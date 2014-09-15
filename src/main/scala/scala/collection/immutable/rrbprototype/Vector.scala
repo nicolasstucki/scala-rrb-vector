@@ -113,7 +113,10 @@ final class Vector[+A] private
 
     def length = vSize
 
+
     // index and update
+
+    override def lengthCompare(len: Int): Int = vSize - len
 
     def apply(index: Int): A = {
         indexAt(index).asInstanceOf[A]
