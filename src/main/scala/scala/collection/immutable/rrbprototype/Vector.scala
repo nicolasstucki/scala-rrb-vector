@@ -16,7 +16,7 @@ object Vector extends SeqFactory[Vector] {
 
     def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
 
-    private[rrbvector] val NIL = new Vector[Nothing](null, 0, 0)
+    private[rrbprototype] val NIL = new Vector[Nothing](null, 0, 0)
 
     @inline override def empty[A]: Vector[A] = NIL
 
