@@ -3,8 +3,9 @@ package scalameter
 import org.scalameter.api._
 import org.scalameter.{Measurer, Aggregator, Warmer, execution}
 
+import scala.collection.immutable
 
-abstract class VectorConcatenation extends PerformanceTest.OfflineReport {
+abstract class VectorConcatenationBenchmark extends PerformanceTest.OfflineReport {
     self: VectorBenchmark =>
 
 //    override def executor = new execution.LocalExecutor(
@@ -26,21 +27,66 @@ abstract class VectorConcatenation extends PerformanceTest.OfflineReport {
                 , ("1 level", Gen.range("size")(1, 32, 1))
             )
         } {
+
             performance of "concatenation" in {
 
                 performance of "concat v ++ v" in {
                     performance of rangeName in {
                         using(vectors(sizes)) curve "Vector" in { v => v ++ v}
-                        using(rrbprototype(sizes)) curve "rrb prototype" in { v => v ++ v}
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v => v ++ v}
                     }
                 }
 
+            }
+
+            performance of "append" in {
+
+                performance of "append v :+ e" in {
+                    performance of rangeName in {
+                        val e = element(-1)
+                        using(vectors(sizes)) curve "Vector" in { v => v :+ e}
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v => v :+ e}
+                    }
+                }
+
+                performance of "append n elements" in {
+                    performance of rangeName in {
+                        using(sizes) curve "Vector" in { n =>
+                            var v = Vector.empty[A]
+                            var i = 0
+                            val e = element(0)
+                            while (i < n) {
+                                v = v :+ e
+                                i += 1
+                            }
+                            v
+                        }
+                        using(sizes) curve "rrb Vector" in { n =>
+                            var v = immutable.rrbvector.Vector.empty[A]
+                            var i = 0
+                            val e = element(0)
+                            while (i < n) {
+                                v = v :+ e
+                                i += 1
+                            }
+                            v
+                        }
+                    }
+                }
+
+                performance of "prepend e +: v" in {
+                    performance of rangeName in {
+                        val e = element(-1)
+                        using(vectors(sizes)) curve "Vector" in { v => v :+ e}
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v => v :+ e}
+                    }
+                }
             }
         }
     }
 
 }
 
-object IntVectorConcatenation extends VectorConcatenation with IntVectorBenchmark
+object IntVectorConcatenationBenchmark extends VectorConcatenationBenchmark with IntVectorBenchmark
 
-object StringVectorConcatenation extends VectorConcatenation with StringVectorBenchmark
+object StringVectorConcatenationBenchmark extends VectorConcatenationBenchmark with StringVectorBenchmark

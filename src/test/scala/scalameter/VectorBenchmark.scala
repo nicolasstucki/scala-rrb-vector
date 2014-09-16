@@ -12,13 +12,13 @@ trait VectorBenchmark {
 
     def typedName: String
 
-    def vectorsName = "Vector"
-
-    def rrbprototypeName = "rrb Prototype"
-
     def vectors(sizes: Gen[Int]) = for (size <- sizes) yield Vector.tabulate[A](size)(element _)
 
     def rrbprototype(sizes: Gen[Int]) = for (size <- sizes) yield immutable.rrbprototype.Vector.tabulate[A](size)(element _)
+
+    def rrbvector(sizes: Gen[Int]) = for (size <- sizes) yield immutable.rrbvector.Vector.tabulate[A](size)(element _)
+
+    def rrbvector1(sizes: Gen[Int]) = for (size <- sizes) yield immutable.rrbvector1.Vector.tabulate[A](size)(element _)
 
 }
 

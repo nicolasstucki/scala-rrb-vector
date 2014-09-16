@@ -6,16 +6,16 @@ import org.scalameter.{Measurer, Aggregator, Warmer, execution}
 /**
  * Created by nicolasstucki on 15/09/2014.
  */
-abstract class VectorIteration extends PerformanceTest.OfflineReport {
+abstract class VectorIterationBenchmark extends PerformanceTest.OfflineReport {
     self: VectorBenchmark =>
 
-    override def executor = new execution.LocalExecutor(
-        Warmer.Default(),
-        Aggregator.median,
-        measurer
-    )
-
-    override def measurer = new Measurer.Default
+//    override def executor = new execution.LocalExecutor(
+//        Warmer.Default(),
+//        Aggregator.median,
+//        measurer
+//    )
+//
+//    override def measurer = new Measurer.Default
 
     performance of s"/temp/$typedName" in {
 
@@ -33,7 +33,7 @@ abstract class VectorIteration extends PerformanceTest.OfflineReport {
                 performance of "iterate with iterator" in {
                     performance of rangeName in {
                         using(vectors(sizes)) curve "Vector" in { v => val it = v.iterator; while (it.hasNext) it.next()}
-                        using(rrbprototype(sizes)) curve "rrb prototype" in { v => val it = v.iterator; while (it.hasNext) it.next()}
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v => val it = v.iterator; while (it.hasNext) it.next()}
                     }
                 }
 
@@ -47,7 +47,7 @@ abstract class VectorIteration extends PerformanceTest.OfflineReport {
                                 i += 1
                             }
                         }
-                        using(rrbprototype(sizes)) curve "rrb prototype" in { v =>
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v =>
                             var i = 0
                             val len = v.length
                             while (i < len) {
@@ -61,7 +61,7 @@ abstract class VectorIteration extends PerformanceTest.OfflineReport {
                 performance of "iterate with reverseIterator" in {
                     performance of rangeName in {
                         using(vectors(sizes)) curve "Vector" in { v => val it = v.reverseIterator; while (it.hasNext) it.next()}
-                        using(rrbprototype(sizes)) curve "rrb prototype" in { v => val it = v.iterator; while (it.hasNext) it.next()}
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v => val it = v.iterator; while (it.hasNext) it.next()}
                     }
                 }
 
@@ -74,7 +74,7 @@ abstract class VectorIteration extends PerformanceTest.OfflineReport {
                                 v(i)
                             }
                         }
-                        using(rrbprototype(sizes)) curve "rrb prototype" in { v =>
+                        using(rrbvector(sizes)) curve "rrb Vector" in { v =>
                             var i = v.length
                             while (i > 0) {
                                 i -= 1
@@ -90,6 +90,6 @@ abstract class VectorIteration extends PerformanceTest.OfflineReport {
 
 }
 
-object IntVectorIteration extends VectorIteration with IntVectorBenchmark
+object IntVectorIterationBenchmark extends VectorIterationBenchmark with IntVectorBenchmark
 
-object StringVectorIteration extends VectorIteration with StringVectorBenchmark
+object StringVectorIterationBenchmark extends VectorIterationBenchmark with StringVectorBenchmark
