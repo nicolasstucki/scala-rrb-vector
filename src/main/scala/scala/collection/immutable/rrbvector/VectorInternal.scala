@@ -122,58 +122,64 @@ private[immutable] trait VectorInternal[A] {
         val thisLength = this._length
         if (thisLength == 0)
             return that
+
         val thatLength = that._length
         if (thatLength == 0)
-            this.asInstanceOf[Vector[U]]
-        else if (thisLength + thatLength <= WIDTH) {
-            new Vector[U].initDisplay1(mergeLeafs(this.display0, that.display0), thisLength + thatLength)
-        } else {
-            // create new vector
-            val newVector = new Vector[U]
-            val newRoot = newVector.concatenatedSubTree(this.root, this.height, that.root, that.height, true)
-            newVector.initDisplayWithoutFocus(newRoot, newVector.height, thisLength + thatLength)
+            return this.asInstanceOf[Vector[U]]
+
+        val newLength = thisLength + thatLength
+        if (newLength <= WIDTH)
+            return new Vector[U].initDisplay1(mergeLeafs(this.display0, that.display0), newLength)
+
+        val thisHeight = this.height
+        val thatHeight = that.height
+        val thisRoot = this.root
+        val thatRoot = that.root
+        if (thisHeight == 1 && thatHeight == 1) {
+            val leftLeaf = thisRoot.asInstanceOf[Array[AnyRef]]
+            val arr = setSizes(araNewAbove(leftLeaf, thatRoot), 2)
+            return new Vector[U].initDisplay2(leftLeaf, arr, newLength, 0, 0, leftLeaf.length)
         }
+
+        val balancedBranch =
+            if (thisHeight > thatHeight) {
+                val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
+                val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisHeight - 1, thatRoot, thatHeight)
+                rebalanced(leftBranch, concatenatedBranch, null, thisHeight, true)
+            } else if (thisHeight < thatHeight) {
+                val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
+                val concatenatedBranch = concatenatedSubTree(thisRoot, thisHeight, rightBranch(1), thatHeight - 1)
+                rebalanced(null, concatenatedBranch, rightBranch, thatHeight, true)
+            } else {
+                val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
+                val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
+                val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisHeight - 1, rightBranch(1), thatHeight - 1)
+                rebalanced(leftBranch, concatenatedBranch, rightBranch, thisHeight, true)
+            }
+        val height = balancedBranch(0).asInstanceOf[Int]
+        val sizedBalancedBranch = setSizes(balancedBranch, height)
+        new Vector[U].initDisplayWithoutFocus(sizedBalancedBranch, height, newLength)
     }
 
-    /**
-     *
-     * @param leftNode
-     * @param leftHeight
-     * @param rightNode
-     * @param rightHeight
-     * @param isTop
-     * @return
-     */
-    private[immutable] final def concatenatedSubTree(leftNode: AnyRef, leftHeight: Int, rightNode: AnyRef, rightHeight: Int, isTop: Boolean): Array[AnyRef] = {
-        if (leftHeight == 1 && rightHeight == 1) {
-            val arr =
-                if (leftNode.asInstanceOf[Array[AnyRef]].length + rightNode.asInstanceOf[Array[AnyRef]].length <= WIDTH)
-                    araNewAbove(mergeLeafs(leftNode.asInstanceOf[Array[AnyRef]], rightNode.asInstanceOf[Array[AnyRef]]))
-                else
-                    araNewAbove(leftNode, rightNode)
-            if (isTop) {
-                this.height = 2
-                return setSizes(arr, 2)
-            } else
-                return arr
-        }
-
+    private final def concatenatedSubTree(leftNode: AnyRef, leftHeight: Int, rightNode: AnyRef, rightHeight: Int): Array[AnyRef] = {
         if (leftHeight > rightHeight) {
             val leftBranch = leftNode.asInstanceOf[Array[AnyRef]]
-            val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), leftHeight - 1, rightNode, rightHeight, false)
-            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, null, leftHeight, isTop)
+            val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), leftHeight - 1, rightNode, rightHeight)
+            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, null, leftHeight, false)
             balancedBranch
         } else if (leftHeight < rightHeight) {
             val rightBranch = rightNode.asInstanceOf[Array[AnyRef]]
-            val concatenatedBranch = concatenatedSubTree(leftNode, leftHeight, rightBranch(1), rightHeight - 1, false)
-            val balancedBranch = rebalanced(null, concatenatedBranch, rightBranch, rightHeight, isTop)
+            val concatenatedBranch = concatenatedSubTree(leftNode, leftHeight, rightBranch(1), rightHeight - 1)
+            val balancedBranch = rebalanced(null, concatenatedBranch, rightBranch, rightHeight, false)
             balancedBranch
+        } else if (leftHeight == 1 /* && rightHeight == 1 */ ) {
+            araNewAbove(leftNode, rightNode)
         } else {
             // two heights the same so move down both
             val leftBranch = leftNode.asInstanceOf[Array[AnyRef]]
             val rightBranch = rightNode.asInstanceOf[Array[AnyRef]]
-            val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), leftHeight - 1, rightBranch(1), rightHeight - 1, false)
-            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, rightBranch, leftHeight, isTop)
+            val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), leftHeight - 1, rightBranch(1), rightHeight - 1)
+            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, rightBranch, leftHeight, false)
             balancedBranch
         }
     }
@@ -203,8 +209,8 @@ private[immutable] trait VectorInternal[A] {
         if (slen <= WIDTH) {
             val na = araNewCopy(nall, 0, slen)
             if (isTop) {
-                this.height = height
-                setSizes(na, height)
+                na(0) = height.asInstanceOf[AnyRef] // use na(0) to transport 2nd return value
+                na
             } else
                 araNewAbove(setSizes(na, height))
 
@@ -213,8 +219,8 @@ private[immutable] trait VectorInternal[A] {
             val nar = araNewCopy(nall, WIDTH, slen - WIDTH)
             val arr = araNewAbove(setSizes(nal, height), setSizes(nar, height))
             if (isTop) {
-                this.height = height + 1
-                setSizes(arr, height + 1)
+                arr(0) = (height + 1).asInstanceOf[AnyRef] // use arr(0) to transport 2nd return value
+                arr
             } else
                 arr
         }
@@ -462,14 +468,14 @@ private[immutable] trait VectorInternal[A] {
     }
 
     // From prototype
-    private def araNewCopy(nall: Array[AnyRef], start: Int, len: Int) = {
+    private final def araNewCopy(nall: Array[AnyRef], start: Int, len: Int) = {
         val na = new Array[AnyRef](len + INVAR)
         Platform.arraycopy(nall, start, na, 1, len)
         na
     }
 
     // From prototype
-    private def araNewJoin(al: Array[AnyRef], ac: Array[AnyRef], ar: Array[AnyRef]): Array[AnyRef] = {
+    private final def araNewJoin(al: Array[AnyRef], ac: Array[AnyRef], ar: Array[AnyRef]): Array[AnyRef] = {
         // result does not contain size slot!!!
         val lenl = if (al != null) al.length - 2 else 0
         val lenc = if (ac != null) ac.length - 1 else 0
