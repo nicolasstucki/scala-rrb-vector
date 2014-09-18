@@ -569,16 +569,6 @@ final class Vector[+A] private[immutable]
     }
 
     // From prototype
-    private final def gtaNewJoin(leftLeaf: Array[AnyRef], rightLeaf: Array[AnyRef]): Array[AnyRef] = {
-        val leftLength = leftLeaf.length
-        val rightLength = rightLeaf.length
-        val newLeaf = new Array[AnyRef](rightLength + leftLength)
-        Platform.arraycopy(leftLeaf, 0, newLeaf, 0, leftLength)
-        Platform.arraycopy(rightLeaf, 0, newLeaf, leftLength, rightLength)
-        newLeaf
-    }
-
-    // From prototype
     private final def araNewAbove(gal: AnyRef): Array[AnyRef] = {
         val na = new Array[AnyRef](1 + INVAR)
         na(1) = gal
