@@ -9,7 +9,7 @@ trait BaseVectorBenchmark extends PerformanceTest {
     /* config */
 
     val minHeight = 1
-    val maxHeight = 4
+    val maxHeight = 3
     val points = 64
     val benchRuns = 32
     val independentSamples = 8
