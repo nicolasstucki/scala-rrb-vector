@@ -9,9 +9,10 @@ trait BaseVectorBenchmark extends PerformanceTest {
     /* config */
 
     val minHeight = 1
-    val maxHeight = 3
+    val maxHeight = 1
     val points = 64
-
+    val benchRuns = 32
+    val independentSamples = 1
 
     /* data */
 
@@ -38,8 +39,8 @@ trait BaseVectorBenchmark extends PerformanceTest {
 
     def performanceOfVectors(benchmarks: Int => Unit): Unit = {
         performance of "vector benchmarks" config(
-          Key.exec.benchRuns -> 12,
-          Key.exec.independentSamples -> 1
+          Key.exec.benchRuns -> benchRuns,
+          Key.exec.independentSamples -> independentSamples
           ) in {
             for (height <- minHeight to maxHeight) {
                 benchmarks(height)
