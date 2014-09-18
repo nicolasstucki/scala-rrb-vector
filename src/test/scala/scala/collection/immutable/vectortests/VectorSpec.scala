@@ -1,4 +1,4 @@
-package scalatest
+package scala.collection.immutable.vectortests
 
 import org.scalatest._
 
