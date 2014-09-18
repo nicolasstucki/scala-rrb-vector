@@ -1,14 +1,13 @@
-package scala.collection.immutable.rrbvector
+package scala.collection.immutable
+package rrbvector
 
 import scala.compat.Platform
 
+import VectorProps._
 
 private[immutable] trait VectorPointer[A] {
-    self: VectorProps =>
 
     private[immutable] var height: Int = 0
-
-    protected var focus: Int = 0
 
     private[immutable] var display5: Array[AnyRef] = _
     private[immutable] var display4: Array[AnyRef] = _
@@ -53,29 +52,24 @@ private[immutable] trait VectorPointer[A] {
             // Do nothing
         } else if /* level = 1 */ (xor < (1 << (2 * WIDTH_SHIFT))) {
             display0 = display1(((indexInFocus >> WIDTH_SHIFT) & 31) + 1).asInstanceOf[Array[AnyRef]]
-            focus = indexInFocus
         } else if /* level = 2 */ (xor < (1 << (3 * WIDTH_SHIFT))) {
             display1 = display2(((indexInFocus >> (2 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display0 = display1(((indexInFocus >> WIDTH_SHIFT) & 31) + 1).asInstanceOf[Array[AnyRef]]
-            focus = indexInFocus
         } else if /* level = 3 */ (xor < (1 << (4 * WIDTH_SHIFT))) {
             display2 = display3(((indexInFocus >> (3 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display1 = display2(((indexInFocus >> (2 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display0 = display1(((indexInFocus >> WIDTH_SHIFT) & 31) + 1).asInstanceOf[Array[AnyRef]]
-            focus = indexInFocus
         } else if /* level = 4 */ (xor < (1 << (5 * WIDTH_SHIFT))) {
             display3 = display4(((indexInFocus >> (4 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display2 = display3(((indexInFocus >> (3 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display1 = display2(((indexInFocus >> (2 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display0 = display1(((indexInFocus >> WIDTH_SHIFT) & 31) + 1).asInstanceOf[Array[AnyRef]]
-            focus = indexInFocus
         } else if /* level = 5 */ (xor < (1 << (6 * WIDTH_SHIFT))) {
             display4 = display5(((indexInFocus >> (5 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display3 = display4(((indexInFocus >> (4 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display2 = display3(((indexInFocus >> (3 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display1 = display2(((indexInFocus >> (2 * WIDTH_SHIFT)) & 31) + 1).asInstanceOf[Array[AnyRef]]
             display0 = display1(((indexInFocus >> WIDTH_SHIFT) & 31) + 1).asInstanceOf[Array[AnyRef]]
-            focus = indexInFocus
         } else /* level > 5 */ {
             throw new IllegalArgumentException(s"xor=$xor")
         }

@@ -3,12 +3,13 @@ package scala.collection.immutable.rrbvector
 import scala.annotation.tailrec
 import scala.compat.Platform
 
-private[immutable] trait RelaxedVectorPointer[A]
-  extends VectorPointer[A] {
-    self: VectorProps =>
+import VectorProps._
+
+private[immutable] trait RelaxedVectorPointer[A] extends VectorPointer[A] {
 
     private[immutable] var _length: Int = 0
 
+    private[immutable] var focus: Int = 0
     private[immutable] var focusStart: Int = 0
     private[immutable] var focusEnd: Int = 0
 
@@ -121,6 +122,7 @@ private[immutable] trait RelaxedVectorPointer[A]
         if (focusStart <= index && index < focusEnd) {
             val indexInFocus = index - focusStart
             focusPositionFromOldFocus(indexInFocus, indexInFocus ^ focus)
+            focus = indexInFocus
         } else if (index < 0 || this._length <= index) {
             throw new IndexOutOfBoundsException(index.toString)
         } else if (_length == 0) {
@@ -164,9 +166,10 @@ private[immutable] trait RelaxedVectorPointer[A]
                     height - 1)
             } else {
                 val indexInFocus = index - start
-                focusPositionFromOldFocus(indexInFocus, 1 << (5 * (height - 1)))
+                focus = indexInFocus
                 focusStart = start
                 focusEnd = end
+                focusPositionFromOldFocus(indexInFocus, 1 << (5 * (height - 1)))
             }
         }
         focusOnPositionRec(0, _length, height)

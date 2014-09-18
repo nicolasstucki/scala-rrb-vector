@@ -6,8 +6,7 @@ import scala.collection.{Iterator, AbstractIterator}
 private[immutable] class VectorIterator[+A]
   extends AbstractIterator[A]
   with Iterator[A]
-  with RelaxedVectorPointer[A@uncheckedVariance]
-  with VectorProps {
+  with RelaxedVectorPointer[A@uncheckedVariance] {
 
     private var blockStart: Int = 0
     private var lo: Int = 0
