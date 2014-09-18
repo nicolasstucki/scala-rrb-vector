@@ -1,7 +1,7 @@
 package scala
 package collection
 package immutable
-package rrbvector1
+package vector
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.Platform
