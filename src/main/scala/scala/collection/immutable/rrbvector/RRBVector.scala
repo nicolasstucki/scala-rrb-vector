@@ -253,33 +253,28 @@ private[immutable] trait RRBVectorPointer[T] {
     // xor: oldIndex ^ index
     private[immutable] final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = {
         // goto block start pos
-        if (xor < (1 << 10)) {
-            // level = 1
+        if /* level = 1 */ (xor < (1 << 10)) {
             if (depth == 1) {
-                display1 = new Array(32);
-                display1(0) = display0;
+                display1 = new Array(32)
+                display1(0) = display0
                 depth += 1
             }
             display0 = new Array(32)
             display1((index >> 5) & 31) = display0
-        } else
-        if (xor < (1 << 15)) {
-            // level = 2
+        } else if /* level = 2 */ (xor < (1 << 15)) {
             if (depth == 2) {
-                display2 = new Array(32);
-                display2(0) = display1;
+                display2 = new Array(32)
+                display2(0) = display1
                 depth += 1
             }
             display0 = new Array(32)
             display1 = new Array(32)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
-        } else
-        if (xor < (1 << 20)) {
-            // level = 3
+        } else if /* level = 3 */ (xor < (1 << 20)) {
             if (depth == 3) {
-                display3 = new Array(32);
-                display3(0) = display2;
+                display3 = new Array(32)
+                display3(0) = display2
                 depth += 1
             }
             display0 = new Array(32)
@@ -288,12 +283,10 @@ private[immutable] trait RRBVectorPointer[T] {
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
-        } else
-        if (xor < (1 << 25)) {
-            // level = 4
+        } else if /* level = 4 */ (xor < (1 << 25)) {
             if (depth == 4) {
-                display4 = new Array(32);
-                display4(0) = display3;
+                display4 = new Array(32)
+                display4(0) = display3
                 depth += 1
             }
             display0 = new Array(32)
@@ -304,12 +297,10 @@ private[immutable] trait RRBVectorPointer[T] {
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
             display4((index >> 20) & 31) = display3
-        } else
-        if (xor < (1 << 30)) {
-            // level = 5
+        } else if /* level = 5 */ (xor < (1 << 30)) {
             if (depth == 5) {
-                display5 = new Array(32);
-                display5(0) = display4;
+                display5 = new Array(32)
+                display5(0) = display4
                 depth += 1
             }
             display0 = new Array(32)
@@ -322,8 +313,7 @@ private[immutable] trait RRBVectorPointer[T] {
             display3((index >> 15) & 31) = display2
             display4((index >> 20) & 31) = display3
             display5((index >> 25) & 31) = display4
-        } else {
-            // level = 6
+        } else /* level < 0 || 5 < level */ {
             throw new IllegalArgumentException()
         }
     }
@@ -359,7 +349,7 @@ final class RRBVectorBuilder[A]() extends Builder[A, RRBVector[A]] with RRBVecto
             return RRBVector.empty
         val s = new RRBVector[A](size)
         this.depth match {
-            case 1 =>
+            case 1 => // Do nothing
             case 2 =>
                 val a = new Array[AnyRef](33)
                 Platform.arraycopy(display1, 0, a, 0, display1.length)
@@ -380,7 +370,7 @@ final class RRBVectorBuilder[A]() extends Builder[A, RRBVector[A]] with RRBVecto
                 val a = new Array[AnyRef](33)
                 Platform.arraycopy(display5, 0, a, 0, display5.length)
                 display5 = a
-            case _ =>
+            case _ => throw new IllegalStateException()
         }
         s.initFrom(this)
         if (depth > 1) s.gotoPos(0, size - 1)
