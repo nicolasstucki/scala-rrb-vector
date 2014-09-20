@@ -1,5 +1,4 @@
-package scala.collection.immutable
-package rrbvector
+package scala.collection.immutable.oldrrbvector
 
 import scala.compat.Platform
 

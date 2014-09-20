@@ -1,10 +1,13 @@
-package scala.collection.immutable.rrbvector
+package scala.collection.immutable.oldrrbvector
 
 import scala.annotation.tailrec
 import scala.compat.Platform
 
 import VectorProps._
 
+/**
+ * Created by nicolasstucki on 19/09/2014.
+ */
 private[immutable] trait RelaxedVectorPointer[A] extends VectorPointer[A] {
 
     private[immutable] var _length: Int = 0
@@ -232,4 +235,3 @@ private[immutable] trait RelaxedVectorPointer[A] extends VectorPointer[A] {
         newBranch
     }
 }
-

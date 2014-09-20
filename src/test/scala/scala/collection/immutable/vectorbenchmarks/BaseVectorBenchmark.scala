@@ -3,16 +3,19 @@ package vectorbenchmarks
 
 import org.scalameter.{Gen, Key, PerformanceTest}
 
+import scala.collection.immutable.rbvector._
+import scala.collection.immutable.rrbvector._
 
 trait BaseVectorBenchmark extends PerformanceTest {
+
 
     /* config */
 
     val minHeight = 1
     val maxHeight = 3
-    val points = 64
-    val benchRuns = 32
-    val independentSamples = 8
+    val points = 32
+    val benchRuns = 64
+    val independentSamples = 2
 
     /* data */
 
@@ -25,11 +28,15 @@ trait BaseVectorBenchmark extends PerformanceTest {
 
     def vectors(from: Int, to: Int, by: Int) = for {
         size <- sizes(from, to, by)
-    } yield (0 until size).toVector
+    } yield Vector.range(0, size)
 
     def rbvectors(from: Int, to: Int, by: Int) = for {
         size <- sizes(from, to, by)
-    } yield scala.collection.immutable.rrbvector.Vector.range(0, size)
+    } yield RBVector.range(0, size)
+
+    def rrbvectors(from: Int, to: Int, by: Int) = for {
+        size <- sizes(from, to, by)
+    } yield RRBVector.range(0, size)
 
     def fromToBy(height: Int) = (
       math.pow(32, height - 1).toInt + 1,
@@ -40,7 +47,8 @@ trait BaseVectorBenchmark extends PerformanceTest {
     def performanceOfVectors(benchmarks: Int => Unit): Unit = {
         performance of "vector benchmarks" config(
           Key.exec.benchRuns -> benchRuns,
-          Key.exec.independentSamples -> independentSamples
+          Key.exec.independentSamples -> independentSamples,
+          Key.exec.jvmflags -> "-XX:+PrintCompilation"
           ) in {
             for (height <- minHeight to maxHeight) {
                 benchmarks(height)

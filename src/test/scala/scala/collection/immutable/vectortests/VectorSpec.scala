@@ -5,9 +5,12 @@ import org.scalatest._
 
 //import scala.collection.immutable.rrbprototype.Vector
 
-import scala.collection.immutable.rrbvector.Vector
+//import scala.collection.immutable.vector.Vector
 
-//import scala.collection.immutable.rrbvector1.Vector
+//import scala.collection.immutable.rbvector.{RBVector => Vector}
+
+import scala.collection.immutable.rrbvector.{RRBVector => Vector}
+
 
 abstract class BaseVectorSpec[A] extends WordSpec {
 

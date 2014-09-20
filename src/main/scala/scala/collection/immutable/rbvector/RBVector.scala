@@ -1,0 +1,328 @@
+package scala
+package collection
+package immutable
+package rbvector
+
+import java.io.Serializable
+
+import scala.annotation.unchecked.uncheckedVariance
+
+import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
+import scala.collection.mutable.Builder
+import scala.compat.Platform
+
+/**
+ * Created by nicolasstucki on 19/09/2014.
+ */
+
+object RBVector extends IndexedSeqFactory[RBVector] {
+    def newBuilder[A]: Builder[A, RBVector[A]] = new RBVectorBuilder[A]
+
+    implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, RBVector[A]] =
+        ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+
+    private[immutable] val NIL = new RBVector[Nothing](0, 0)
+
+    override def empty[A]: RBVector[A] = NIL
+
+}
+
+final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int, val focus: Int)
+  extends AbstractSeq[A]
+  with IndexedSeq[A]
+  with GenericTraversableTemplate[A, RBVector]
+  with IndexedSeqLike[A, RBVector[A]]
+  with RBVectorPointer[A@uncheckedVariance]
+  with Serializable {
+    //  with CustomParallelizable[A, ParVector[A]] {
+    self =>
+
+    override def companion: GenericCompanion[RBVector] = RBVector
+
+    def length = endIndex
+
+    override def lengthCompare(len: Int): Int = length - len
+
+
+    override /*SeqLike*/ def reverseIterator: Iterator[A] = new AbstractIterator[A] {
+        // can still be improved
+        private var i = self.length
+
+        def hasNext: Boolean = 0 < i
+
+        def next(): A =
+            if (0 < i) {
+                i -= 1
+                self(i)
+            } else Iterator.empty.next()
+    }
+
+    def apply(index: Int): A = {
+        if (0 <= index && index < endIndex) getElem(index, index ^ focus)
+        else throw new IndexOutOfBoundsException(index.toString)
+    }
+
+    override /*IterableLike*/ def head: A = {
+        if (isEmpty) throw new UnsupportedOperationException("empty.head")
+        apply(0)
+    }
+
+    override /*TraversableLike*/ def tail: RBVector[A] = {
+        if (isEmpty) throw new UnsupportedOperationException("empty.tail")
+        drop(1)
+    }
+
+    override /*TraversableLike*/ def last: A = {
+        if (isEmpty) throw new UnsupportedOperationException("empty.last")
+        apply(length - 1)
+    }
+
+    override /*TraversableLike*/ def init: RBVector[A] = {
+        if (isEmpty) throw new UnsupportedOperationException("empty.init")
+        dropRight(1)
+    }
+
+    override /*IterableLike*/ def slice(from: Int, until: Int): RBVector[A] =
+        take(until).drop(from)
+
+    override /*IterableLike*/ def splitAt(n: Int): (RBVector[A], RBVector[A]) = (take(n), drop(n))
+
+}
+
+private[immutable] trait RBVectorPointer[A] {
+    private[immutable] var depth: Int = _
+
+    private[immutable] var display0: Array[AnyRef] = _
+    private[immutable] var display1: Array[AnyRef] = _
+    private[immutable] var display2: Array[AnyRef] = _
+    private[immutable] var display3: Array[AnyRef] = _
+    private[immutable] var display4: Array[AnyRef] = _
+    private[immutable] var display5: Array[AnyRef] = _
+
+    private[immutable] final def initFrom[U](that: RBVectorPointer[U]): Unit = initFrom(that, that.depth)
+
+    private[immutable] final def initFrom[U](that: RBVectorPointer[U], depth: Int) = {
+        this.depth = depth
+        (depth - 1) match {
+            case -1 =>
+            case 0 =>
+                display0 = that.display0
+            case 1 =>
+                display1 = that.display1
+                display0 = that.display0
+            case 2 =>
+                display2 = that.display2
+                display1 = that.display1
+                display0 = that.display0
+            case 3 =>
+                display3 = that.display3
+                display2 = that.display2
+                display1 = that.display1
+                display0 = that.display0
+            case 4 =>
+                display4 = that.display4
+                display3 = that.display3
+                display2 = that.display2
+                display1 = that.display1
+                display0 = that.display0
+            case 5 =>
+                display5 = that.display5
+                display4 = that.display4
+                display3 = that.display3
+                display2 = that.display2
+                display1 = that.display1
+                display0 = that.display0
+        }
+    }
+
+    private[immutable] final def getElem(index: Int, xor: Int): A = {
+        if (xor < (1 << 5)) {
+            // level = 0
+            display0(index & 31).asInstanceOf[A]
+        } else
+        if (xor < (1 << 10)) {
+            // level = 1
+            display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
+        } else
+        if (xor < (1 << 15)) {
+            // level = 2
+            display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
+        } else
+        if (xor < (1 << 20)) {
+            // level = 3
+            display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
+        } else
+        if (xor < (1 << 25)) {
+            // level = 4
+            display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
+        } else
+        if (xor < (1 << 30)) {
+            // level = 5
+            display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
+
+    private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
+        if (xor < (1 << 5)) {
+            // level = 0 (could maybe removed)
+        } else
+        if (xor < (1 << 10)) {
+            // level = 1
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else
+        if (xor < (1 << 15)) {
+            // level = 2
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else
+        if (xor < (1 << 20)) {
+            // level = 3
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else
+        if (xor < (1 << 25)) {
+            // level = 4
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else
+        if (xor < (1 << 30)) {
+            // level = 5
+            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
+
+    // USED BY BUILDER
+
+    // xor: oldIndex ^ index
+    private[immutable] final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = {
+        // goto block start pos
+        if (xor < (1 << 10)) {
+            // level = 1
+            if (depth == 1) {
+                display1 = new Array(32);
+                display1(0) = display0;
+                depth += 1
+            }
+            display0 = new Array(32)
+            display1((index >> 5) & 31) = display0
+        } else
+        if (xor < (1 << 15)) {
+            // level = 2
+            if (depth == 2) {
+                display2 = new Array(32);
+                display2(0) = display1;
+                depth += 1
+            }
+            display0 = new Array(32)
+            display1 = new Array(32)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+        } else
+        if (xor < (1 << 20)) {
+            // level = 3
+            if (depth == 3) {
+                display3 = new Array(32);
+                display3(0) = display2;
+                depth += 1
+            }
+            display0 = new Array(32)
+            display1 = new Array(32)
+            display2 = new Array(32)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+            display3((index >> 15) & 31) = display2
+        } else
+        if (xor < (1 << 25)) {
+            // level = 4
+            if (depth == 4) {
+                display4 = new Array(32);
+                display4(0) = display3;
+                depth += 1
+            }
+            display0 = new Array(32)
+            display1 = new Array(32)
+            display2 = new Array(32)
+            display3 = new Array(32)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+            display3((index >> 15) & 31) = display2
+            display4((index >> 20) & 31) = display3
+        } else
+        if (xor < (1 << 30)) {
+            // level = 5
+            if (depth == 5) {
+                display5 = new Array(32);
+                display5(0) = display4;
+                depth += 1
+            }
+            display0 = new Array(32)
+            display1 = new Array(32)
+            display2 = new Array(32)
+            display3 = new Array(32)
+            display4 = new Array(32)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+            display3((index >> 15) & 31) = display2
+            display4((index >> 20) & 31) = display3
+            display5((index >> 25) & 31) = display4
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
+}
+
+
+final class RBVectorBuilder[A]() extends Builder[A, RBVector[A]] with RBVectorPointer[A@uncheckedVariance] {
+
+    display0 = new Array[AnyRef](32)
+    depth = 1
+
+    private var blockIndex = 0
+    private var lo = 0
+
+    def +=(elem: A): this.type = {
+        if (lo >= display0.length) {
+            val newBlockIndex = blockIndex + 32
+            gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)
+            blockIndex = newBlockIndex
+            lo = 0
+        }
+        display0(lo) = elem.asInstanceOf[AnyRef]
+        lo += 1
+        this
+    }
+
+    override def ++=(xs: TraversableOnce[A]): this.type =
+        super.++=(xs)
+
+    def result: RBVector[A] = {
+        val size = blockIndex + lo
+        if (size == 0)
+            return RBVector.empty
+        val s = new RBVector[A](size, 0) // should focus front or back?
+        s.initFrom(this)
+        if (depth > 1) s.gotoPos(0, size - 1)
+        s
+    }
+
+    def clear(): Unit = {
+        display0 = new Array[AnyRef](32)
+        depth = 1
+        blockIndex = 0
+        lo = 0
+    }
+}

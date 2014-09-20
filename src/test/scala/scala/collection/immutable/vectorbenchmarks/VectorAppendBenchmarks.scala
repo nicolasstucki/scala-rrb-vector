@@ -3,43 +3,57 @@ package vectorbenchmarks
 
 import org.scalameter.{Key, PerformanceTest}
 
+import scala.collection.generic.CanBuildFrom
+import scala.collection.immutable.rbvector.RBVector
 
-class VectorAppendBenchmarks extends PerformanceTest.OfflineReport with BaseVectorBenchmark {
+class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport with BaseVectorBenchmark {
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
 
         var sideeffect = 0
-        val v1 = Vector(42)
 
         measure method "append" config(
-          Key.exec.minWarmupRuns -> (if (height <= 2) 1000 else 200).asInstanceOf[Int],
-          Key.exec.maxWarmupRuns -> (if (height <= 2) 2000 else 500).asInstanceOf[Int]
+          Key.exec.minWarmupRuns -> 2000,
+          Key.exec.maxWarmupRuns -> 5000
           ) in {
 
-            performance of s"Height $height" in {
+            performance of "append x65" in {
 
-                using(sizes(from, to, by)) curve ("Vector") in { len =>
-                    var i = 0
-                    var vector = Vector.empty[Int]
-                    while (i < len) {
-                        vector = vector :+ i
-                        i += 1
+                performance of s"Height $height" in {
+                    using(vectors(from, to, by)) curve ("Vector") in { vec =>
+                        var i = 0
+                        var v = vec
+                        while (i < 65) {
+                            v = v :+ 0
+                            i += 1
+                        }
+                        sideeffect = v.length
                     }
-                    sideeffect = i
-                }
 
-                using(sizes(from, to, by)) curve ("rbVector") in { len =>
-                    var i = 0
-                    var vector = rrbvector.Vector.empty[Int]
-                    while (i < len) {
-                        vector = vector :+ i
-                        i += 1
+                    using(rbvectors(from, to, by)) curve ("rbVector") in { vec =>
+                        var i = 0
+                        var v = vec
+                        while (i < 65) {
+                            v = v :+ 0
+                            i += 1
+                        }
+                        sideeffect = v.length
                     }
-                    sideeffect = i
-                }
 
+                    using(rrbvectors(from, to, by)) curve ("rrbVector") in { vec =>
+                        var i = 0
+                        var v = vec
+                        while (i < 65) {
+                            v = v :+ 0
+                            i += 1
+                        }
+                        sideeffect = v.length
+                    }
+                }
             }
+
         }
     }
+
 }

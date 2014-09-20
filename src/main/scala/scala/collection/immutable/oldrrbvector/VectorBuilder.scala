@@ -1,4 +1,4 @@
-package scala.collection.immutable.rrbvectorx
+package scala.collection.immutable.oldrrbvector
 
 import scala.collection.mutable.Builder
 

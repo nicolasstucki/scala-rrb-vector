@@ -1,10 +1,10 @@
-package scala.collection.immutable.rrbvector
+package scala.collection.immutable.oldrrbvector
 
 import java.lang.Math._
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection._
-import scala.collection.immutable.rrbvector.VectorProps._
+import scala.collection.immutable.oldrrbvector.VectorProps._
 import scala.compat.Platform
 
 //import scala.collection.generic.GenTraversableFactory.GenericCanBuildFrom

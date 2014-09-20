@@ -1,7 +1,7 @@
-package scala.collection.immutable.rrbvector
+package scala.collection.immutable.oldrrbvector
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.{Iterator, AbstractIterator}
+import scala.collection.{AbstractIterator, Iterator}
 
 private[immutable] class VectorIterator[+A]
   extends AbstractIterator[A]
