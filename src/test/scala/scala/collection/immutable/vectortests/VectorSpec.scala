@@ -7,9 +7,9 @@ import org.scalatest._
 
 //import scala.collection.immutable.vector.Vector
 
-//import scala.collection.immutable.rbvector.{RBVector => Vector}
+import scala.collection.immutable.rbvector.{RBVector => Vector}
 
-import scala.collection.immutable.rrbvector.{RRBVector => Vector}
+//import scala.collection.immutable.rrbvector.{RRBVector => Vector}
 
 
 abstract class BaseVectorSpec[A] extends WordSpec {
@@ -70,6 +70,9 @@ abstract class BaseVectorSpec[A] extends WordSpec {
             "return an empty iterator" in {
                 assert(vector.iterator.isEmpty)
             }
+            "return an empty reverseIterator" in {
+                assert(vector.reverseIterator.isEmpty)
+            }
             "return an empty vector when slice is invoked" in {
                 assertResult(vector)(vector.slice(0, 1))
                 assertResult(vector)(vector.slice(0, -1))
@@ -96,8 +99,6 @@ abstract class BaseVectorSpec[A] extends WordSpec {
                     for (i <- 0 until n) assertResult(element(i))(vector(i))
                 }
             }
-
-
         }
         "two vectors are concatenated" when {
             for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025)) {
@@ -113,6 +114,12 @@ abstract class BaseVectorSpec[A] extends WordSpec {
                                 for (e <- left) b = b :+ e
                                 for (e <- right) b = b :+ e
                                 assert(b === vector)
+                            }
+                            "iterator is equal (content/order wise) to the concatenated iterators" in {
+                                assert((vector.iterator zip (left.iterator ++ right.iterator)).forall { case (a, b) => a == b})
+                            }
+                            "reverseIterator is equal (content/order wise) to the concatenated reverseIterators" in {
+                                assert((vector.reverseIterator zip (right.reverseIterator ++ left.reverseIterator)).forall { case (a, b) => a == b})
                             }
                         }
                     }
