@@ -8,6 +8,7 @@ import java.io.Serializable
 import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
+import scala.collection.immutable.oldrrbvector.RelaxedVectorPointer
 import scala.collection.mutable.Builder
 import scala.compat.Platform
 
@@ -43,18 +44,26 @@ final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int
 
     override def lengthCompare(len: Int): Int = length - len
 
+    private[collection] final def initIterator[B >: A](s: RBVectorIterator[B]) {
+        s.initFrom(this)
+        if (s.depth > 1) s.gotoPos(0, 0 ^ focus)
+    }
 
-    override /*SeqLike*/ def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-        // can still be improved
-        private var i = self.length
+    private[collection] final def initReverseIterator[B >: A](s: RBVectorReverseIterator[B]) {
+        s.initFrom(this)
+        if (s.depth > 1) s.gotoPos(endIndex - 1, (endIndex - 1) ^ focus)
+    }
 
-        def hasNext: Boolean = 0 < i
+    override def iterator: RBVectorIterator[A] = {
+        val s = new RBVectorIterator[A](0, endIndex)
+        initIterator(s)
+        s
+    }
 
-        def next(): A =
-            if (0 < i) {
-                i -= 1
-                self(i)
-            } else Iterator.empty.next()
+    override /*SeqLike*/ def reverseIterator: Iterator[A] = {
+        val s = new RBVectorReverseIterator[A](0, endIndex)
+        initReverseIterator(s)
+        s
     }
 
     def apply(index: Int): A = {
@@ -204,6 +213,74 @@ private[immutable] trait RBVectorPointer[A] {
         }
     }
 
+    // xor: oldIndex ^ index
+    private[immutable] final def gotoNextBlockStart(index: Int, xor: Int): Unit = {
+        // goto block start pos
+        if (xor < (1 << 10)) {
+            // level = 1
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 15)) {
+            // level = 2
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 20)) {
+            // level = 3
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(0).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 25)) {
+            // level = 4
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3(0).asInstanceOf[Array[AnyRef]]
+            display1 = display2(0).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 30)) {
+            // level = 5
+            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = display4(0).asInstanceOf[Array[AnyRef]]
+            display2 = display3(0).asInstanceOf[Array[AnyRef]]
+            display1 = display2(0).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
+
+    // xor: oldIndex ^ index
+    private[immutable] final def gotoPrevBlockStart(index: Int, xor: Int): Unit = {
+        // goto block start pos
+        if (xor < (1 << 10)) {
+            // level = 1
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 15)) {
+            // level = 2
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 20)) {
+            // level = 3
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 25)) {
+            // level = 4
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3(31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 30)) {
+            // level = 5
+            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = display4(31).asInstanceOf[Array[AnyRef]]
+            display2 = display3(31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
+
     // USED BY BUILDER
 
     // xor: oldIndex ^ index
@@ -283,8 +360,81 @@ private[immutable] trait RBVectorPointer[A] {
             throw new IllegalArgumentException()
         }
     }
+
+
 }
 
+final class RBVectorIterator[+A](startIndex: Int, endIndex: Int)
+  extends AbstractIterator[A]
+  with Iterator[A]
+  with RBVectorPointer[A@uncheckedVariance] {
+
+    private var blockIndex: Int = startIndex & ~31
+    private var lo: Int = startIndex & 31
+
+    private var endLo = math.min(endIndex - blockIndex, 32)
+
+    def hasNext = _hasNext
+
+    private var _hasNext = blockIndex + lo < endIndex
+
+    def next(): A = {
+        if (!_hasNext) throw new NoSuchElementException("reached iterator end")
+
+        val res = display0(lo).asInstanceOf[A]
+        lo += 1
+
+        if (lo == endLo) {
+            if (blockIndex + lo < endIndex) {
+                val newBlockIndex = blockIndex + 32
+                gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
+                blockIndex = newBlockIndex
+                endLo = math.min(endIndex - blockIndex, 32)
+                lo = 0
+            } else {
+                _hasNext = false
+            }
+        }
+
+        res
+    }
+}
+
+final class RBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
+  extends AbstractIterator[A]
+  with Iterator[A]
+  with RBVectorPointer[A@uncheckedVariance] {
+
+    private var blockIndex: Int = (endIndex-1) & ~31
+    private var lo: Int = (endIndex-1) & 31
+
+    private var endLo = math.max(startIndex - blockIndex, 0)
+
+    def hasNext = _hasNext
+
+    private var _hasNext = startIndex <= blockIndex + lo
+
+    def next(): A = {
+        if (!_hasNext) throw new NoSuchElementException("reached iterator end")
+
+        val res = display0(lo).asInstanceOf[A]
+        lo -= 1
+
+        if (lo < endLo) {
+            if (startIndex < blockIndex + lo) {
+                val newBlockIndex = blockIndex - 32
+                gotoPrevBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
+                blockIndex = newBlockIndex
+                endLo = math.max(startIndex - blockIndex, 0)
+                lo = 31
+            } else {
+                _hasNext = false
+            }
+        }
+
+        res
+    }
+}
 
 final class RBVectorBuilder[A]() extends Builder[A, RBVector[A]] with RBVectorPointer[A@uncheckedVariance] {
 
@@ -325,4 +475,6 @@ final class RBVectorBuilder[A]() extends Builder[A, RBVector[A]] with RBVectorPo
         blockIndex = 0
         lo = 0
     }
+
+
 }
