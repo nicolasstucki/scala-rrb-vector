@@ -176,7 +176,7 @@ private[immutable] trait RRBVectorRelaxedPointer[A] extends RRBVectorPointer[A] 
 
 }
 
-private[immutable] trait RRBVectorPointer[T] {
+private[immutable] trait RRBVectorPointer[A] {
     private[immutable] var depth: Int = _
 
     private[immutable] var display0: Array[AnyRef] = _
@@ -224,19 +224,19 @@ private[immutable] trait RRBVectorPointer[T] {
         }
     }
 
-    private[immutable] final def getElem(index: Int, xor: Int): T = {
+    private[immutable] final def getElem(index: Int, xor: Int): A = {
         if /* level = 0 */ (xor < (1 << 5)) {
-            display0(index & 31).asInstanceOf[T]
+            display0(index & 31).asInstanceOf[A]
         } else if /* level = 1 */ (xor < (1 << 10)) {
-            display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+            display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
         } else if /* level = 2 */ (xor < (1 << 15)) {
-            display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+            display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
         } else if /* level = 3 */ (xor < (1 << 20)) {
-            display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+            display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
         } else if /* level = 4 */ (xor < (1 << 25)) {
-            display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+            display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
         } else if /* level = 5 */ (xor < (1 << 30)) {
-            display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[T]
+            display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
         } else /* level < 0 || 5 < level */ {
             throw new IllegalArgumentException()
         }
@@ -396,10 +396,10 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
     private var _hasNext = startIndex < endIndex
 
     private[immutable] final def resetIterator(): Unit = {
-        if (startIndex < focusStart || focusEnd <= focusEnd)
-            gotoPosRelaxed(startIndex, 0, endIndex, depth)
-        else
+        if (focusStart <= startIndex && startIndex < focusEnd)
             gotoPos(startIndex, startIndex ^ focus)
+        else
+            gotoPosRelaxed(startIndex, 0, endIndex, depth)
         blockIndex = focusStart
         lo = startIndex - focusStart
         endLo = math.min(focusEnd - blockIndex, 32)
