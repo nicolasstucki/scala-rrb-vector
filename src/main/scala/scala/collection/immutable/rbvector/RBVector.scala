@@ -364,14 +364,13 @@ private[immutable] trait RBVectorPointer[A] {
 
 }
 
-final class RBVectorIterator[+A](startIndex: Int, endIndex: Int)
+class RBVectorIterator[+A](startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
   with Iterator[A]
   with RBVectorPointer[A@uncheckedVariance] {
 
     private var blockIndex: Int = startIndex & ~31
     private var lo: Int = startIndex & 31
-
     private var endLo = math.min(endIndex - blockIndex, 32)
 
     def hasNext = _hasNext
@@ -400,7 +399,7 @@ final class RBVectorIterator[+A](startIndex: Int, endIndex: Int)
     }
 }
 
-final class RBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
+class RBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
   with Iterator[A]
   with RBVectorPointer[A@uncheckedVariance] {
