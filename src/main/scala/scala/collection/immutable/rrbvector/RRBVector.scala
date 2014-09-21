@@ -45,6 +45,19 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     override def lengthCompare(len: Int): Int = length - len
 
 
+    // Iterators
+
+    private[collection] final def initIterator[B >: A](s: RRBVectorIterator[B]) {
+        s.initWithFocusFrom(this)
+        if (depth > 0) s.resetIterator()
+    }
+
+    override def iterator: Iterator[A] = {
+        val s = new RRBVectorIterator[A](0, endIndex)
+        initIterator(s)
+        s
+    }
+
     override /*SeqLike*/ def reverseIterator: Iterator[A] = new AbstractIterator[A] {
         // can still be improved
         private var i = self.length
@@ -71,10 +84,21 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
 
     }
 
+
+    // IterableLike
+
     override /*IterableLike*/ def head: A = {
         if (isEmpty) throw new UnsupportedOperationException("empty.head")
         apply(0)
     }
+
+    override /*IterableLike*/ def slice(from: Int, until: Int): RRBVector[A] =
+        take(until).drop(from)
+
+    override /*IterableLike*/ def splitAt(n: Int): (RRBVector[A], RRBVector[A]) = (take(n), drop(n))
+
+
+    // TraversableLike
 
     override /*TraversableLike*/ def tail: RRBVector[A] = {
         if (isEmpty) throw new UnsupportedOperationException("empty.tail")
@@ -91,10 +115,6 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         dropRight(1)
     }
 
-    override /*IterableLike*/ def slice(from: Int, until: Int): RRBVector[A] =
-        take(until).drop(from)
-
-    override /*IterableLike*/ def splitAt(n: Int): (RRBVector[A], RRBVector[A]) = (take(n), drop(n))
 
 }
 
@@ -103,6 +123,11 @@ private[immutable] trait RRBVectorRelaxedPointer[A] extends RRBVectorPointer[A] 
     private[immutable] var focus: Int = 0
     private[immutable] var focusStart: Int = 0
     private[immutable] var focusEnd: Int = 0
+
+    private[immutable] final def initWithFocusFrom[U](that: RRBVectorRelaxedPointer[U]): Unit = {
+        setFocus(that.focus, that.focusStart, that.focusEnd)
+        initFrom(that)
+    }
 
     private[immutable] final def setFocus(focus: Int, focusStart: Int, focusEnd: Int) = {
         this.focus = focus
@@ -113,6 +138,7 @@ private[immutable] trait RRBVectorRelaxedPointer[A] extends RRBVectorPointer[A] 
     @tailrec
     private[immutable] final def gotoPosRelaxed(index: Int, start: Int, end: Int, depth: Int): Unit = {
         val display = depth match {
+            case 0 => null
             case 1 => display0
             case 2 => display1
             case 3 => display2
@@ -248,6 +274,42 @@ private[immutable] trait RRBVectorPointer[T] {
         }
     }
 
+
+    // xor: oldIndex ^ index
+    private[immutable] final def gotoNextBlockStart(index: Int, xor: Int): Unit = {
+        // goto block start pos
+        if (xor < (1 << 10)) {
+            // level = 1
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 15)) {
+            // level = 2
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 20)) {
+            // level = 3
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(0).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 25)) {
+            // level = 4
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3(0).asInstanceOf[Array[AnyRef]]
+            display1 = display2(0).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 30)) {
+            // level = 5
+            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = display4(0).asInstanceOf[Array[AnyRef]]
+            display2 = display3(0).asInstanceOf[Array[AnyRef]]
+            display1 = display2(0).asInstanceOf[Array[AnyRef]]
+            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
+
+
     // USED BY BUILDER
 
     // xor: oldIndex ^ index
@@ -316,6 +378,54 @@ private[immutable] trait RRBVectorPointer[T] {
         } else /* level < 0 || 5 < level */ {
             throw new IllegalArgumentException()
         }
+    }
+}
+
+
+class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
+  extends AbstractIterator[A]
+  with Iterator[A]
+  with RRBVectorRelaxedPointer[A@uncheckedVariance] {
+
+    private var blockIndex: Int = _
+    private var lo: Int = _
+    private var endLo: Int = _
+
+    def hasNext = _hasNext
+
+    private var _hasNext = startIndex < endIndex
+
+    private[immutable] final def resetIterator(): Unit = {
+        if (startIndex < focusStart || focusEnd <= focusEnd)
+            gotoPosRelaxed(startIndex, 0, endIndex, depth)
+        else
+            gotoPos(startIndex, startIndex ^ focus)
+        blockIndex = focusStart
+        lo = startIndex - focusStart
+        endLo = math.min(focusEnd - blockIndex, 32)
+    }
+
+    def next(): A = {
+        if (!_hasNext) throw new NoSuchElementException("reached iterator end")
+
+        val res = display0(lo).asInstanceOf[A]
+        lo += 1
+
+        if (lo == endLo) {
+            val newBlockIndex = blockIndex + endLo
+            if (newBlockIndex < focusEnd) {
+                gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
+            } else if (newBlockIndex < endIndex) {
+                gotoPosRelaxed(newBlockIndex, 0, endIndex, depth)
+            } else {
+                _hasNext = false
+            }
+            blockIndex = newBlockIndex
+            lo = 0
+            endLo = math.min(focusEnd - blockIndex, 32)
+        }
+
+        res
     }
 }
 
