@@ -52,26 +52,26 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         if (depth > 0) s.resetIterator()
     }
 
+    private[collection] final def initIterator[B >: A](s: RRBVectorReverseIterator[B]) {
+        s.initWithFocusFrom(this)
+        if (depth > 0) s.initIterator()
+    }
+
     override def iterator: Iterator[A] = {
         val s = new RRBVectorIterator[A](0, endIndex)
         initIterator(s)
         s
     }
 
-    override /*SeqLike*/ def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-        // can still be improved
-        private var i = self.length
-
-        def hasNext: Boolean = 0 < i
-
-        def next(): A =
-            if (0 < i) {
-                i -= 1
-                self(i)
-            } else Iterator.empty.next()
+    override def reverseIterator: Iterator[A] = {
+        val s = new RRBVectorReverseIterator[A](0, endIndex)
+        initIterator(s)
+        s
     }
 
-    def apply(index: Int): A = {
+    // SeqLike
+
+    def /*SeqLike*/ apply(index: Int): A = {
         if (focusStart <= index && index < focusEnd) {
             val indexInFocus = index - focusStart
             getElem(indexInFocus, indexInFocus ^ focus)
@@ -309,6 +309,39 @@ private[immutable] trait RRBVectorPointer[A] {
         }
     }
 
+    // xor: oldIndex ^ index
+    private[immutable] final def gotoPrevBlockStart(index: Int, xor: Int): Unit = {
+        // goto block start pos
+        if (xor < (1 << 10)) {
+            // level = 1
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 15)) {
+            // level = 2
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 20)) {
+            // level = 3
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 25)) {
+            // level = 4
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3(31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < (1 << 30)) {
+            // level = 5
+            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = display4(31).asInstanceOf[Array[AnyRef]]
+            display2 = display3(31).asInstanceOf[Array[AnyRef]]
+            display1 = display2(31).asInstanceOf[Array[AnyRef]]
+            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        } else {
+            // level = 6
+            throw new IllegalArgumentException()
+        }
+    }
 
     // USED BY BUILDER
 
@@ -381,7 +414,6 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 }
 
-
 class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
   with Iterator[A]
@@ -391,9 +423,9 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
     private var lo: Int = _
     private var endLo: Int = _
 
-    def hasNext = _hasNext
+    private var _hasNext: Boolean = startIndex < endIndex
 
-    private var _hasNext = startIndex < endIndex
+    def hasNext = _hasNext
 
     private[immutable] final def resetIterator(): Unit = {
         if (focusStart <= startIndex && startIndex < focusEnd)
@@ -422,7 +454,61 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
             }
             blockIndex = newBlockIndex
             lo = 0
-            endLo = math.min(focusEnd - blockIndex, 32)
+            endLo = math.min(focusEnd - focus, 32)
+        }
+
+        res
+    }
+}
+
+
+class RRBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
+  extends AbstractIterator[A]
+  with Iterator[A]
+  with RRBVectorRelaxedPointer[A@uncheckedVariance] {
+
+    private var blockIndexInFocus: Int = _
+    private var lo: Int = _
+    private var endLo: Int = _
+
+    private var _hasNext: Boolean = startIndex < endIndex
+
+    def hasNext = _hasNext
+
+    private[immutable] final def initIterator(): Unit = {
+        val idx = endIndex - 1
+        if (focusStart <= idx && idx < focusEnd)
+            gotoPos(idx, idx ^ focus)
+        else
+            gotoPosRelaxed(idx, 0, endIndex, depth)
+        val indexInFocus = idx - focusStart
+        blockIndexInFocus = indexInFocus & ~31
+        lo = indexInFocus & 31
+        endLo = math.max(startIndex - focusStart - blockIndexInFocus, 0)
+    }
+
+    def next(): A = {
+        if (!_hasNext) throw new NoSuchElementException("reached iterator end")
+
+        val res = display0(lo).asInstanceOf[A]
+        lo -= 1
+
+        if (lo < endLo) {
+            val newBlockIndex = blockIndexInFocus - 32
+            if (focusStart <= newBlockIndex) {
+                gotoPrevBlockStart(newBlockIndex, newBlockIndex ^ blockIndexInFocus)
+                blockIndexInFocus = newBlockIndex
+                lo = 31
+                endLo = math.max(startIndex - focusStart - focus, 0)
+            } else if (startIndex <= focus - 1) {
+                val newIndexInFocus = focus - 1
+                gotoPosRelaxed(newIndexInFocus, 0, endIndex, depth)
+                blockIndexInFocus = newIndexInFocus & ~31
+                lo = newIndexInFocus & 31
+                endLo = math.max(startIndex - focusStart - blockIndexInFocus, 0)
+            } else {
+                _hasNext = false
+            }
         }
 
         res
