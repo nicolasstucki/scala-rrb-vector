@@ -243,6 +243,17 @@ private[immutable] trait RRBVectorPointer[A] {
         }
     }
 
+    /* variant designed for performance base on index locality
+    private[immutable] final def getElem(index: Int, xor: Int): A = {
+        if (xor >= (1 << 5)) {
+            // TODO test this with random access
+            focus = index
+            gotoPos(index, xor)
+        }
+        display0(index & 31).asInstanceOf[A]
+    }
+    */
+
 
     // go to specific position
     // requires structure is at pos oldIndex = xor ^ index,
