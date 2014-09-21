@@ -33,7 +33,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
   with IndexedSeq[A]
   with GenericTraversableTemplate[A, RRBVector]
   with IndexedSeqLike[A, RRBVector[A]]
-  with RRBVectorRelaxedPointer[A@uncheckedVariance]
+  with RRBVectorPointer[A@uncheckedVariance]
   with Serializable {
     //  with CustomParallelizable[A, ParVector[A]] {
     self =>
@@ -118,13 +118,25 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
 
 }
 
-private[immutable] trait RRBVectorRelaxedPointer[A] extends RRBVectorPointer[A] {
+private[immutable] trait RRBVectorPointer[A] {
 
     private[immutable] var focus: Int = 0
     private[immutable] var focusStart: Int = 0
     private[immutable] var focusEnd: Int = 0
 
-    private[immutable] final def initWithFocusFrom[U](that: RRBVectorRelaxedPointer[U]): Unit = {
+    private[immutable] var depth: Int = _
+
+    private[immutable] var display0: Array[AnyRef] = _
+    private[immutable] var display1: Array[AnyRef] = _
+    private[immutable] var display2: Array[AnyRef] = _
+    private[immutable] var display3: Array[AnyRef] = _
+    private[immutable] var display4: Array[AnyRef] = _
+    private[immutable] var display5: Array[AnyRef] = _
+
+
+    // Relaxed radix based methods
+
+    private[immutable] final def initWithFocusFrom[U](that: RRBVectorPointer[U]): Unit = {
         setFocus(that.focus, that.focusStart, that.focusEnd)
         initFrom(that)
     }
@@ -173,18 +185,7 @@ private[immutable] trait RRBVectorRelaxedPointer[A] extends RRBVectorPointer[A] 
         is
     }
 
-
-}
-
-private[immutable] trait RRBVectorPointer[A] {
-    private[immutable] var depth: Int = _
-
-    private[immutable] var display0: Array[AnyRef] = _
-    private[immutable] var display1: Array[AnyRef] = _
-    private[immutable] var display2: Array[AnyRef] = _
-    private[immutable] var display3: Array[AnyRef] = _
-    private[immutable] var display4: Array[AnyRef] = _
-    private[immutable] var display5: Array[AnyRef] = _
+    // Radix based methods
 
     private[immutable] final def initFrom[U](that: RRBVectorPointer[U]): Unit = initFrom(that, that.depth)
 
@@ -417,7 +418,7 @@ private[immutable] trait RRBVectorPointer[A] {
 class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
   with Iterator[A]
-  with RRBVectorRelaxedPointer[A@uncheckedVariance] {
+  with RRBVectorPointer[A@uncheckedVariance] {
 
     private var blockIndex: Int = _
     private var lo: Int = _
@@ -454,7 +455,7 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
             }
             blockIndex = newBlockIndex
             lo = 0
-            endLo = math.min(focusEnd - focus, 32)
+            endLo = math.min(focusEnd - blockIndex, 32)
         }
 
         res
@@ -465,7 +466,7 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
 class RRBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
   with Iterator[A]
-  with RRBVectorRelaxedPointer[A@uncheckedVariance] {
+  with RRBVectorPointer[A@uncheckedVariance] {
 
     private var blockIndexInFocus: Int = _
     private var lo: Int = _
@@ -569,8 +570,9 @@ final class RRBVectorBuilder[A]() extends Builder[A, RRBVector[A]] with RRBVecto
             case _ => throw new IllegalStateException()
         }
         s.initFrom(this)
-        if (depth > 1) s.gotoPos(0, size - 1)
-        else s.setFocus(0, 0, size)
+        if (depth > 1)
+            s.gotoPos(0, size - 1)
+        s.setFocus(0, 0, size)
         s
     }
 
