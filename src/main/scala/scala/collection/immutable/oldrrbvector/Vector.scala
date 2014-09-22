@@ -135,7 +135,7 @@ final class Vector[+A] private[immutable]
     /* Private methods */
 
     private final def appendedBack[B >: A](elem: B): Vector[B] = {
-        // TODO re-implement using an generalized version of gotoPosWritable
+
         height match {
             case 0 =>
                 new Vector[B].initDisplay1(unitLeaf(elem.asInstanceOf[AnyRef]), 1)
@@ -233,10 +233,8 @@ final class Vector[+A] private[immutable]
                     new Vector[B].initDisplay5(n0, n1, n2, n3, n4, _length + 1, 0, _length, _length + 1)
                 }
             case 5 =>
-                // TODO
                 throw new NotImplementedError()
             case 6 =>
-                // TODO
                 throw new NotImplementedError()
             case _ => throw new IllegalStateException("Illegal vector height: " + height)
 
@@ -317,7 +315,6 @@ final class Vector[+A] private[immutable]
 
         // shuffle slot sizes to fit invariant
         val szs = shuffle(all, height)
-        // TODO remove this second return value
         val slen = this._length // use object field to transport 2nd return value
 
         //println("shuffle: "+hw+ " " + (all map { (x:AnyRef) => x match {case a: Array[AnyRef] => a.mkString("{,",",","}") }} mkString))//TR

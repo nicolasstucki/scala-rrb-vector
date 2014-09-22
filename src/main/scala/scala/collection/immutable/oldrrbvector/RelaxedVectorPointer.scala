@@ -138,7 +138,6 @@ private[immutable] trait RelaxedVectorPointer[A] extends VectorPointer[A] {
     private[immutable] final def focusOnPositionFromRoot(index: Int) {
         @tailrec
         def focusOnPositionRec(start: Int, end: Int, height: Int): Unit = {
-            // TODO: rewrite this method to avoid the match in each loop
             val display = height match {
                 case 1 => display0
                 case 2 => display1
@@ -196,7 +195,6 @@ private[immutable] trait RelaxedVectorPointer[A] extends VectorPointer[A] {
         newRoot(1) = branch0
         newRoot(2) = branch1
         if (branch0(branch0.length - 1) != null) {
-            //            // TODO set sizes in tb(0)
         }
         newRoot
     }
