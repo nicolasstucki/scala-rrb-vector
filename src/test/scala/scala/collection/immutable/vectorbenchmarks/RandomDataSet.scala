@@ -5,7 +5,7 @@ import java.io._
 
 private[vectorbenchmarks] object RandomDataSet {
 
-    private final val DOUBLES_FILES = "src/test/resources/pseudo-random-doubles"
+    private final val DOUBLES_FILES = "src/test/resources/random-doubles"
     private final val RANDOM_SET_SIZE = 2 << 14
 
     def getDoubles(n: Int) = {
@@ -22,13 +22,13 @@ private[vectorbenchmarks] object RandomDataSet {
             for (i <- 0 until RANDOM_SET_SIZE)
                 arr(i) = reader.readDouble()
         } catch {
-            case _ =>
+            case _: Throwable =>
         } finally {
             if (reader != null) {
                 try {
                     reader.close()
                 } catch {
-                    case _ =>
+                    case _: Throwable =>
                 }
             }
         }
@@ -39,19 +39,17 @@ private[vectorbenchmarks] object RandomDataSet {
         var writer: DataOutputStream = null
         try {
             writer = new DataOutputStream(new FileOutputStream(DOUBLES_FILES))
-            try {
-                for (i <- 0 until RANDOM_SET_SIZE)
-                    writer.writeDouble(Math.random())
-                writer.close()
-            } catch {
-                case _ =>
-            } finally {
-                if (writer != null) {
-                    try {
-                        writer.close()
-                    } catch {
-                        case _ =>
-                    }
+            for (i <- 0 until RANDOM_SET_SIZE)
+                writer.writeDouble(Math.random())
+            writer.close()
+        } catch {
+            case _: Throwable =>
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close()
+                } catch {
+                    case _: Throwable =>
                 }
             }
         }
