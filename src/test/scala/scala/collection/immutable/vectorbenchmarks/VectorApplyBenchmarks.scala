@@ -53,6 +53,22 @@ class VectorApplyBenchmarks extends PerformanceTest.OfflineRegressionReport with
                 }
             }
 
+            performance of "1M random indices" in {
+                def benchmarkFunction(vec: Seq[Int]) = {
+                    var sum = 0
+                    val len = vec.length
+                    for (d <- RandomDataSet.getDoubles(1000000)) {
+                        val i = (d * len).toInt
+                        sum += vec.apply(i)
+                    }
+                    sideeffect = sum
+                }
+                performance of s"Height $height" in {
+                    using(vectors(from, to, by)) curve ("Vector") in (benchmarkFunction _)
+                    using(rbvectors(from, to, by)) curve ("rbVector") in (benchmarkFunction _)
+                    using(rrbvectors(from, to, by)) curve ("rrbVector") in (benchmarkFunction _)
+                }
+            }
         }
     }
 }
