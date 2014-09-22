@@ -7,10 +7,17 @@ import org.scalatest._
 
 //import scala.collection.immutable.vector.Vector
 
-import scala.collection.immutable.rbvector.{RBVector => Vector}
+//import scala.collection.immutable.rbvector.{RBVector => Vector}
 
-//import scala.collection.immutable.rrbvector.{RRBVector => Vector}
+import scala.collection.immutable.rrbvector.{RRBVector => Vector}
 
+class IntVectorSpec extends BaseVectorSpec[Int] {
+    def element(n: Int) = n
+}
+
+class StringVectorSpec extends BaseVectorSpec[String] {
+    def element(n: Int) = n.toString
+}
 
 abstract class BaseVectorSpec[A] extends WordSpec {
 
@@ -98,6 +105,13 @@ abstract class BaseVectorSpec[A] extends WordSpec {
                 s"return the i-th element of Vector.tabulate($n)(i => element(i)) should be i when apply is invoked" in {
                     for (i <- 0 until n) assertResult(element(i))(vector(i))
                 }
+                "reverseIterator yields the correct sequence of elements" in {
+                    val it = vector.reverseIterator
+                    for (i <- 0 until n) {
+                        assert(it.hasNext)
+                        assertResult(element(n - i - 1))(it.next)
+                    }
+                }
             }
         }
         "two vectors are concatenated" when {
@@ -152,12 +166,4 @@ abstract class BaseVectorSpec[A] extends WordSpec {
         }
     }
 
-}
-
-class IntVectorSpec extends BaseVectorSpec[Int] {
-    def element(n: Int) = n
-}
-
-class StringVectorSpec extends BaseVectorSpec[String] {
-    def element(n: Int) = n.toString
 }
