@@ -6,8 +6,9 @@ import org.scalameter.PerformanceTest
 
 class AllVectorBenchmarks extends PerformanceTest.OfflineReport {
 
-    include[VectorApplyBenchmarks]
     include[VectorAppendBenchmarks]
+    include[VectorApplyBenchmarks]
+    include[VectorBuilderBenchmarks]
     include[VectorIterationBenchmarks]
 
 }
