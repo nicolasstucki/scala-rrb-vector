@@ -8,7 +8,7 @@ import java.io.Serializable
 import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
-import scala.collection.immutable.oldrrbvector.RelaxedVectorPointer
+
 import scala.collection.mutable.Builder
 import scala.compat.Platform
 
@@ -22,13 +22,13 @@ object RBVector extends IndexedSeqFactory[RBVector] {
     implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, RBVector[A]] =
         ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
-    private[immutable] val NIL = new RBVector[Nothing](0, 0)
+    private[immutable] val NIL = new RBVector[Nothing](0)
 
     override def empty[A]: RBVector[A] = NIL
 
 }
 
-final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int, val focus: Int)
+final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int)
   extends AbstractSeq[A]
   with IndexedSeq[A]
   with GenericTraversableTemplate[A, RBVector]
@@ -37,6 +37,7 @@ final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int
   with Serializable {
     //  with CustomParallelizable[A, ParVector[A]] {
     self =>
+
 
     override def companion: GenericCompanion[RBVector] = RBVector
 
@@ -65,6 +66,10 @@ final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int
         initReverseIterator(s)
         s
     }
+
+    override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RBVector[A], B, That]): That =
+        if (bf eq IndexedSeq.ReusableCBF) appendedBack(elem).asInstanceOf[That] // just ignore bf
+        else super.:+(elem)(bf)
 
     def apply(index: Int): A = {
         if (0 <= index && index < endIndex) getElem(index, index ^ focus)
@@ -96,9 +101,48 @@ final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int
 
     override /*IterableLike*/ def splitAt(n: Int): (RBVector[A], RBVector[A]) = (take(n), drop(n))
 
+
+    private[immutable] def appendedBack[B >: A](value: B): RBVector[B] = {
+        val vec = new RBVector[A](endIndex + 1)
+        if (endIndex == 0) {
+            vec.display0 = new Array[AnyRef](32)
+            vec.display0(0) = value.asInstanceOf[AnyRef]
+            vec.depth = 1
+            vec.hasWritableTail = true
+        } else {
+            val lastIndex = endIndex - 1
+
+            vec.initFrom(this)
+            vec.focus = focus
+
+            if ((focus ^ ~31) != (lastIndex ^ ~31)) {
+                vec.gotoPos(lastIndex, lastIndex ^ focus)
+                vec.focus = lastIndex
+            }
+
+            if (!hasWritableTail) {
+                if ((lastIndex & 31) < 31) {
+                    vec.display0 = copyOf(vec.display0)
+                    vec.stabilize(lastIndex)
+                } else {
+                    vec.stabilize(lastIndex) // TODO: Improve performance. May not need to stabilize all the way down
+                    vec.gotoNextBlockStartWritable(endIndex, endIndex ^ vec.focus)
+                    vec.focus = endIndex
+                }
+            } else {
+                hasWritableTail = false
+            }
+
+            vec.display0(endIndex & 31) = value.asInstanceOf[AnyRef]
+            vec.hasWritableTail = (endIndex & 31) < 31
+        }
+        vec
+    }
+
 }
 
 private[immutable] trait RBVectorPointer[A] {
+    private[immutable] var focus: Int = 0
     private[immutable] var depth: Int = _
 
     private[immutable] var display0: Array[AnyRef] = _
@@ -107,6 +151,8 @@ private[immutable] trait RBVectorPointer[A] {
     private[immutable] var display3: Array[AnyRef] = _
     private[immutable] var display4: Array[AnyRef] = _
     private[immutable] var display5: Array[AnyRef] = _
+
+    var hasWritableTail = false
 
     private[immutable] final def initFrom[U](that: RBVectorPointer[U]): Unit = initFrom(that, that.depth)
 
@@ -361,8 +407,53 @@ private[immutable] trait RBVectorPointer[A] {
         }
     }
 
+    private[immutable] final def stabilize(index: Int) = (depth - 1) match {
+        case 5 =>
+            display5 = copyOf(display5)
+            display4 = copyOf(display4)
+            display3 = copyOf(display3)
+            display2 = copyOf(display2)
+            display1 = copyOf(display1)
+            display5((index >> 25) & 31) = display4
+            display4((index >> 20) & 31) = display3
+            display3((index >> 15) & 31) = display2
+            display2((index >> 10) & 31) = display1
+            display1((index >> 5) & 31) = display0
+        case 4 =>
+            display4 = copyOf(display4)
+            display3 = copyOf(display3)
+            display2 = copyOf(display2)
+            display1 = copyOf(display1)
+            display4((index >> 20) & 31) = display3
+            display3((index >> 15) & 31) = display2
+            display2((index >> 10) & 31) = display1
+            display1((index >> 5) & 31) = display0
+        case 3 =>
+            display3 = copyOf(display3)
+            display2 = copyOf(display2)
+            display1 = copyOf(display1)
+            display3((index >> 15) & 31) = display2
+            display2((index >> 10) & 31) = display1
+            display1((index >> 5) & 31) = display0
+        case 2 =>
+            display2 = copyOf(display2)
+            display1 = copyOf(display1)
+            display2((index >> 10) & 31) = display1
+            display1((index >> 5) & 31) = display0
+        case 1 =>
+            display1 = copyOf(display1)
+            display1((index >> 5) & 31) = display0
+        case 0 =>
+    }
+
+    private[immutable] final def copyOf(a: Array[AnyRef]) = {
+        val b = new Array[AnyRef](a.length)
+        Platform.arraycopy(a, 0, b, 0, a.length)
+        b
+    }
 
 }
+
 
 class RBVectorIterator[+A](startIndex: Int, endIndex: Int)
   extends AbstractIterator[A]
@@ -404,8 +495,8 @@ class RBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
   with Iterator[A]
   with RBVectorPointer[A@uncheckedVariance] {
 
-    private var blockIndex: Int = (endIndex-1) & ~31
-    private var lo: Int = (endIndex-1) & 31
+    private var blockIndex: Int = (endIndex - 1) & ~31
+    private var lo: Int = (endIndex - 1) & 31
 
     private var endLo = math.max(startIndex - blockIndex, 0)
 
@@ -462,7 +553,7 @@ final class RBVectorBuilder[A]() extends Builder[A, RBVector[A]] with RBVectorPo
         val size = blockIndex + lo
         if (size == 0)
             return RBVector.empty
-        val s = new RBVector[A](size, 0) // should focus front or back?
+        val s = new RBVector[A](size) // should focus front or back?
         s.initFrom(this)
         if (depth > 1) s.gotoPos(0, size - 1)
         s
