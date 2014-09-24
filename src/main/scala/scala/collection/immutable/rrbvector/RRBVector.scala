@@ -9,15 +9,11 @@ import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
-import scala.collection.mutable.Builder
 import scala.compat.Platform
 
-/**
- * Created by nicolasstucki on 19/09/2014.
- */
 
 object RRBVector extends IndexedSeqFactory[RRBVector] {
-    def newBuilder[A]: Builder[A, RRBVector[A]] = new RRBVectorBuilder[A]
+    def newBuilder[A]: mutable.Builder[A, RRBVector[A]] = new RRBVectorBuilder[A]
 
     implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, RRBVector[A]] =
         ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
@@ -47,12 +43,12 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
 
     // Iterators
 
-    private[collection] final def initIterator[B >: A](s: RRBVectorIterator[B]) {
+    private[collection] def initIterator[B >: A](s: RRBVectorIterator[B]) {
         s.initFrom(this)
         if (depth > 0) s.resetIterator()
     }
 
-    private[collection] final def initIterator[B >: A](s: RRBVectorReverseIterator[B]) {
+    private[collection] def initIterator[B >: A](s: RRBVectorReverseIterator[B]) {
         s.initFrom(this)
         if (depth > 0) s.initIterator()
     }
@@ -523,7 +519,7 @@ private[immutable] trait RRBVectorPointer[A] {
 
     private[immutable] final def stabilizeFocus(_depth: Int) = {
         val _focus = this.focus
-        (_depth - 1) match {
+        _depth - 1 match {
             case 5 =>
                 display5 = copyOf(display5)
                 display4 = copyOf(display4)
@@ -672,7 +668,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
 }
 
 
-final class RRBVectorBuilder[A]() extends Builder[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] {
+final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] {
 
     display0 = new Array[AnyRef](32)
     depth = 1
@@ -695,7 +691,7 @@ final class RRBVectorBuilder[A]() extends Builder[A, RRBVector[A]] with RRBVecto
     override def ++=(xs: TraversableOnce[A]): this.type =
         super.++=(xs)
 
-    def result: RRBVector[A] = {
+    def result(): RRBVector[A] = {
         val size = blockIndex + lo
         if (size == 0)
             return RRBVector.empty
