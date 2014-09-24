@@ -46,18 +46,17 @@ class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                         sideeffect = sum
                     }
 
-                    /* The operation :+ has not been implemented in RRBVector */
-                    //                    using(rrbvectors(from, to, by)) curve ("rrbVector") in { vec =>
-                    //                    var i = 0
-                    //                    var v = vec
-                    //                    var sum = 0
-                    //                    while (i < times) {
-                    //                        v = vec :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7
-                    //                        sum += v.length
-                    //                        i += 1
-                    //                    }
-                    //                    sideeffect = sum
-                    //                    }
+                    using(rrbvectors(from, to, by)) curve ("rrbVector") in { vec =>
+                        var i = 0
+                        var v = vec
+                        var sum = 0
+                        while (i < times) {
+                            v = vec :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7
+                            sum += v.length
+                            i += 1
+                        }
+                        sideeffect = sum
+                    }
                 }
             }
         }
