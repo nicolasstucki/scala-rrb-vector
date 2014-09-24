@@ -152,7 +152,7 @@ private[immutable] trait RBVectorPointer[A] {
     private[immutable] var display4: Array[AnyRef] = _
     private[immutable] var display5: Array[AnyRef] = _
 
-    var hasWritableTail = false
+    private[immutable] var hasWritableTail = false
 
     private[immutable] final def initFrom[U](that: RBVectorPointer[U]): Unit = initFrom(that, that.depth)
 
