@@ -9,15 +9,10 @@ import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
 
-import scala.collection.mutable.Builder
 import scala.compat.Platform
 
-/**
- * Created by nicolasstucki on 19/09/2014.
- */
-
 object RBVector extends IndexedSeqFactory[RBVector] {
-    def newBuilder[A]: Builder[A, RBVector[A]] = new RBVectorBuilder[A]
+    def newBuilder[A]: mutable.Builder[A, RBVector[A]] = new RBVectorBuilder[A]
 
     implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, RBVector[A]] =
         ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
@@ -45,12 +40,12 @@ final class RBVector[+A] private[immutable](private[immutable] val endIndex: Int
 
     override def lengthCompare(len: Int): Int = length - len
 
-    private[collection] final def initIterator[B >: A](s: RBVectorIterator[B]) {
+    private[collection] def initIterator[B >: A](s: RBVectorIterator[B]) {
         s.initFrom(this)
         if (s.depth > 1) s.gotoPos(0, 0 ^ focus)
     }
 
-    private[collection] final def initReverseIterator[B >: A](s: RBVectorReverseIterator[B]) {
+    private[collection] def initReverseIterator[B >: A](s: RBVectorReverseIterator[B]) {
         s.initFrom(this)
         if (s.depth > 1) s.gotoPos(endIndex - 1, (endIndex - 1) ^ focus)
     }
@@ -158,7 +153,7 @@ private[immutable] trait RBVectorPointer[A] {
 
     private[immutable] final def initFrom[U](that: RBVectorPointer[U], depth: Int) = {
         this.depth = depth
-        (depth - 1) match {
+        depth - 1 match {
             case -1 =>
             case 0 =>
                 display0 = that.display0
@@ -335,8 +330,8 @@ private[immutable] trait RBVectorPointer[A] {
         if (xor < (1 << 10)) {
             // level = 1
             if (depth == 1) {
-                display1 = new Array(32);
-                display1(0) = display0;
+                display1 = new Array(32)
+                display1(0) = display0
                 depth += 1
             }
             display0 = new Array(32)
@@ -345,8 +340,8 @@ private[immutable] trait RBVectorPointer[A] {
         if (xor < (1 << 15)) {
             // level = 2
             if (depth == 2) {
-                display2 = new Array(32);
-                display2(0) = display1;
+                display2 = new Array(32)
+                display2(0) = display1
                 depth += 1
             }
             display0 = new Array(32)
@@ -357,8 +352,8 @@ private[immutable] trait RBVectorPointer[A] {
         if (xor < (1 << 20)) {
             // level = 3
             if (depth == 3) {
-                display3 = new Array(32);
-                display3(0) = display2;
+                display3 = new Array(32)
+                display3(0) = display2
                 depth += 1
             }
             display0 = new Array(32)
@@ -371,8 +366,8 @@ private[immutable] trait RBVectorPointer[A] {
         if (xor < (1 << 25)) {
             // level = 4
             if (depth == 4) {
-                display4 = new Array(32);
-                display4(0) = display3;
+                display4 = new Array(32)
+                display4(0) = display3
                 depth += 1
             }
             display0 = new Array(32)
@@ -387,8 +382,8 @@ private[immutable] trait RBVectorPointer[A] {
         if (xor < (1 << 30)) {
             // level = 5
             if (depth == 5) {
-                display5 = new Array(32);
-                display5(0) = display4;
+                display5 = new Array(32)
+                display5(0) = display4
                 depth += 1
             }
             display0 = new Array(32)
@@ -407,7 +402,7 @@ private[immutable] trait RBVectorPointer[A] {
         }
     }
 
-    private[immutable] final def stabilize(index: Int) = (depth - 1) match {
+    private[immutable] final def stabilize(index: Int) = depth - 1 match {
         case 5 =>
             display5 = copyOf(display5)
             display4 = copyOf(display4)
@@ -526,7 +521,7 @@ class RBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
     }
 }
 
-final class RBVectorBuilder[A]() extends Builder[A, RBVector[A]] with RBVectorPointer[A@uncheckedVariance] {
+final class RBVectorBuilder[A]() extends mutable.Builder[A, RBVector[A]] with RBVectorPointer[A@uncheckedVariance] {
 
     display0 = new Array[AnyRef](32)
     depth = 1
@@ -549,7 +544,7 @@ final class RBVectorBuilder[A]() extends Builder[A, RBVector[A]] with RBVectorPo
     override def ++=(xs: TraversableOnce[A]): this.type =
         super.++=(xs)
 
-    def result: RBVector[A] = {
+    def result(): RBVector[A] = {
         val size = blockIndex + lo
         if (size == 0)
             return RBVector.empty
