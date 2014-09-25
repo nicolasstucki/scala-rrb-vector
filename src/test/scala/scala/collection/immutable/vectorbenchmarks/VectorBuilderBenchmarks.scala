@@ -14,7 +14,7 @@ class VectorBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport wi
 
         var sideeffect = 0
 
-        measure method "append" config(
+        measure method "builder" config(
           Key.exec.minWarmupRuns -> 2000,
           Key.exec.maxWarmupRuns -> 5000
           ) in {
