@@ -147,7 +147,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         vec.initFrom(this)
 
         // Focus on the right most branch
-        gotoIndex(endIndex - 1, endIndex)
+        vec.gotoIndex(endIndex - 1, endIndex)
 
         // Make sure that vec.display0 is writable
         if (this.hasWritableTail) this.hasWritableTail = false
@@ -163,63 +163,58 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         vec
     }
 
-
     //    private def concatenated[B >: A](that: RRBVector[B]): RRBVector[B] = {
+    //        assert(this.length > 0)
+    //        assert(that.length > 0)
+    //
     //        val thisLength = this.endIndex
-    //        if (thisLength == 0) return that
-    //
     //        val thatLength = that.endIndex
-    //        if (thatLength == 0) return this.asInstanceOf[RRBVector[B]]
-    //
     //        val newLength = thisLength + thatLength
     //        if (newLength <= 32) {
     //            val vec = new RRBVector[B](newLength)
-    //            vec.display0 = mergeLeafs(this.display0, that.display0)
+    //            vec.display0 = mergeLeafs(this.display0, thisLength, that.display0, thatLength)
+    //            vec.depth = 1
     //            vec.initFocus(0, 0, newLength, 1, 0)
-    //            return vec
-    //        } else if (thisLength <= 32 && thatLength <= 32) {
-    //            val vec = new RRBVector[B](newLength)
-    //            val l0 = new Array[AnyRef](32)
-    //            val l1 = new Array[AnyRef](32)
-    //            val root = new Array[AnyRef](3)
-    //            root(0) = l0
-    //            root(1) = l1
-    //            vec.display0 = l0
-    //            vec.display1 = root
-    //            Platform.arraycopy(this.display0, 0, l0, 0, thisLength)
-    //            Platform.arraycopy(that.display0, thatLength, l0, thisLength, 32 - thisLength)
-    //            Platform.arraycopy(that.display0, 32 - thisLength, l1, 0, thatLength - 32 + thisLength)
-    //            vec.depth = 2
-    //            vec.focusDepth = 2
-    //            vec.initFocus(0, 0, newLength, 2, 0)
-    //            vec.hasWritableTail = true
-    //            return vec
-    //        }
+    //            vec
+    //        } else {
+    //            this.closeTail()
+    //            that.closeTail()
     //
-    //        val thisHeight = this.depth
-    //        val thatHeight = that.depth
-    //        val thisRoot = this.root()
-    //        val thatRoot = that.root()
-    //        val balancedBranch =
-    //            if (thisHeight > thatHeight) {
-    //                val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
-    //                val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisHeight - 1, thatRoot, thatHeight)
-    //                rebalanced(leftBranch, concatenatedBranch, null, thisHeight, true)
-    //            } else if (thisHeight < thatHeight) {
-    //                val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
-    //                val concatenatedBranch = concatenatedSubTree(thisRoot, thisHeight, rightBranch(1), thatHeight - 1)
-    //                rebalanced(null, concatenatedBranch, rightBranch, thatHeight, true)
-    //            } else {
-    //                val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
-    //                val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
-    //                val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisHeight - 1, rightBranch(1), thatHeight - 1)
-    //                rebalanced(leftBranch, concatenatedBranch, rightBranch, thisHeight, true)
-    //            }
-    //        val height = balancedBranch(0).asInstanceOf[Int]
-    //        val sizedBalancedBranch = setSizes(balancedBranch, height)
-    //        val vec = new RRBVector[B](newLength)
-    //        vec.initFromRoot(sizedBalancedBranch, depth, newLength)
-    //        vec
+    //            val vec = new RRBVector[B](newLength)
+    //            val thisDepth = this.depth
+    //            val thatDepth = that.depth
+    //            val thisRoot = this.root()
+    //            val thatRoot = that.root()
+    //            val balancedBranch =
+    //                if (thisDepth > thatDepth) {
+    //                    val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
+    //                    val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisDepth - 1, thatRoot, thatDepth)
+    //                    vec.rebalanced(leftBranch, concatenatedBranch, null, thisDepth, true)
+    //                } else if (thisDepth < thatDepth) {
+    //                    val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
+    //                    val concatenatedBranch = concatenatedSubTree(thisRoot, thisDepth, rightBranch(1), thatDepth - 1)
+    //                    vec.rebalanced(null, concatenatedBranch, rightBranch, thatDepth, true)
+    //                } else if (thisDepth == 1 /* && thatDepth == 1 */ ) {
+    //                    val concatenatedBranch = concatenatedSubTree(thisRoot, thisDepth, thatRoot, thatDepth)
+    //                    vec.depth = 1
+    //                    vec.rebalanced(null, concatenatedBranch, null, thatDepth, true)
+    //                } else {
+    //                    val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
+    //                    val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
+    //                    val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisDepth - 1, rightBranch(1), thatDepth - 1)
+    //                    vec.rebalanced(leftBranch, concatenatedBranch, rightBranch, thisDepth, true)
+    //                }
+    //            val sizedBalancedBranch = setSizes(balancedBranch, vec.depth)
+    //            vec.initFromRoot(sizedBalancedBranch, vec.depth, newLength)
+    //            vec
+    //        }
+    //    }
+
+    //    private def closeTail() = {
+    //        gotoIndex(endIndex - 1, endIndex)
+    //        closeTailLeaf()
+    //        stabilize(depth, focus)
+    //        hasWritableTail = false
     //    }
 
     //    private final def concatenatedSubTree(leftNode: AnyRef, leftHeight: Int, rightNode: AnyRef, rightHeight: Int): Array[AnyRef] = {
@@ -245,8 +240,8 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //        }
     //    }
 
-    //    //  From prototype
     //    private final def rebalanced(al: Array[AnyRef], ac: Array[AnyRef], ar: Array[AnyRef], height: Int, isTop: Boolean): Array[AnyRef] = {
+    //        // From prototype
     //        // Put all the slots at this level in one array ++Note:  This can be avoided by indexing the sub arrays as one
     //        // remember Ara(0) is Size
     //        val all = araNewJoin(al, ac, ar)
@@ -322,7 +317,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //        if (nalen <= 32) {
     //            val na = araNewCopy(nall, 0, nalen)
     //            if (isTop) {
-    //                na(0) = height.asInstanceOf[AnyRef] // use na(0) to transport 2nd return value
+    //                this.depth += height
     //                na
     //            } else
     //                araNewAbove(setSizes(na, height))
@@ -332,7 +327,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //            val nar = araNewCopy(nall, 32, nalen - 32)
     //            val arr = araNewAbove(setSizes(nal, height), setSizes(nar, height))
     //            if (isTop) {
-    //                arr(0) = (height + 1).asInstanceOf[AnyRef] // use arr(0) to transport 2nd return value
+    //                this.depth += height + 1
     //                arr
     //            } else
     //                arr
@@ -340,16 +335,16 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //
     //    }
 
-    //    // From prototype
-    //    // Takes the slot size model and copies across slots to match it.
     //    private def copyAcross(all: Array[AnyRef], szs: Array[Int], slen: Int, height: Int): Array[AnyRef] = {
+    //        // From prototype
+    //        // Takes the slot size model and copies across slots to match it.
     //
     //        val nall = new Array[AnyRef](slen + 1)
     //        var ix = 0 // index into the all input array
     //        var offset = 0 // offset into an individual slot array.
     //        // It points to the next sub tree in the array to be copied
     //
-    //        if (height == 2) {
+    //        if (height == 1) {
     //            var i = 0
     //            while (i < slen) {
     //                val nsize = szs(i)
@@ -442,7 +437,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //        } // end bottom
     //        nall
     //    }
-    //
+
 }
 
 
@@ -549,7 +544,7 @@ private[immutable] trait RRBVectorPointer[A] {
         if (focusStart <= index && index < focusEnd) {
             val indexInFocus = index - focusStart
             val xor = indexInFocus ^ focus
-            if /* is not focused on last block */ (xor < (1 << 5)) {
+            if /* is not focused on last block */ (xor >= (1 << 5)) {
                 gotoPos(indexInFocus, xor)
                 focus = index
             }
@@ -644,91 +639,91 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
 
-    //    // From prototype
-    //    private[immutable] final def setSizes(a: Array[AnyRef], height: Int) = {
-    //        var sigma = 0
-    //        val lena = a.length - 1
-    //        val szs = new Array[Int](lena)
-    //        //cost+=lena
-    //        var i = 0
-    //        while (i < lena) {
-    //            sigma += sizeSubTrie(a(i + 1), height - 1, 0)
-    //            szs(i) = sigma
-    //            i += 1
-    //        }
-    //        a(0) = szs
-    //        a
-    //    }
+//    private[immutable] final def setSizes(a: Array[AnyRef], height: Int) = {
+//        // From prototype
+//        var sigma = 0
+//        val lena = a.length - 1
+//        val szs = new Array[Int](lena)
+//        //cost+=lena
+//        var i = 0
+//        while (i < lena) {
+//            sigma += sizeSubTrie(a(i), height - 1, 0)
+//            szs(i) = sigma
+//            i += 1
+//        }
+//        a(lena) = szs
+//        a
+//    }
 
-    //    // From prototype
-    //    private[immutable] final def sizeSubTrie(treeNode: AnyRef, height: Int, acc: Int): Int = {
-    //        if (height > 1) {
-    //            val treeBranch = treeNode.asInstanceOf[Array[AnyRef]]
-    //            val len = treeBranch.length
-    //            if (treeBranch(0) == null) {
-    //                val sltsz = height - 1
-    //                sizeSubTrie(treeBranch(len - 1), sltsz, acc + (1 << (5 * sltsz)) * (len - 2))
-    //            } else {
-    //                val sn = treeBranch(0).asInstanceOf[Array[Int]]
-    //                acc + sn(sn.length - 1)
-    //            }
-    //        } else {
-    //            acc + treeNode.asInstanceOf[Array[AnyRef]].length
-    //        }
-    //    }
+//    private[immutable] final def sizeSubTrie(treeNode: AnyRef, height: Int, acc: Int): Int = {
+//        // From prototype
+//        if (height > 1) {
+//            val treeBranch = treeNode.asInstanceOf[Array[AnyRef]]
+//            val len = treeBranch.length
+//            if (treeBranch(0) == null) {
+//                val sltsz = height - 1
+//                sizeSubTrie(treeBranch(len - 1), sltsz, acc + (1 << (5 * sltsz)) * (len - 2))
+//            } else {
+//                val sn = treeBranch(0).asInstanceOf[Array[Int]]
+//                acc + sn(sn.length - 1)
+//            }
+//        } else {
+//            acc + treeNode.asInstanceOf[Array[AnyRef]].length
+//        }
+//    }
 
-    //    // From prototype
-    //    private[immutable] final def sizeSlot(a: AnyRef, height: Int) = {
-    //        if (height > 1)
-    //            a.asInstanceOf[Array[AnyRef]].length - 1
-    //        else
-    //            a.asInstanceOf[Array[AnyRef]].length
-    //    }
+//    private[immutable] final def sizeSlot(a: AnyRef, height: Int) = {
+//        // From prototype
+//        if (height > 1)
+//            a.asInstanceOf[Array[AnyRef]].length - 1
+//        else
+//            a.asInstanceOf[Array[AnyRef]].length
+//    }
 
-    //    // From prototype
-    //    private[immutable] final def araNewCopy(nall: Array[AnyRef], start: Int, len: Int) = {
-    //        val na = new Array[AnyRef](len + 1)
-    //        Platform.arraycopy(nall, start, na, 1, len)
-    //        na
-    //    }
+//    private[immutable] final def araNewCopy(nall: Array[AnyRef], start: Int, len: Int) = {
+//        // From prototype
+//        val na = new Array[AnyRef](len + 1)
+//        Platform.arraycopy(nall, start, na, 0, len)
+//        na
+//    }
 
-    //    // From prototype
-    //    private[immutable] final def araNewJoin(al: Array[AnyRef], ac: Array[AnyRef], ar: Array[AnyRef]): Array[AnyRef] = {
-    //        // result does not contain size slot!!!
-    //        val lenl = if (al != null) al.length - 2 else 0
-    //        val lenc = if (ac != null) ac.length - 1 else 0
-    //        val lenr = if (ar != null) ar.length - 2 else 0
-    //        var allx = 0
-    //        val all = new Array[AnyRef](lenl + lenc + lenr)
-    //        if (lenl > 0) {
-    //            //for(i<-0 until lenl) all(i)=al(i+1)
-    //            System.arraycopy(al, 1, all, 0, lenl)
-    //            allx += lenl
-    //        }
-    //        //for(i<-0 until lenc) all(i+allx)=ac(i+1)
-    //        System.arraycopy(ac, 1, all, allx, lenc)
-    //        allx += lenc // <--- bug? wouldn't that exceed range of ac???
-    //        if (lenr > 0) {
-    //            //for(i<-0 until lenr)all(i+allx)=ar(i+2)
-    //            System.arraycopy(ar, 2, all, allx, lenr)
-    //        }
-    //        all
-    //    }
+//    private[immutable] final def araNewJoin(al: Array[AnyRef], ac: Array[AnyRef], ar: Array[AnyRef]): Array[AnyRef] = {
+//        // From prototype
+//        // result does not contain size slot!!!
+//        val lenl = if (al != null) al.length - 2 else 0
+//        val lenc = if (ac != null) ac.length - 1 else 0
+//        val lenr = if (ar != null) ar.length - 2 else 0
+//        var allx = 0
+//        val all = new Array[AnyRef](lenl + lenc + lenr)
+//        if (lenl > 0) {
+//            //for(i<-0 until lenl) all(i)=al(i+1)
+//            System.arraycopy(al, 0, all, 0, lenl)
+//            allx += lenl
+//        }
+//        //for(i<-0 until lenc) all(i+allx)=ac(i+1)
+//        System.arraycopy(ac, 0, all, allx, lenc)
+//        allx += lenc // <--- bug? wouldn't that exceed range of ac???
+//        if (lenr > 0) {
+//            //for(i<-0 until lenr)all(i+allx)=ar(i+2)
+//            System.arraycopy(ar, 1, all, allx, lenr)
+//        }
+//        all
+//    }
 
-    //    // From prototype
-    //    private[immutable] final def araNewAbove(gal: AnyRef): Array[AnyRef] = {
-    //        val na = new Array[AnyRef](2)
-    //        na(1) = gal
-    //        na
-    //    }
+//    private[immutable] final def araNewAbove(gal: AnyRef): Array[AnyRef] = {
+//        // From prototype
+//        val na = new Array[AnyRef](2)
+//        na(0) = gal
+//        na
+//    }
 
-    //    // From prototype
-    //    private[immutable] final def araNewAbove(til: AnyRef, tir: AnyRef): Array[AnyRef] = {
-    //        val na = new Array[AnyRef](3)
-    //        na(1) = til
-    //        na(2) = tir
-    //        na
-    //    }
+//    private[immutable] final def araNewAbove(til: AnyRef, tir: AnyRef): Array[AnyRef] = {
+//        // From prototype
+//        val na = new Array[AnyRef](3)
+//        na(0) = til
+//        na(1) = tir
+//        na
+//    }
 
 
     //
@@ -1015,11 +1010,11 @@ private[immutable] trait RRBVectorPointer[A] {
         display0 = copyOf(display0, cutIndex, cutIndex)
     }
 
-    private[immutable] final def mergeLeafs(leaf0: Array[AnyRef], leaf1: Array[AnyRef]): Array[AnyRef] = {
-        // assert(leaf0.length + leaf1.length <= 32)
-        val newLeaf = new Array[AnyRef](leaf0.length + leaf1.length)
-        Platform.arraycopy(leaf0, 0, newLeaf, 0, leaf0.length)
-        Platform.arraycopy(leaf1, 0, newLeaf, leaf0.length, leaf1.length)
+    private[immutable] final def mergeLeafs(leaf0: Array[AnyRef], length0: Int, leaf1: Array[AnyRef], length1: Int): Array[AnyRef] = {
+        // assert(length0 + length1 <= 32)
+        val newLeaf = new Array[AnyRef](length0 + length1)
+        Platform.arraycopy(leaf0, 0, newLeaf, 0, length0)
+        Platform.arraycopy(leaf1, 0, newLeaf, length0, length1)
         newLeaf
     }
 
@@ -1159,12 +1154,15 @@ final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with 
         val s = new RRBVector[A](size)
 
         s.initFrom(this)
+
+        // TODO optimization: check if stabilization is really necessary on all displays based on the last index.
         s.gotoPos(size - 1, size - 1)
-        s.focus = size - 1
+        if (depth > 1) s.copyAndStabilize(depth, size - 1)
+
+        s.gotoPos(0, size - 1)
+        s.focus = 0
         s.focusEnd = size
         s.focusDepth = depth
-        // TODO optimization: check if stabilization is really necessary on all displays based on the last index.
-        if (depth > 1) s.copyAndStabilize(s.depth, s.focus)
         s
     }
 
