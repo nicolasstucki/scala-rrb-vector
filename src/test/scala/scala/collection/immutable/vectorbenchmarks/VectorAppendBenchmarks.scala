@@ -3,10 +3,6 @@ package vectorbenchmarks
 
 import org.scalameter.{Key, PerformanceTest}
 
-import scala.collection.generic.CanBuildFrom
-import scala.collection.immutable.rbvector.RBVector
-import scala.collection.immutable.rrbvector.RRBVector
-
 class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport with BaseVectorBenchmark {
 
     performanceOfVectors { height =>
@@ -22,7 +18,7 @@ class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport wit
             performance of s"append 32 elements, $times times" in {
 
                 performance of s"Height $height" in {
-                    using(vectors(from, to, by)) curve ("Vector") in { vec =>
+                    using(vectors(from, to, by)) curve "Vector" in { vec =>
                         var i = 0
                         var v = vec
                         var sum = 0
@@ -34,7 +30,7 @@ class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                         sideeffect = sum
                     }
 
-                    using(rbvectors(from, to, by)) curve ("rbVector") in { vec =>
+                    using(rbvectors(from, to, by)) curve "rbVector" in { vec =>
                         var i = 0
                         var v = vec
                         var sum = 0
@@ -46,7 +42,7 @@ class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                         sideeffect = sum
                     }
 
-                    using(rrbvectors(from, to, by)) curve ("rrbVector") in { vec =>
+                    using(rrbvectors(from, to, by)) curve "rrbVector" in { vec =>
                         var i = 0
                         var v = vec
                         var sum = 0

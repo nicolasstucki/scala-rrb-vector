@@ -1,10 +1,10 @@
 package scala.collection.immutable.oldrrbvector
 
-import scala.collection.mutable.Builder
+import scala.collection.mutable
 
 
 final class VectorBuilder[A]()
-  extends Builder[A, Vector[A]] {
+  extends mutable.Builder[A, Vector[A]] {
 
     var acc: Vector[A] = Vector.empty[A]
 
@@ -18,7 +18,7 @@ final class VectorBuilder[A]()
 //        case _ => super.++=(xs)
 //    }
 
-    def result: Vector[A] = acc
+    def result(): Vector[A] = acc
 
     def clear(): Unit = {
         acc = Vector.empty[A]

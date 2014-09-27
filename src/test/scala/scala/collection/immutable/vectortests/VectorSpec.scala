@@ -109,7 +109,7 @@ abstract class BaseVectorSpec[A] extends WordSpec {
                     val it = vector.reverseIterator
                     for (i <- 0 until n) {
                         assert(it.hasNext)
-                        assertResult(element(n - i - 1))(it.next)
+                        assertResult(element(n - i - 1))(it.next())
                     }
                 }
             }

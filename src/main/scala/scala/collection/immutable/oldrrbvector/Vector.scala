@@ -1,22 +1,18 @@
 package scala.collection.immutable.oldrrbvector
 
-import java.lang.Math._
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection._
 import scala.collection.immutable.oldrrbvector.VectorProps._
 import scala.compat.Platform
 
-//import scala.collection.generic.GenTraversableFactory.GenericCanBuildFrom
 
 import scala.collection.generic.{CanBuildFrom, GenericCompanion, GenericTraversableTemplate, IndexedSeqFactory}
 import scala.collection.immutable.IndexedSeq
-import scala.collection.mutable.Builder
 
 import java.lang.Math.{max => mmax, min => mmin}
 
 object Vector extends IndexedSeqFactory[Vector] {
-    def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
+    def newBuilder[A]: mutable.Builder[A, Vector[A]] = new VectorBuilder[A]
 
     @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
         ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
@@ -268,16 +264,16 @@ final class Vector[+A] private[immutable]
             if (thisHeight > thatHeight) {
                 val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
                 val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisHeight - 1, thatRoot, thatHeight)
-                rebalanced(leftBranch, concatenatedBranch, null, thisHeight, true)
+                rebalanced(leftBranch, concatenatedBranch, null, thisHeight, isTop = true)
             } else if (thisHeight < thatHeight) {
                 val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
                 val concatenatedBranch = concatenatedSubTree(thisRoot, thisHeight, rightBranch(1), thatHeight - 1)
-                rebalanced(null, concatenatedBranch, rightBranch, thatHeight, true)
+                rebalanced(null, concatenatedBranch, rightBranch, thatHeight, isTop = true)
             } else {
                 val leftBranch = thisRoot.asInstanceOf[Array[AnyRef]]
                 val rightBranch = thatRoot.asInstanceOf[Array[AnyRef]]
                 val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), thisHeight - 1, rightBranch(1), thatHeight - 1)
-                rebalanced(leftBranch, concatenatedBranch, rightBranch, thisHeight, true)
+                rebalanced(leftBranch, concatenatedBranch, rightBranch, thisHeight, isTop = true)
             }
         val height = balancedBranch(0).asInstanceOf[Int]
         val sizedBalancedBranch = setSizes(balancedBranch, height)
@@ -288,12 +284,12 @@ final class Vector[+A] private[immutable]
         if (leftHeight > rightHeight) {
             val leftBranch = leftNode.asInstanceOf[Array[AnyRef]]
             val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), leftHeight - 1, rightNode, rightHeight)
-            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, null, leftHeight, false)
+            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, null, leftHeight, isTop = false)
             balancedBranch
         } else if (leftHeight < rightHeight) {
             val rightBranch = rightNode.asInstanceOf[Array[AnyRef]]
             val concatenatedBranch = concatenatedSubTree(leftNode, leftHeight, rightBranch(1), rightHeight - 1)
-            val balancedBranch = rebalanced(null, concatenatedBranch, rightBranch, rightHeight, false)
+            val balancedBranch = rebalanced(null, concatenatedBranch, rightBranch, rightHeight, isTop = false)
             balancedBranch
         } else if (leftHeight == 1 /* && rightHeight == 1 */ ) {
             araNewAbove(leftNode, rightNode)
@@ -302,7 +298,7 @@ final class Vector[+A] private[immutable]
             val leftBranch = leftNode.asInstanceOf[Array[AnyRef]]
             val rightBranch = rightNode.asInstanceOf[Array[AnyRef]]
             val concatenatedBranch = concatenatedSubTree(leftBranch(leftBranch.length - 1), leftHeight - 1, rightBranch(1), rightHeight - 1)
-            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, rightBranch, leftHeight, false)
+            val balancedBranch = rebalanced(leftBranch, concatenatedBranch, rightBranch, leftHeight, isTop = false)
             balancedBranch
         }
     }
@@ -436,7 +432,7 @@ final class Vector[+A] private[immutable]
                 val asIs = (offset == 0) && (nsize == ge.length)
 
                 if (asIs) {
-                    ix += 1;
+                    ix += 1
                     nall(i) = ge
                 } else {
                     var fillcnt = 0
@@ -616,7 +612,7 @@ final class Vector[+A] private[immutable]
 
 private[immutable] final object VectorProps {
     private[immutable] final val WIDTH_SHIFT = 5
-    private[immutable] final val WIDTH = (1 << WIDTH_SHIFT)
+    private[immutable] final val WIDTH = 1 << WIDTH_SHIFT
     // sets min standard size for a slot ie w-invar
     private[immutable] final val INVAR = 1
     // sets number of extra slots allowed, ie linear search limit

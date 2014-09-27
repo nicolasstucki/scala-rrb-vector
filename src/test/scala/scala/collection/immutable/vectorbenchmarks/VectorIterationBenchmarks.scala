@@ -32,9 +32,9 @@ class VectorIterationBenchmarks extends PerformanceTest.OfflineRegressionReport 
                 }
 
                 performance of s"Height $height" in {
-                    using(vectors(from, to, by)) curve ("Vector") in (benchmarkFunction _)
-                    using(rbvectors(from, to, by)) curve ("rbVector") in (benchmarkFunction _)
-                    using(rrbvectors(from, to, by)) curve ("rrbVector") in (benchmarkFunction _)
+                    using(vectors(from, to, by)) curve "Vector" in benchmarkFunction
+                    using(rbvectors(from, to, by)) curve "rbVector" in benchmarkFunction
+                    using(rrbvectors(from, to, by)) curve "rrbVector" in benchmarkFunction
                 }
             }
 
@@ -54,9 +54,9 @@ class VectorIterationBenchmarks extends PerformanceTest.OfflineRegressionReport 
                 }
 
                 performance of s"Height $height" in {
-                    using(vectors(from, to, by)) curve ("Vector") in (benchmarkFunction _)
-                    using(rbvectors(from, to, by)) curve ("rbVector") in (benchmarkFunction _)
-                    using(rrbvectors(from, to, by)) curve ("rrbVector") in (benchmarkFunction _)
+                    using(vectors(from, to, by)) curve "Vector" in benchmarkFunction
+                    using(rbvectors(from, to, by)) curve "rbVector" in benchmarkFunction
+                    using(rrbvectors(from, to, by)) curve "rrbVector" in benchmarkFunction
                 }
             }
 

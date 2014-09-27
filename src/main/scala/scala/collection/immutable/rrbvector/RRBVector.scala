@@ -620,15 +620,15 @@ private[immutable] trait RRBVectorPointer[A] {
             copyDisplays(_focusDepth, focus)
             // TODO: Improve performance. May not need to stabilize all the way down
             stabilize(depth, focus)
-            gotoNextBlockStartWritable(endIndexInFocus, endIndexInFocus ^ focus, true)
+            gotoNextBlockStartWritable(endIndexInFocus, endIndexInFocus ^ focus, closed = true)
             focusDepth = depth
             focus = endIndexInFocus
             focusEnd = endIndexInFocus
         } else /* is rrb-tree */ {
             // TODO: Improve performance. May not need to stabilize all the way down
             relaxedStabilize()
-            gotoNextBlockStartWritable(endIndexInFocus, (endIndexInFocus) ^ focus, true)
-            assert(false, "implementation missing")
+            gotoNextBlockStartWritable(endIndexInFocus, endIndexInFocus ^ focus, closed = true)
+            assert(assertion = false, "implementation missing")
             // TODO: gotoNextBlockStartWritable non focused part, set focus start
 
             focus = endIndexInFocus
@@ -818,7 +818,7 @@ private[immutable] trait RRBVectorPointer[A] {
 
     // xor: oldIndex ^ index
     private[immutable] final def gotoNextBlockStartWritable(index: Int, xor: Int, closed: Boolean): Unit = {
-        val newBrachBlockSize = if (closed) 2 else 33
+        val newBranchBlockSize = if (closed) 2 else 33
         // goto block start pos
         if /* level = 1 */ (xor < (1 << 10)) {
             if (depth == 1) {
@@ -835,7 +835,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 depth += 1
             }
             display0 = new Array(32)
-            display1 = new Array(newBrachBlockSize)
+            display1 = new Array(newBranchBlockSize)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
         } else if /* level = 3 */ (xor < (1 << 20)) {
@@ -845,8 +845,8 @@ private[immutable] trait RRBVectorPointer[A] {
                 depth += 1
             }
             display0 = new Array(32)
-            display1 = new Array(newBrachBlockSize)
-            display2 = new Array(newBrachBlockSize)
+            display1 = new Array(newBranchBlockSize)
+            display2 = new Array(newBranchBlockSize)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
@@ -857,9 +857,9 @@ private[immutable] trait RRBVectorPointer[A] {
                 depth += 1
             }
             display0 = new Array(32)
-            display1 = new Array(newBrachBlockSize)
-            display2 = new Array(newBrachBlockSize)
-            display3 = new Array(newBrachBlockSize)
+            display1 = new Array(newBranchBlockSize)
+            display2 = new Array(newBranchBlockSize)
+            display3 = new Array(newBranchBlockSize)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
@@ -871,10 +871,10 @@ private[immutable] trait RRBVectorPointer[A] {
                 depth += 1
             }
             display0 = new Array(32)
-            display1 = new Array(newBrachBlockSize)
-            display2 = new Array(newBrachBlockSize)
-            display3 = new Array(newBrachBlockSize)
-            display4 = new Array(newBrachBlockSize)
+            display1 = new Array(newBranchBlockSize)
+            display2 = new Array(newBranchBlockSize)
+            display3 = new Array(newBranchBlockSize)
+            display4 = new Array(newBranchBlockSize)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
@@ -1130,7 +1130,7 @@ final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with 
     def +=(elem: A): this.type = {
         if (lo >= display0.length) {
             val newBlockIndex = blockIndex + 32
-            gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex, false)
+            gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex, closed = false)
             blockIndex = newBlockIndex
             lo = 0
         }

@@ -22,7 +22,7 @@ class VectorBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport wi
             performance of s"build vectors using $elements elements" in {
 
                 performance of s"Height $height" in {
-                    using(sizes(from, to, by)) curve ("Vector") in { n =>
+                    using(sizes(from, to, by)) curve "Vector" in { n =>
                         var i = 0
                         var sum = 0
                         while (i < elements) {
@@ -36,7 +36,7 @@ class VectorBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport wi
                         sideeffect = sum
                     }
 
-                    using(sizes(from, to, by)) curve ("rbVector") in { n =>
+                    using(sizes(from, to, by)) curve "rbVector" in { n =>
                         var i = 0
                         var sum = 0
                         while (i < elements) {
@@ -50,7 +50,7 @@ class VectorBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport wi
                         sideeffect = sum
                     }
 
-                    using(sizes(from, to, by)) curve ("rrbVector") in { n =>
+                    using(sizes(from, to, by)) curve "rrbVector" in { n =>
                         var i = 0
                         var sum = 0
                         while (i < elements) {

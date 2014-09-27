@@ -5,9 +5,6 @@ import scala.compat.Platform
 
 import VectorProps._
 
-/**
- * Created by nicolasstucki on 19/09/2014.
- */
 private[immutable] trait RelaxedVectorPointer[A] extends VectorPointer[A] {
 
     private[immutable] var _length: Int = 0
