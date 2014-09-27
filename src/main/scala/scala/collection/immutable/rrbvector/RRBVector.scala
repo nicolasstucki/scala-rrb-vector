@@ -33,6 +33,8 @@ object RRBVector extends IndexedSeqFactory[RRBVector] {
         vec
     }
 
+    private[immutable] final val useAssertions = false
+
 }
 
 final class RRBVector[+A] private[immutable](val endIndex: Int)
@@ -108,7 +110,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     override /*IterableLike*/ def splitAt(n: Int): (RRBVector[A], RRBVector[A]) = (take(n), drop(n))
 
     override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That = {
-        /*if (bf eq IndexedSeq.ReusableCBF) {
+        if (bf eq IndexedSeq.ReusableCBF) {
             if (that.isEmpty) this.asInstanceOf[That]
             else {
                 that match {
@@ -116,7 +118,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
                     case _ => super.++(that)
                 }
             }
-        } else */ super.++(that.seq)
+        } else super.++(that.seq)
     }
 
     // TraversableLike
@@ -157,13 +159,25 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         vec.hasWritableTail = elemIndexInBlock < 31
 
         // TODO: update sizes
+        //        withComputedSizes(vec.display2, 2)
+        //        withComputedSizes(vec.display3, 3)
+        //        withComputedSizes(vec.display4, 4)
+        //        withComputedSizes(vec.display5, 5)
+
+        if (RRBVector.useAssertions) {
+            vec.assertVectorInvariant()
+        }
 
         vec
     }
 
-    private def concatenated[B >: A](that: RRBVector[B]): RRBVector[B] = {
-        assert(this.length > 0)
-        assert(that.length > 0)
+    private[immutable] def concatenated[B >: A](that: RRBVector[B]): RRBVector[B] = {
+        if (RRBVector.useAssertions) {
+            this.assertVectorInvariant()
+            that.assertVectorInvariant()
+            assert(this.length > 0)
+            assert(that.length > 0)
+        }
 
         this.closeTail()
         that.closeTail()
@@ -173,39 +187,41 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
 
         val newSize = this.length + that.length
 
-        def instantiateVector(concat: Array[AnyRef], depth: Int): RRBVector[B] = {
-            val vec = new RRBVector[B](newSize)
+        def initVector(vec: RRBVector[B], concat: Array[AnyRef], depth: Int): Unit = {
             if (concat.length == 2) vec.initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], depth, newSize)
-            else vec.initFromRoot(concat, depth + 1, newSize)
-            vec
+            else {
+                vec.initFromRoot(withComputedSizes(concat, depth), depth + 1, newSize)
+            }
         }
+
+        val vec = new RRBVector[B](newSize)
 
         math.max(this.depth, that.depth) match {
             case 1 =>
                 val concat1 = rebalanced(this.display0, null, that.display0, 1)
-                instantiateVector(concat1, 1)
+                initVector(vec, concat1, 1)
             case 2 =>
                 val concat1 = rebalanced(this.display0, null, that.display0, 1)
                 val concat2 = rebalanced(this.display1, concat1, that.display1, 2)
-                instantiateVector(concat2, 2)
+                initVector(vec, concat2, 2)
             case 3 =>
                 val concat1 = rebalanced(this.display0, null, that.display0, 1)
                 val concat2 = rebalanced(this.display1, concat1, that.display1, 2)
                 val concat3 = rebalanced(this.display2, concat2, that.display2, 3)
-                instantiateVector(concat3, 3)
+                initVector(vec, concat3, 3)
             case 4 =>
                 val concat1 = rebalanced(this.display0, null, that.display0, 1)
                 val concat2 = rebalanced(this.display1, concat1, that.display1, 2)
                 val concat3 = rebalanced(this.display2, concat2, that.display2, 3)
                 val concat4 = rebalanced(this.display3, concat3, that.display3, 4)
-                instantiateVector(concat4, 4)
+                initVector(vec, concat4, 4)
             case 5 =>
                 val concat1 = rebalanced(this.display0, null, that.display0, 1)
                 val concat2 = rebalanced(this.display1, concat1, that.display1, 2)
                 val concat3 = rebalanced(this.display2, concat2, that.display2, 3)
                 val concat4 = rebalanced(this.display3, concat3, that.display3, 4)
                 val concat5 = rebalanced(this.display4, concat4, that.display4, 5)
-                instantiateVector(concat5, 5)
+                initVector(vec, concat5, 5)
             case 6 =>
                 val concat1 = rebalanced(this.display0, null, that.display0, 1)
                 val concat2 = rebalanced(this.display1, concat1, that.display1, 2)
@@ -213,10 +229,14 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
                 val concat4 = rebalanced(this.display3, concat3, that.display3, 4)
                 val concat5 = rebalanced(this.display4, concat4, that.display4, 5)
                 val concat6 = rebalanced(this.display5, concat5, that.display5, 6)
-                instantiateVector(concat6, 6)
+                initVector(vec, concat6, 6)
             case _ => throw new IllegalStateException()
 
         }
+        if (RRBVector.useAssertions) {
+            vec.assertVectorInvariant()
+        }
+        vec
     }
 
     private def closeTail() = {
@@ -229,14 +249,15 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], depth: Int): Array[AnyRef] = {
 
         @inline def displayLength(display: Array[AnyRef]): Int = if (display != null) display.length else 0
+
         val thisDisplay1Length = displayLength(displayLeft)
         val concatLength = displayLength(concat)
         val thatDisplay1Length = displayLength(displayRight)
         var offset = 0
 
         val alen =
-            if (depth == 1) (thisDisplay1Length + thatDisplay1Length)
-            else (thisDisplay1Length + concatLength + thatDisplay1Length - 1 - (if (thisDisplay1Length == 0) 0 else 2) - (if (thatDisplay1Length == 0) 0 else 2))
+            if (depth == 1) thisDisplay1Length + thatDisplay1Length
+            else thisDisplay1Length + concatLength + thatDisplay1Length - 1 - (if (thisDisplay1Length == 0) 0 else 2) - (if (thatDisplay1Length == 0) 0 else 2)
         val all = new Array[AnyRef](alen)
         if (thisDisplay1Length > 0) {
             val s = thisDisplay1Length - (if (depth == 1) 0 else 2)
@@ -302,28 +323,72 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             nalen -= 1
         }
 
-
         copiedAcross(all, szs, nalen, depth)
     }
 
+    private def withComputedSizes(node: Array[AnyRef], depth: Int): Array[AnyRef] = {
+        if (RRBVector.useAssertions) {
+            assert(!this.hasWritableTail)
+            assert(node != null)
+            assert(0 <= depth && depth <= 6)
+        }
+        if (depth == 1) {
+            var i = 0
+            var acc = 0
+            val end = node.length - 1
+            val sizes = new Array[Int](end)
+            while (i < end) {
+                acc += node(i).asInstanceOf[Array[AnyRef]].length
+                sizes(i) = acc
+                i += 1
+            }
+            node(end) = sizes
+        } else {
+            var i = 0
+            var acc = 0
+            val end = node.length - 1
+            val sizes = new Array[Int](end)
+            while (i < end) {
+                acc += treeSize(node(i).asInstanceOf[Array[AnyRef]], depth - 1)
+                sizes(i) = acc
+                i += 1
+            }
+            node(end) = sizes
+        }
+        node
+    }
+
+    private def treeSize(tree: Array[AnyRef], depth: Int): Int = {
+        if (RRBVector.useAssertions) {
+            assert(!this.hasWritableTail)
+            assert(tree != null)
+            assert(0 <= depth && depth <= 6)
+        }
+        if (depth == 0) tree.length
+        else {
+            val treeSizes = tree(tree.length - 1).asInstanceOf[Array[Int]]
+            if (treeSizes != null) treeSizes(treeSizes.length - 1)
+            else (tree.length - 2) * (1 << (5 * depth)) + treeSize(tree(tree.length - 2).asInstanceOf[Array[AnyRef]], depth - 1)
+        }
+    }
 
     private def copiedAcross(all: Array[AnyRef], sizes: Array[Int], lengthSizes: Int, depth: Int): Array[AnyRef] = {
+        if (RRBVector.useAssertions) {
+            assert(all != null)
+            assert(sizes != null)
+            assert(lengthSizes <= sizes.length)
+            assert(0 <= depth && depth <= 6)
+        }
         if (depth == 1) {
             val top = new Array[AnyRef](lengthSizes + 1)
-            val topSizes = new Array[Int](lengthSizes)
-            top(top.length - 1) = topSizes
-
             var iTop = 0
             var accSizes = 0
             while (iTop < top.length - 1) {
                 val nodeSize = sizes(iTop)
                 val node = new Array[AnyRef](nodeSize)
-                top(iTop) = node
                 Platform.arraycopy(all, accSizes, node, 0, nodeSize)
-
                 accSizes += nodeSize
-                topSizes(iTop) = accSizes
-
+                top(iTop) = node
                 iTop += 1
             }
             top
@@ -333,21 +398,18 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             var jAll = 0
 
             val top = new Array[AnyRef]((lengthSizes >> 5) + (if ((lengthSizes & 31) == 0) 1 else 2))
+            val topSizes = new Array[Int](top.length - 1)
+            top(top.length - 1) = topSizes
+
             var iTop = 0
             while (iTop < top.length - 1) {
                 val node = new Array[AnyRef](math.min(33, lengthSizes + 1 - (iTop << 5)))
-                val nodeSizes = new Array[Int](node.length - 1)
-                node(node.length - 1) = nodeSizes // TODO: Detect when not to assign
-                top(iTop) = node
 
                 var iNode = 0
-                var accSizeBottom = 0
                 while (iNode < node.length - 1) {
                     val sizeBottom = sizes((iTop << 5) + iNode)
                     val bottom = new Array[AnyRef](sizeBottom + (if (depth == 2) 0 else 1))
                     node(iNode) = bottom
-                    accSizeBottom += sizeBottom
-                    nodeSizes(iNode) = accSizeBottom
                     var iBottom = 0
                     while (iBottom < bottom.length) {
                         bottom(iBottom) = allSubNode(jAll)
@@ -364,6 +426,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
                     iNode += 1
                 }
 
+                top(iTop) = withComputedSizes(node, depth - 1)
                 iTop += 1
             }
 
@@ -377,29 +440,53 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         else a.asInstanceOf[Array[AnyRef]].length - 1
     }
 
-    private def assertRRBVectorInvariant(): Unit = {
-        assert(0 <= depth && depth <= 6, depth)
+    private[immutable] def assertVectorInvariant(): Unit = {
+        if (RRBVector.useAssertions) {
+            assert(0 <= depth && depth <= 6, depth)
 
-        assert(isEmpty == (depth == 0), (isEmpty, depth))
-        assert(isEmpty == (length == 0), (isEmpty, length))
-        assert(length == endIndex, (length, endIndex))
+            assert(isEmpty == (depth == 0), (isEmpty, depth))
+            assert(isEmpty == (length == 0), (isEmpty, length))
+            assert(length == endIndex, (length, endIndex))
 
-        assert((depth == 0 && display0 == null) || (depth > 0 && display0 != null), s"depth==0 <==> display0==null ${(depth, display0)}")
-        assert((depth <= 1 && display1 == null) || (depth > 1 && display1 != null), s"depth<=1 <==> display1==null ${(depth, display1)}")
-        assert((depth <= 2 && display2 == null) || (depth > 2 && display2 != null), s"depth<=2 <==> display2==null ${(depth, display2)}")
-        assert((depth <= 3 && display3 == null) || (depth > 3 && display3 != null), s"depth<=3 <==> display3==null ${(depth, display3)}")
-        assert((depth <= 4 && display4 == null) || (depth > 4 && display4 != null), s"depth<=4 <==> display4==null ${(depth, display4)}")
-        assert((depth <= 5 && display5 == null) || (depth > 5 && display5 != null), s"depth<=5 <==> display5==null ${(depth, display5)}")
+            assert((depth == 0 && display0 == null) || (depth > 0 && display0 != null), s"depth==0 <==> display0==null ${(depth, display0)}")
+            assert((depth <= 1 && display1 == null) || (depth > 1 && display1 != null), s"depth<=1 <==> display1==null ${(depth, display1)}")
+            assert((depth <= 2 && display2 == null) || (depth > 2 && display2 != null), s"depth<=2 <==> display2==null ${(depth, display2)}")
+            assert((depth <= 3 && display3 == null) || (depth > 3 && display3 != null), s"depth<=3 <==> display3==null ${(depth, display3)}")
+            assert((depth <= 4 && display4 == null) || (depth > 4 && display4 != null), s"depth<=4 <==> display4==null ${(depth, display4)}")
+            assert((depth <= 5 && display5 == null) || (depth > 5 && display5 != null), s"depth<=5 <==> display5==null ${(depth, display5)}")
 
-        assert(0 <= focusStart && focusStart <= focusEnd && focusEnd <= endIndex, (focusStart, focusEnd, endIndex))
-        assert(focusStart == focusEnd || focusEnd != 0, "focusStart==focusEnd ==> focusEnd==0" +(focusStart, focusEnd))
+            if (display5 != null) {
+                assert(display4 != null)
+                if (focusDepth < 6) assert(display5((focusRelax >> 25) & 31) == display4)
+                else assert(display5((focus >> 25) & 31) == display4)
+            }
+            if (display4 != null) {
+                assert(display3 != null)
+                if (focusDepth < 5) assert(display4((focusRelax >> 20) & 31) == display3)
+                else assert(display4((focus >> 20) & 31) == display3)
+            }
+            if (display3 != null) {
+                assert(display2 != null)
+                if (focusDepth < 4) assert(display3((focusRelax >> 15) & 31) == display2)
+                else assert(display3((focus >> 15) & 31) == display2)
+            }
+            if (display2 != null) {
+                assert(display1 != null)
+                if (focusDepth < 3) assert(display2((focusRelax >> 10) & 31) == display1)
+                else assert(display2((focus >> 10) & 31) == display1)
+            }
+            if (display1 != null) {
+                assert(display0 != null)
+                if (focusDepth < 2) assert(display1((focusRelax >> 5) & 31) == display0)
+                else assert(display1((focus >> 5) & 31) == display0)
+            }
 
-        assert(0 <= focusDepth && focusDepth <= depth, (focusDepth, depth))
+            assert(0 <= focusStart && focusStart <= focusEnd && focusEnd <= endIndex, (focusStart, focusEnd, endIndex))
+            assert(focusStart == focusEnd || focusEnd != 0, "focusStart==focusEnd ==> focusEnd==0" +(focusStart, focusEnd))
 
-        if (hasWritableTail) {
-            // TODO: check that the tail has size 32
-        } else {
-            // TODO: check that the tail is closed
+            assert(0 <= focusDepth && focusDepth <= depth, (focusDepth, depth))
+
+            // TODO assert tree sizes and block sizes
         }
     }
 
@@ -410,9 +497,9 @@ private[immutable] trait RRBVectorPointer[A] {
 
     private[immutable] var focusStart: Int = 0
     private[immutable] var focusEnd: Int = 0
-    // TODO: Change the meaning of focus to include the indices of the non focus part
-    private[immutable] var focusDepth: Int = 0
     private[immutable] var focus: Int = 0
+    private[immutable] var focusDepth: Int = 0
+    private[immutable] var focusRelax: Int = 0
 
     private[immutable] var depth: Int = _
 
@@ -526,21 +613,24 @@ private[immutable] trait RRBVectorPointer[A] {
         val endIndexInFocus = endIndex - focusStart
         if /* space left in current block */ ((endIndexInFocus & 31) != 0) {
             display0 = copyOf(display0, display0.length, 32)
-            if (_focusDepth == depth) copyAndStabilize(_focusDepth, focus)
+            if (_focusDepth == depth) copyDisplays(_focusDepth, focus)
             else relaxedStabilize()
+            stabilize(depth, focus | focusRelax)
         } else if /* is rb-tree */ (_focusDepth == depth) {
-            copyAndStabilize(_focusDepth, focus)
+            copyDisplays(_focusDepth, focus)
             // TODO: Improve performance. May not need to stabilize all the way down
+            stabilize(depth, focus)
             gotoNextBlockStartWritable(endIndexInFocus, endIndexInFocus ^ focus, true)
             focusDepth = depth
             focus = endIndexInFocus
             focusEnd = endIndexInFocus
         } else /* is rrb-tree */ {
-            relaxedStabilize()
             // TODO: Improve performance. May not need to stabilize all the way down
-            gotoNextBlockStartWritable(endIndexInFocus, endIndexInFocus ^ focus, true)
-            // TODO: gotoNextBlockStartWritable non focused part
-            // TODO set focusStart
+            relaxedStabilize()
+            gotoNextBlockStartWritable(endIndexInFocus, (endIndexInFocus) ^ focus, true)
+            assert(false, "implementation missing")
+            // TODO: gotoNextBlockStartWritable non focused part, set focus start
+
             focus = endIndexInFocus
             focusStart = ???
             focusEnd = endIndexInFocus
@@ -556,7 +646,7 @@ private[immutable] trait RRBVectorPointer[A] {
      * @param _depth: Depth of the current subtree. If called from the root, it should be the depth of the tree.
      */
     @tailrec
-    private[immutable] final def gotoPosRelaxed(index: Int, _startIndex: Int, _endIndex: Int, _depth: Int): Unit = {
+    private[immutable] final def gotoPosRelaxed(index: Int, _startIndex: Int, _endIndex: Int, _depth: Int, _focusRelax: Int = 0): Unit = {
         val display = _depth match {
             case 0 => null
             case 1 => display0
@@ -578,11 +668,12 @@ private[immutable] trait RRBVectorPointer[A] {
                 case 6 => display4 = display(is).asInstanceOf[Array[AnyRef]]
                 case _ => throw new IllegalArgumentException("depth=" + _depth)
             }
-            gotoPosRelaxed(index, if (is == 0) _startIndex else _startIndex + sizes(is - 1), _startIndex + sizes(is), _depth - 1)
+            gotoPosRelaxed(index, if (is == 0) _startIndex else _startIndex + sizes(is - 1), _startIndex + sizes(is), _depth - 1, _focusRelax | (is << (5 * depth - 5)))
         } else {
             val indexInFocus = index - _startIndex
             gotoPos(indexInFocus, 1 << (5 * (_depth - 1)))
             initFocus(indexInFocus, _startIndex, _endIndex, _depth)
+            this.focusRelax = _focusRelax
         }
     }
 
@@ -594,9 +685,8 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def relaxedStabilize(): Unit = {
-        copyAndStabilize(focusDepth, focus)
-        // TODO: stabilize non focus part
-        ???
+        copyDisplays(focusDepth, focus)
+        copyDisplaysTop(focusDepth + 1, focusRelax)
     }
 
 
@@ -796,8 +886,10 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
 
-    private[immutable] final def copyAndStabilize(_depth: Int, _focus: Int): Unit = {
-        // assert(0 < _depth && _depth <= 6)
+    private[immutable] final def copyDisplays(_depth: Int, _focus: Int): Unit = {
+        if (RRBVector.useAssertions) {
+            assert(0 < _depth && _depth <= 6)
+        }
         _depth match {
             case 1 =>
             case 2 =>
@@ -837,11 +929,36 @@ private[immutable] trait RRBVectorPointer[A] {
                 display1 = copyOf(display1, f1 + 1, f1 + 2)
             case _ => throw new IllegalStateException()
         }
-        stabilize(_depth, _focus)
+    }
+
+    private[immutable] final def copyDisplaysTop(_currentDepth: Int, _focusRelax: Int): Unit = {
+        _currentDepth match {
+            case 2 =>
+                val f1 = (_focusRelax >> 5) & 31
+                display1 = copyOf(display1, f1 + 1, f1 + 2)
+            case 3 =>
+                val f2 = (_focusRelax >> 10) & 31
+                display2 = copyOf(display2, f2 + 1, f2 + 2)
+            case 4 =>
+                val f3 = (_focusRelax >> 15) & 31
+                display3 = copyOf(display3, f3 + 1, f3 + 2)
+            case 5 =>
+                val f4 = (_focusRelax >> 20) & 31
+                display4 = copyOf(display4, f4 + 1, f4 + 2)
+            case 6 =>
+                val f5 = (_focusRelax >> 25) & 31
+                display5 = copyOf(display5, f5 + 1, f5 + 2)
+            case _ => throw new IllegalStateException()
+        }
+        if (_currentDepth < depth)
+            copyDisplaysTop(_currentDepth + 1, _focusRelax)
+
     }
 
     private[immutable] final def stabilize(_depth: Int, _focus: Int): Unit = {
-        // assert(0 < _depth && _depth <= 6)
+        if (RRBVector.useAssertions) {
+            assert(0 < _depth && _depth <= 6)
+        }
         _depth match {
             case 1 =>
             case 2 =>
@@ -869,8 +986,11 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def copyOf(a: Array[AnyRef], numElements: Int, newSize: Int) = {
-        // assert(a != null)
-        // assert(numElements <= newSize)
+        if (RRBVector.useAssertions) {
+            assert(a != null)
+            assert(numElements <= newSize)
+            assert(numElements <= a.length)
+        }
         val b = new Array[AnyRef](newSize)
         Platform.arraycopy(a, 0, b, 0, numElements)
         b
@@ -885,7 +1005,9 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def mergeLeafs(leaf0: Array[AnyRef], length0: Int, leaf1: Array[AnyRef], length1: Int): Array[AnyRef] = {
-        // assert(length0 + length1 <= 32)
+        if (RRBVector.useAssertions) {
+            assert(length0 + length1 <= 32)
+        }
         val newLeaf = new Array[AnyRef](length0 + length1)
         Platform.arraycopy(leaf0, 0, newLeaf, 0, length0)
         Platform.arraycopy(leaf1, 0, newLeaf, length0, length1)
@@ -1025,19 +1147,27 @@ final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with 
         val size = blockIndex + lo
         if (size == 0)
             return RRBVector.empty
-        val s = new RRBVector[A](size)
+        val vec = new RRBVector[A](size)
 
-        s.initFrom(this)
+        vec.initFrom(this)
 
-        // TODO optimization: check if stabilization is really necessary on all displays based on the last index.
-        s.gotoPos(size - 1, size - 1)
-        if (depth > 1) s.copyAndStabilize(depth, size - 1)
+        // TODO: Optimization: check if stabilization is really necessary on all displays based on the last index.
+        vec.gotoPos(size - 1, size - 1)
+        if (depth > 1) {
+            vec.copyDisplays(depth, size - 1)
+            vec.stabilize(depth, size - 1)
+        }
 
-        s.gotoPos(0, size - 1)
-        s.focus = 0
-        s.focusEnd = size
-        s.focusDepth = depth
-        s
+        vec.gotoPos(0, size - 1)
+        vec.focus = 0
+        vec.focusEnd = size
+        vec.focusDepth = depth
+
+        if (RRBVector.useAssertions) {
+            vec.assertVectorInvariant()
+        }
+
+        vec
     }
 
     def clear(): Unit = {
