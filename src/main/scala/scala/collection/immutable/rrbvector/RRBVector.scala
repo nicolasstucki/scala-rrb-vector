@@ -404,17 +404,18 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         node
     }
 
-    private def treeSize(tree: Array[AnyRef], depth: Int): Int = {
+    @tailrec
+    private def treeSize(tree: Array[AnyRef], depth: Int, acc: Int = 0): Int = {
         if (RRBVector.useAssertions) {
             assert(!this.hasWritableTail)
             assert(tree != null)
             assert(0 <= depth && depth <= 6)
         }
-        if (depth == 0) tree.length
+        if (depth == 0) acc + tree.length
         else {
             val treeSizes = tree(tree.length - 1).asInstanceOf[Array[Int]]
             if (treeSizes != null) treeSizes(treeSizes.length - 1)
-            else (tree.length - 2) * (1 << (5 * depth)) + treeSize(tree(tree.length - 2).asInstanceOf[Array[AnyRef]], depth - 1)
+            else treeSize(tree(tree.length - 2).asInstanceOf[Array[AnyRef]], depth - 1, acc + (tree.length - 2) * (1 << (5 * depth)))
         }
     }
 
