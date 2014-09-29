@@ -143,6 +143,7 @@ abstract class BaseVectorSpec[A] extends WordSpec {
     }
 
     def testNonEmptyVectorProperties(vector: => Vector[A], n: Int) = {
+        s"vector invariant should hold" in trap(vector.assertVectorInvariant())
         s"have size $n" in assertResult(n)(vector.size)
         s"have length $n" in assertResult(n)(vector.length)
         "return false when isEmpty is invoked" in assertResult(false)(vector.isEmpty)
