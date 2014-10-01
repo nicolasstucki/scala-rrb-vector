@@ -54,7 +54,7 @@ class VectorConcatBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                     performance of s"vector ++ Vector$otherSize" in {
 
                         performance of s"Height $height" in {
-                            using(vectors(from, math.min(to, 5000), by)) curve "Vector" in { vec =>
+                            using(vectors(from, math.min(to, 3000), by)) curve "Vector" in { vec =>
                                 var i = 0
                                 var sum = 0
                                 while (i < times) {
