@@ -33,7 +33,7 @@ object RRBVector extends IndexedSeqFactory[RRBVector] {
         vec
     }
 
-    private[immutable] final val useAssertions = true
+    private[immutable] final val useAssertions = false
 
 }
 
@@ -85,7 +85,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //
 
     def /*SeqLike*/ apply(index: Int): A = {
-        //        val focusStart = this.focusStart
+        val focusStart = this.focusStart
         if (focusStart <= index && index < focusEnd) {
             val indexInFocus = index - focusStart
             getElement(indexInFocus, indexInFocus ^ focus).asInstanceOf[A]
@@ -127,7 +127,10 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             if (that.isEmpty) this.asInstanceOf[That]
             else {
                 that match {
-                    case vec: RRBVector[B] => this.concatenated[B](vec).asInstanceOf[That]
+                    case vec: RRBVector[B] => {
+                        if (this.isEmpty) vec.asInstanceOf[That]
+                        else this.concatenated[B](vec).asInstanceOf[That]
+                    }
                     case _ => super.++(that)
                 }
             }
@@ -161,31 +164,16 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         val vec = new RRBVector[B](endIndex + 1)
         vec.initFrom(this)
         vec.gotoIndex(endIndex - 1, endIndex - 1)
-        vec.appendBack(value)
-
-        if (RRBVector.useAssertions) {
-            vec.assertVectorInvariant()
-        }
+        if (this.hasWritableTail) {
+            this.hasWritableTail = false
+            val elemIndexInBlock = (endIndex - vec.focusStart) & 31
+            vec.display0(elemIndexInBlock) = value.asInstanceOf[AnyRef]
+            vec.focusEnd += 1
+            if (elemIndexInBlock < 31)
+                vec.hasWritableTail = true
+        } else vec.appendBackNewTail(value)
 
         vec
-    }
-
-    private def appendBack[B >: A](value: B): Unit = {
-        if (hasWritableTail) {
-            this.hasWritableTail = false
-            appendBackWritableTail(value)
-        } else appendBackNewTail(value)
-    }
-
-    private def appendBackWritableTail[B >: A](value: B): Unit = {
-        if (RRBVector.useAssertions) {
-            assert(endIndex - 2 == focus + focusStart)
-        }
-        val elemIndexInBlock = (endIndex - focusStart - 1) & 31
-        display0(elemIndexInBlock) = value.asInstanceOf[AnyRef]
-        focusEnd += 1
-        if (elemIndexInBlock < 31)
-            hasWritableTail = true
     }
 
     private def appendBackNewTail[B >: A](value: B): Unit = {
@@ -272,7 +260,6 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             }
             hasWritableTail = true
         }
-        // TODO: update sizes. account for the full 32 position last array
     }
 
     private[immutable] def concatenated[B >: A](that: RRBVector[B]): RRBVector[B] = {
@@ -608,6 +595,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             }
 
             depth match {
+                case 0 =>
                 case 1 => checkSize(display0, 1, endIndex)
                 case 2 => checkSize(display1, 2, endIndex)
                 case 3 => checkSize(display2, 3, endIndex)
