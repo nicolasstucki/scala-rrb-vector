@@ -24,7 +24,7 @@ object RRBVector extends IndexedSeqFactory[RRBVector] {
 
     private[immutable] final def singleton[A](value: A): RRBVector[A] = {
         val vec = new RRBVector[A](1)
-        vec.display0 = new Array[AnyRef](32)
+        vec.display0 = new Array[AnyRef](vec.TREE_BRANCH_WIDTH)
         vec.display0(0) = value.asInstanceOf[AnyRef]
         vec.depth = 1
         vec.focusEnd = 1
@@ -169,7 +169,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             val elemIndexInBlock = (endIndex - vec.focusStart) & 31
             vec.display0(elemIndexInBlock) = value.asInstanceOf[AnyRef]
             vec.focusEnd += 1
-            if (elemIndexInBlock < 31)
+            if (elemIndexInBlock < TREE_BRANCH_WIDTH - 1)
                 vec.hasWritableTail = true
         } else vec.appendBackNewTail(value)
 
@@ -184,7 +184,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         val _depth = depth
         if (elemIndexInBlock != 0) {
             val deltaSize = 32 - display0.length
-            display0 = copyOf(display0, display0.length, 32)
+            display0 = copyOf(display0, display0.length, TREE_BRANCH_WIDTH)
             if (_depth > 1) {
                 val stabilizationIndex = focus | focusRelax
                 val displaySizes = allDisplaySizes()
@@ -208,7 +208,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             }
             display0(elemIndexInBlock) = value.asInstanceOf[AnyRef]
             focusEnd += 1
-            if (elemIndexInBlock < 31)
+            if (elemIndexInBlock < TREE_BRANCH_WIDTH - 1)
                 hasWritableTail = true
         } else {
             // TODO: should only copy the top displays, not the ones affected by setUpNextBlockStartTailWritable
@@ -242,7 +242,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
                     val newSizes = new Array[Int](display.length - 1)
                     Platform.arraycopy(oldSizes, 0, newSizes, 0, oldSizes.length)
                     if (newSizes.length != oldSizes.length) {
-                        newSizes(newSizes.length - 1) = newSizes(newSizes.length - 2) + 32
+                        newSizes(newSizes.length - 1) = newSizes(newSizes.length - 2) + TREE_BRANCH_WIDTH
                     } else {
                         newSizes(newSizes.length - 1) += 32
                     }
@@ -329,15 +329,15 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         vec
     }
 
-    private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], lengthLeft: Int, lengthConcat: Int, lengthRight: Int, depth: Int): Array[AnyRef] = {
+    private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], lengthLeft: Int, lengthConcat: Int, lengthRight: Int, _depth: Int): Array[AnyRef] = {
 
         var offset = 0
         val alen =
-            if (depth == 1) lengthLeft + lengthRight
+            if (_depth == 1) lengthLeft + lengthRight
             else lengthLeft + lengthConcat + lengthRight - 1 - (if (lengthLeft == 0) 0 else 2) - (if (lengthRight == 0) 0 else 2)
         val all = new Array[AnyRef](alen)
         if (lengthLeft > 0) {
-            val s = lengthLeft - (if (depth == 1) 0 else 2)
+            val s = lengthLeft - (if (_depth == 1) 0 else 2)
             Platform.arraycopy(displayLeft, 0, all, 0, s)
             offset += s
         }
@@ -346,25 +346,30 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             offset += concat.length - 1
         }
         if (lengthRight > 0) {
-            val s = lengthRight - (if (depth == 1) 0 else 2)
-            Platform.arraycopy(displayRight, if (depth == 1) 0 else 1, all, offset, s)
+            val s = lengthRight - (if (_depth == 1) 0 else 2)
+            Platform.arraycopy(displayRight, if (_depth == 1) 0 else 1, all, offset, s)
         }
 
-        // LOAD CURRENT SIZESs
+        val (szs, nalen) = computeNewSizes(all, alen, _depth)
+
+        copiedAcross(all, szs, nalen, _depth)
+    }
+
+    private def computeNewSizes(all: Array[AnyRef], alen: Int, _depth: Int) = {
         val szs = new Array[Int](alen)
-        var tcnt = 0
+        var totalCount = 0
         var i = 0
         while (i < alen) {
-            val sz = sizeSlot(all(i), depth - 1)
+            val sz = sizeSlot(all(i), _depth - 1)
             szs(i) = sz
-            tcnt += sz
+            totalCount += sz
             i += 1
         }
 
         // COMPUTE NEW SIZES
         // Calculate the ideal or effective number of slots
         // used to limit number of extra slots.
-        val effslt = tcnt / 32 + 1 // <-- "desired" number of slots???
+        val effectiveNumberOfSlots = totalCount / 32 + 1 // <-- "desired" number of slots???
 
         val MinWidth = 31 // min number of slots allowed...
 
@@ -372,7 +377,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         // note - this makes multiple passes, can be done in one.
         // redistribute the smallest slots until only the allowed extras remain
         val EXTRAS = 2
-        while (nalen > effslt + EXTRAS) {
+        while (nalen > effectiveNumberOfSlots + EXTRAS) {
             // TR each loop iteration removes the first short block
             // TR what if no small one is found? doesn't check ix < szs.length,
             // TR we know there are small ones. what if the small ones are all at the right?
@@ -400,7 +405,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             nalen -= 1
         }
 
-        copiedAcross(all, szs, nalen, depth)
+        (szs, nalen)
     }
 
     private def withComputedSizes(node: Array[AnyRef], depth: Int): Array[AnyRef] = {
@@ -482,7 +487,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
 
             var iTop = 0
             while (iTop < top.length - 1) {
-                val node = new Array[AnyRef](math.min(33, lengthSizes + 1 - (iTop << 5)))
+                val node = new Array[AnyRef](math.min(TREE_BRANCH_WIDTH + TREE_INVARIANTS, lengthSizes + 1 - (iTop << 5)))
 
                 var iNode = 0
                 while (iNode < node.length - 1) {
@@ -589,7 +594,7 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
                     if (strictSize) {
                         assert(node.length == expectedSize, (node.mkString("Array(", ",", ")"), expectedSize))
                     } else {
-                        assert(node.length == expectedSize || node.length == 32, (node, expectedSize))
+                        assert(node.length == expectedSize || node.length == TREE_BRANCH_WIDTH, (node, expectedSize))
                     }
                 }
             }
@@ -612,6 +617,9 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
 
 
 private[immutable] trait RRBVectorPointer[A] {
+
+    private[immutable] final val TREE_BRANCH_WIDTH: Int = 32
+    private[immutable] final val TREE_INVARIANTS: Int = 1
 
     private[immutable] var focusStart: Int = 0
     private[immutable] var focusEnd: Int = 0
@@ -938,66 +946,66 @@ private[immutable] trait RRBVectorPointer[A] {
         // goto block start pos
         if /* level = 1 */ (xor < (1 << 10)) {
             if (depth == 1) {
-                display1 = new Array(3)
+                display1 = new Array(2 + TREE_INVARIANTS)
                 display1(0) = display0
                 depth += 1
             } else {
                 val len = display1.length
                 display1 = copyOf(display1, len, len + 1)
             }
-            display0 = new Array(32)
+            display0 = new Array(TREE_BRANCH_WIDTH)
         }
 
         else if /* level = 2 */ (xor < (1 << 15)) {
             if (depth == 2) {
-                display2 = new Array(3)
+                display2 = new Array(2 + TREE_INVARIANTS)
                 display2(0) = display1
                 depth += 1
             } else {
                 val len = display2.length
                 display2 = copyOf(display2, len, len + 1)
             }
-            display0 = new Array(32)
-            display1 = new Array(2)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(1 + TREE_INVARIANTS)
         } else if /* level = 3 */ (xor < (1 << 20)) {
             if (depth == 3) {
-                display3 = new Array(3)
+                display3 = new Array(2 + TREE_INVARIANTS)
                 display3(0) = display2
                 depth += 1
             } else {
                 val len = display3.length
                 display3 = copyOf(display3, len, len + 1)
             }
-            display0 = new Array(32)
-            display1 = new Array(3)
-            display2 = new Array(3)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(1 + TREE_INVARIANTS)
+            display2 = new Array(1 + TREE_INVARIANTS)
         } else if /* level = 4 */ (xor < (1 << 25)) {
             if (depth == 4) {
-                display4 = new Array(33)
+                display4 = new Array(2 + TREE_INVARIANTS)
                 display4(0) = display3
                 depth += 1
             } else {
                 val len = display4.length
                 display4 = copyOf(display4, len, len + 1)
             }
-            display0 = new Array(32)
-            display1 = new Array(3)
-            display2 = new Array(3)
-            display3 = new Array(3)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(1 + TREE_INVARIANTS)
+            display2 = new Array(1 + TREE_INVARIANTS)
+            display3 = new Array(1 + TREE_INVARIANTS)
         } else if /* level = 5 */ (xor < (1 << 30)) {
             if (depth == 5) {
-                display5 = new Array(3)
+                display5 = new Array(2 + TREE_INVARIANTS)
                 display5(0) = display4
                 depth += 1
             } else {
                 val len = display5.length
                 display5 = copyOf(display5, len, len + 1)
             }
-            display0 = new Array(32)
-            display1 = new Array(33)
-            display2 = new Array(3)
-            display3 = new Array(3)
-            display4 = new Array(3)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(1 + TREE_INVARIANTS)
+            display2 = new Array(1 + TREE_INVARIANTS)
+            display3 = new Array(1 + TREE_INVARIANTS)
+            display4 = new Array(1 + TREE_INVARIANTS)
         } else /* level < 0 || 5 < level */ {
             throw new IllegalArgumentException()
         }
@@ -1010,44 +1018,44 @@ private[immutable] trait RRBVectorPointer[A] {
         // goto block start pos
         if /* level = 1 */ (xor < (1 << 10)) {
             if (depth == 1) {
-                display1 = new Array(33)
+                display1 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
                 display1(0) = display0
                 depth += 1
             }
-            display0 = new Array(32)
+            display0 = new Array(TREE_BRANCH_WIDTH)
             display1((index >> 5) & 31) = display0
         } else if /* level = 2 */ (xor < (1 << 15)) {
             if (depth == 2) {
-                display2 = new Array(33)
+                display2 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
                 display2(0) = display1
                 depth += 1
             }
-            display0 = new Array(32)
-            display1 = new Array(33)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
         } else if /* level = 3 */ (xor < (1 << 20)) {
             if (depth == 3) {
-                display3 = new Array(33)
+                display3 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
                 display3(0) = display2
                 depth += 1
             }
-            display0 = new Array(32)
-            display1 = new Array(33)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
             display2 = new Array(3)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
         } else if /* level = 4 */ (xor < (1 << 25)) {
             if (depth == 4) {
-                display4 = new Array(33)
+                display4 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
                 display4(0) = display3
                 depth += 1
             }
-            display0 = new Array(32)
-            display1 = new Array(33)
-            display2 = new Array(33)
-            display3 = new Array(33)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
+            display2 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
+            display3 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
@@ -1058,11 +1066,11 @@ private[immutable] trait RRBVectorPointer[A] {
                 display5(0) = display4
                 depth += 1
             }
-            display0 = new Array(32)
-            display1 = new Array(33)
-            display2 = new Array(3)
-            display3 = new Array(3)
-            display4 = new Array(3)
+            display0 = new Array(TREE_BRANCH_WIDTH)
+            display1 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
+            display2 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
+            display3 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
+            display4 = new Array(TREE_BRANCH_WIDTH + TREE_INVARIANTS)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
             display3((index >> 15) & 31) = display2
@@ -1226,7 +1234,7 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
             gotoPosRelaxed(startIndex, 0, endIndex, depth)
         blockIndex = focusStart
         lo = startIndex - focusStart
-        endLo = math.min(focusEnd - blockIndex, 32)
+        endLo = math.min(focusEnd - blockIndex, TREE_BRANCH_WIDTH)
     }
 
     def next(): A = {
@@ -1246,7 +1254,7 @@ class RRBVectorIterator[+A](startIndex: Int, endIndex: Int)
             }
             blockIndex = newBlockIndex
             lo = 0
-            endLo = math.min(focusEnd - blockIndex, 32)
+            endLo = math.min(focusEnd - blockIndex, TREE_BRANCH_WIDTH)
         }
 
         res
@@ -1286,7 +1294,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
         lo -= 1
 
         if (lo < endLo) {
-            val newBlockIndex = blockIndexInFocus - 32
+            val newBlockIndex = blockIndexInFocus - TREE_BRANCH_WIDTH
             if (focusStart <= newBlockIndex) {
                 gotoPrevBlockStart(newBlockIndex, newBlockIndex ^ blockIndexInFocus)
                 blockIndexInFocus = newBlockIndex
@@ -1310,7 +1318,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, endIndex: Int)
 
 final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] {
 
-    display0 = new Array[AnyRef](32)
+    display0 = new Array[AnyRef](TREE_BRANCH_WIDTH)
     depth = 1
     hasWritableTail = true
 
@@ -1318,8 +1326,8 @@ final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with 
     private var lo = 0
 
     def +=(elem: A): this.type = {
-        if (lo >= display0.length) {
-            val newBlockIndex = blockIndex + 32
+        if (lo >= TREE_BRANCH_WIDTH) {
+            val newBlockIndex = blockIndex + TREE_BRANCH_WIDTH
             gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ blockIndex)
             blockIndex = newBlockIndex
             lo = 0
@@ -1362,7 +1370,7 @@ final class RRBVectorBuilder[A]() extends mutable.Builder[A, RRBVector[A]] with 
     }
 
     def clear(): Unit = {
-        display0 = new Array[AnyRef](32)
+        display0 = new Array[AnyRef](TREE_BRANCH_WIDTH)
         display1 = null
         display2 = null
         display3 = null
