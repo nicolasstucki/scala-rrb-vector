@@ -30,7 +30,7 @@ class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                         sideeffect = sum
                     }
 
-                    using(rbvectors(from, to, by)) curve "rbVector" in { vec =>
+                    using(rbVectors(from, to, by)) curve "rbVector" in { vec =>
                         var i = 0
                         var v = vec
                         var sum = 0
@@ -42,7 +42,7 @@ class VectorAppendBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                         sideeffect = sum
                     }
 
-                    using(rrbvectors(from, to, by)) curve "rrbVector" in { vec =>
+                    using(rrbVectors(from, to, by)) curve "rrbVector" in { vec =>
                         var i = 0
                         var v = vec
                         var sum = 0

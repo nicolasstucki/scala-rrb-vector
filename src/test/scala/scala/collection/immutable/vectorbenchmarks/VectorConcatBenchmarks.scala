@@ -38,7 +38,7 @@ class VectorConcatBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                                 sideeffect = sum
                             }
 
-                            using(rrbvectors(from, to, by)) curve "rrbVector" in { vec =>
+                            using(rrbVectors(from, to, by)) curve "rrbVector" in { vec =>
                                 var i = 0
                                 var sum = 0
                                 while (i < times) {
@@ -65,7 +65,7 @@ class VectorConcatBenchmarks extends PerformanceTest.OfflineRegressionReport wit
                                 sideeffect = sum
                             }
 
-                            using(rrbvectors(from, to, by)) curve "rrbVector" in { vec =>
+                            using(rrbVectors(from, to, by)) curve "rrbVector" in { vec =>
                                 var i = 0
                                 var sum = 0
                                 while (i < times) {

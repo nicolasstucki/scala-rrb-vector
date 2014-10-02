@@ -30,8 +30,8 @@ class VectorApplyBenchmarks extends PerformanceTest.OfflineRegressionReport with
 
                 performance of s"Height $height" in {
                     using(vectors(from, to, by)) curve "Vector" in benchmarkFunction
-                    using(rbvectors(from, to, by)) curve "rbVector" in benchmarkFunction
-                    using(rrbvectors(from, to, by)) curve "rrbVector" in benchmarkFunction
+                    using(rbVectors(from, to, by)) curve "rbVector" in benchmarkFunction
+                    using(rrbVectors(from, to, by)) curve "rrbVector" in benchmarkFunction
                 }
             }
 
@@ -48,8 +48,8 @@ class VectorApplyBenchmarks extends PerformanceTest.OfflineRegressionReport with
                 }
                 performance of s"Height $height" in {
                     using(vectors(from, to, by)) curve "Vector" in benchmarkFunction
-                    using(rbvectors(from, to, by)) curve "rbVector" in benchmarkFunction
-                    using(rrbvectors(from, to, by)) curve "rrbVector" in benchmarkFunction
+                    using(rbVectors(from, to, by)) curve "rbVector" in benchmarkFunction
+                    using(rrbVectors(from, to, by)) curve "rrbVector" in benchmarkFunction
                 }
             }
 
@@ -68,24 +68,24 @@ class VectorApplyBenchmarks extends PerformanceTest.OfflineRegressionReport with
             performance of "1M pseudo-random indices (seed=42)" in {
                 performance of s"Height $height" in {
                     using(vectors(from, to, by)) curve "Vector" in (benchmarkFunctionPseudoRandom(_, 42))
-                    using(rbvectors(from, to, by)) curve "rbVector" in (benchmarkFunctionPseudoRandom(_, 42))
-                    using(rrbvectors(from, to, by)) curve "rrbVector" in (benchmarkFunctionPseudoRandom(_, 42))
+                    using(rbVectors(from, to, by)) curve "rbVector" in (benchmarkFunctionPseudoRandom(_, 42))
+                    using(rrbVectors(from, to, by)) curve "rrbVector" in (benchmarkFunctionPseudoRandom(_, 42))
                 }
             }
 
             performance of "1M pseudo-random indices (seed=274181)" in {
                 performance of s"Height $height" in {
                     using(vectors(from, to, by)) curve "Vector" in (benchmarkFunctionPseudoRandom(_, 274181))
-                    using(rbvectors(from, to, by)) curve "rbVector" in (benchmarkFunctionPseudoRandom(_, 274181))
-                    using(rrbvectors(from, to, by)) curve "rrbVector" in (benchmarkFunctionPseudoRandom(_, 274181))
+                    using(rbVectors(from, to, by)) curve "rbVector" in (benchmarkFunctionPseudoRandom(_, 274181))
+                    using(rrbVectors(from, to, by)) curve "rrbVector" in (benchmarkFunctionPseudoRandom(_, 274181))
                 }
             }
 
             performance of "1M pseudo-random indices (seed=53426)" in {
                 performance of s"Height $height" in {
                     using(vectors(from, to, by)) curve "Vector" in (benchmarkFunctionPseudoRandom(_, 53426))
-                    using(rbvectors(from, to, by)) curve "rbVector" in (benchmarkFunctionPseudoRandom(_, 53426))
-                    using(rrbvectors(from, to, by)) curve "rrbVector" in (benchmarkFunctionPseudoRandom(_, 53426))
+                    using(rbVectors(from, to, by)) curve "rbVector" in (benchmarkFunctionPseudoRandom(_, 53426))
+                    using(rrbVectors(from, to, by)) curve "rrbVector" in (benchmarkFunctionPseudoRandom(_, 53426))
                 }
             }
         }

@@ -5,6 +5,7 @@ import org.scalameter.{Gen, Key, PerformanceTest}
 
 import scala.collection.immutable.rbvector._
 import scala.collection.immutable.rrbvector._
+import scala.collection.immutable.vectorutils.RRBVectorGenerator
 
 trait BaseVectorBenchmark extends PerformanceTest {
 
@@ -12,10 +13,10 @@ trait BaseVectorBenchmark extends PerformanceTest {
     /* config */
 
     val minHeight = 1
-    val maxHeight = 4
-    val points = 32
-    val benchRuns = 64
-    val independentSamples = 2
+    val maxHeight = 2
+    val points = 16
+    val benchRuns = 32
+    val independentSamples = 1
 
     /* data */
 
@@ -30,13 +31,17 @@ trait BaseVectorBenchmark extends PerformanceTest {
         size <- sizes(from, to, by)
     } yield Vector.range(0, size)
 
-    def rbvectors(from: Int, to: Int, by: Int) = for {
+    def rbVectors(from: Int, to: Int, by: Int) = for {
         size <- sizes(from, to, by)
     } yield RBVector.range(0, size)
 
-    def rrbvectors(from: Int, to: Int, by: Int) = for {
+    def rrbVectors(from: Int, to: Int, by: Int) = for {
         size <- sizes(from, to, by)
     } yield RRBVector.range(0, size)
+
+    def extremelyUnbalancedRrbVectors(from: Int, to: Int, by: Int)(implicit config: RRBVectorGenerator.Config[Int]) = for {
+        size <- sizes(from, to, by)
+    } yield RRBVectorGenerator.vectorOfSize(size)
 
     def fromToBy(height: Int) = (
       math.pow(32, height - 1).toInt + 1,
