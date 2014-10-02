@@ -1,14 +1,13 @@
 package scala.collection.immutable
 package vectorutils
 
-/**
- * Created by nicolasstucki on 30/09/2014.
- */
 
 import scala.util.Random
 import rrbvector._
 
 object RRBVectorGenerator {
+
+    def defaultConfig[A](f: Int => A) = RRBVectorGenerator.Config[A](new scala.util.Random(111), 6, f)
 
     case class Config[A](rnd: Random, maxSplitSize: Int, tabFunc: Int => A)
 
@@ -23,6 +22,9 @@ object RRBVectorGenerator {
         case n if n > 0 && config.maxSplitSize >= n => RRBVector.tabulate(n)(config.tabFunc)
         case _ => throw new IllegalArgumentException()
     }
+
+
+
 
 
 }
