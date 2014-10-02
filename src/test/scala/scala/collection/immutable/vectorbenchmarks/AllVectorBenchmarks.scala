@@ -11,5 +11,6 @@ class AllVectorBenchmarks extends PerformanceTest.OfflineReport {
     include[VectorBuilderBenchmarks]
     include[VectorConcatBenchmarks]
     include[VectorIterationBenchmarks]
+    include[VectorMemoryAllocation]
 
 }
