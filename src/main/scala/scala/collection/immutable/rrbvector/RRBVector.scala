@@ -3,8 +3,6 @@ package collection
 package immutable
 package rrbvector
 
-import java.io.Serializable
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -85,13 +83,13 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     //
 
     def /*SeqLike*/ apply(index: Int): A = {
-        val focusStart = this.focusStart
-        if (focusStart <= index && index < focusEnd) {
-            val indexInFocus = index - focusStart
+        val _focusStart = this.focusStart
+        if (_focusStart <= index && index < focusEnd) {
+            val indexInFocus = index - _focusStart
             getElement(indexInFocus, indexInFocus ^ focus).asInstanceOf[A]
         } else if (0 <= index && index < endIndex) {
             gotoPosRelaxed(index, 0, endIndex, depth)
-            display0((index - focusStart) & 31).asInstanceOf[A]
+            display0((index - _focusStart) & 31).asInstanceOf[A]
         } else {
             throw new IndexOutOfBoundsException(index.toString)
         }
@@ -754,7 +752,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 case 3 => display3(display3.length - 1) = allSizes(i - 1)
                 case 4 => display4(display4.length - 1) = allSizes(i - 1)
                 case 5 => display5(display5.length - 1) = allSizes(i - 1)
-                case _ => null
+                case _ =>
             }
         }
     }
@@ -776,6 +774,7 @@ private[immutable] trait RRBVectorPointer[A] {
             case 3 => display2
             case 4 => display3
             case 5 => display4
+            case 6 => display5
             case _ => throw new IllegalArgumentException("depth=" + _depth)
         }
 
@@ -1169,13 +1168,13 @@ private[immutable] trait RRBVectorPointer[A] {
                 display2((_focus >> 10) & 31) = display1
                 display1((_focus >> 5) & 31) = display0
             case 5 =>
-                display4(_focus >> 15) = display3
+                display4(_focus >> 20) = display3
                 display3((_focus >> 15) & 31) = display2
                 display2((_focus >> 10) & 31) = display1
                 display1((_focus >> 5) & 31) = display0
             case 6 =>
-                display5(_focus >> 20) = display4
-                display4((_focus >> 15) & 31) = display3
+                display5(_focus >> 25) = display4
+                display4((_focus >> 20) & 31) = display3
                 display3((_focus >> 15) & 31) = display2
                 display2((_focus >> 10) & 31) = display1
                 display1((_focus >> 5) & 31) = display0
