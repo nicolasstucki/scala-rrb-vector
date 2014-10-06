@@ -719,13 +719,13 @@ else
           };
           private[immutable] def initFromRoot(root: Array[AnyRef], _depth: Int, _endIndex: Int): Unit = {
             _depth match {
-              case 0 => throw new IllegalArgumentException()
               case 1 => display0 = root
               case 2 => display1 = root
               case 3 => display2 = root
               case 4 => display3 = root
               case 5 => display4 = root
-              case _ => throw new IllegalStateException()
+              case 6 => display5 = root
+              case _ => throw new IllegalArgumentException()
             };
             depth = _depth;
             gotoIndex(0, _endIndex)
@@ -987,7 +987,7 @@ else
                     }
                   else
                     throw new IllegalArgumentException();
-          final private[immutable] def setUpNextBlockStartTailWritable(_index: Int, _or: Int): Unit = if (_or.<(1024))
+          final private[immutable] def setUpNextBlockStartTailWritable(_index: Int, _xor: Int): Unit = if (_xor.<(1024))
             {
               if (depth.==(1))
                 {
@@ -1003,7 +1003,7 @@ else
               display0 = new Array(32)
             }
           else
-            if (_or.<(32768))
+            if (_xor.<(32768))
               {
                 if (depth.==(2))
                   {
@@ -1020,7 +1020,7 @@ else
                 display1 = new Array(33)
               }
             else
-              if (_or.<(1048576))
+              if (_xor.<(1048576))
                 {
                   if (depth.==(3))
                     {
@@ -1038,7 +1038,7 @@ else
                   display2 = new Array(33)
                 }
               else
-                if (_or.<(33554432))
+                if (_xor.<(33554432))
                   {
                     if (depth.==(4))
                       {
@@ -1057,7 +1057,7 @@ else
                     display3 = new Array(33)
                   }
                 else
-                  if (_or.<(1073741824))
+                  if (_xor.<(1073741824))
                     {
                       if (depth.==(5))
                         {
@@ -1175,7 +1175,7 @@ else
             _depth match {
               case 1 => ()
               case 2 => display1 = {
-                val idx_1 = _focus.>>(5);
+                val idx_1 = _focus.>>(5).&(31);
                 copyOf(display1, idx_1.+(1), idx_1.+(2))
               }
               case 3 => {
@@ -1184,7 +1184,7 @@ else
                   copyOf(display1, idx_1.+(1), idx_1.+(2))
                 };
                 display2 = {
-                  val idx_2 = _focus.>>(10);
+                  val idx_2 = _focus.>>(10).&(31);
                   copyOf(display2, idx_2.+(1), idx_2.+(2))
                 }
               }
@@ -1198,7 +1198,7 @@ else
                   copyOf(display2, idx_2.+(1), idx_2.+(2))
                 };
                 display3 = {
-                  val idx_3 = _focus.>>(15);
+                  val idx_3 = _focus.>>(15).&(31);
                   copyOf(display3, idx_3.+(1), idx_3.+(2))
                 }
               }
@@ -1216,7 +1216,7 @@ else
                   copyOf(display3, idx_3.+(1), idx_3.+(2))
                 };
                 display4 = {
-                  val idx_4 = _focus.>>(20);
+                  val idx_4 = _focus.>>(20).&(31);
                   copyOf(display4, idx_4.+(1), idx_4.+(2))
                 }
               }
@@ -1238,7 +1238,7 @@ else
                   copyOf(display4, idx_4.+(1), idx_4.+(2))
                 };
                 display5 = {
-                  val idx_5 = _focus.>>(25);
+                  val idx_5 = _focus.>>(25).&(31);
                   copyOf(display5, idx_5.+(1), idx_5.+(2))
                 }
               }
