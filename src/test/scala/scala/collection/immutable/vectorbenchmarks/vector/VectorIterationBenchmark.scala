@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.vector
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.IterationBenchmarks
+import scala.collection.immutable.vectorbenchmarks._
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+abstract class VectorAbstractIterationBenchmark[A] extends IterationBenchmarks[A] with VectorBenchmark[A]
+
+class VectorIterationIntBenchmark extends VectorAbstractIterationBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class VectorIterationAnyRefBenchmark extends VectorAbstractIterationBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator

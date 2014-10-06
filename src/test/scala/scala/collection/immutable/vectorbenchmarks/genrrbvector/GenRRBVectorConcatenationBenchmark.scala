@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.genrrbvector
+
+import scala.collection.immutable.vectorbenchmarks.GenRRBVectorBenchmark
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+abstract class GenRRBVectorAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with GenRRBVectorBenchmark[A]
+
+class GenRRBVectorConcatenationIntBenchmark extends GenRRBVectorAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class GenRRBVectorConcatenationAnyRefBenchmark extends GenRRBVectorAbstractConcatenationBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator

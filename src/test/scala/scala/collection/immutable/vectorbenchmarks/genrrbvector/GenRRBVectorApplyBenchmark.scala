@@ -1,0 +1,12 @@
+package scala.collection.immutable.vectorbenchmarks.genrrbvector
+
+import scala.collection.immutable.vectorbenchmarks.GenRRBVectorBenchmark
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ApplyBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class GenRRBVectorAbstractApplyBenchmark[A] extends ApplyBenchmarks[A] with GenRRBVectorBenchmark[A]
+
+class GenRRBVectorApplyIntBenchmark extends GenRRBVectorAbstractApplyBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class GenRRBVectorApplyAnyRefBenchmark extends GenRRBVectorAbstractApplyBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
