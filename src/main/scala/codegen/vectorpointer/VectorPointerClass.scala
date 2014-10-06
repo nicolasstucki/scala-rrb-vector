@@ -91,15 +91,12 @@ trait VectorPointerClass {
     }
 
     private def initFromRootDef() = {
-        val cases =
-            cq"0 => throw new IllegalArgumentException()" ::
-              (List.range(1, 6) map (i => cq"$i => ${getDisplayTree(i)} = root")) :::
-              cq"_ => throw new IllegalStateException()" :: Nil
+        val rootParam = TermName("root")
+        val depthParam = TermName("_depth")
+        val endIndexParam = TermName("_endIndex")
         q"""
-             private[immutable] def $initFromRoot(root: Array[AnyRef], _depth: Int, _endIndex: Int): Unit = {
-                 _depth match { case ..$cases }
-                 $depth = _depth
-                 gotoIndex(0, _endIndex)
+             private[immutable] def $initFromRoot($rootParam: Array[AnyRef], $depthParam: Int, $endIndexParam: Int): Unit = {
+                 ${initFromRootCode(rootParam, depthParam, endIndexParam)}
              }
          """
     }
@@ -351,7 +348,7 @@ trait VectorPointerClass {
 
     private def setUpNextBlockStartTailWritableDef() = {
         val index = TermName("_index")
-        val xor = TermName("_or")
+        val xor = TermName("_xor")
         q"""
              private[immutable] final def $setUpNextBlockStartTailWritable($index: Int, $xor: Int): Unit = {
                  if (${indexIsInLevel(q"$xor", q"1")}) {
@@ -493,22 +490,20 @@ trait VectorPointerClass {
          """
     }
 
+    protected def copyDisplaysDepth(index: TermName, depths: Seq[Int]): Tree = {
+        def copyDisplay(i: Int) = {
+            val t = TermName(s"idx_$i")
+            val indexDef = q"val $t = ($index >> ${5 * i}) & 31"
+            setDisplay(i, q"$indexDef; copyOf(${displayAt(i)}, $t + 1, $t + 2)")
+
+        }
+        val displayCopies = depths map copyDisplay
+        q"..$displayCopies"
+    }
 
     private def copyDisplaysDef() = {
-        def copyDisplaysDepth(d: Int) = {
-            def copyDisplay(i: Int) = {
-                val t = TermName(s"idx_$i")
-                val indexDef =
-                    if (i == d - 1) q"val $t = _focus >> ${5 * i}"
-                    else q"val $t = (_focus >> ${5 * i}) & 31"
-                setDisplay(i, q"$indexDef; copyOf(${displayAt(i)}, $t + 1, $t + 2)")
-
-            }
-            val displayCopies = (1 until d) map copyDisplay
-            q"..$displayCopies"
-        }
-
-        val code = matchOnDepth(q"_depth", 1 to 6, copyDisplaysDepth)
+        val t = TermName("_focus")
+        val code = matchOnDepth(q"_depth", 1 to 6, d => copyDisplaysDepth(t, 1 until d))
 
         q"""
              private[immutable] final def $copyDisplays(_depth: Int, _focus: Int): Unit = {
@@ -551,7 +546,9 @@ trait VectorPointerClass {
 
     private def stabilizeDef() = {
         def stabilizeDepth(depth: Int) = {
-            def stabilizeDisplay(i: Int) = updateDisplay(i, q"(_focus >> ${5 * i}) & 31", displayAt(i - 1))
+            def stabilizeDisplay(i: Int) = updateDisplay(i, q"(_focus >> ${
+                5 * i
+            }) & 31", displayAt(i - 1))
             val updates = (depth - 1 to 1 by -1) map stabilizeDisplay
             q"..$updates"
         }
@@ -560,8 +557,12 @@ trait VectorPointerClass {
         q"""
          private[immutable] final def $stabilize(_depth: Int, _focus: Int): Unit =
          {
-             ${asserts(q"assert(0 < _depth && _depth <= 6)")}
-             ${asserts(q"assert((_focus >> (5 * _depth)) == 0, (_depth, _focus))")}
+             ${
+            asserts(q"assert(0 < _depth && _depth <= 6)")
+        }
+             ${
+            asserts(q"assert((_focus >> (5 * _depth)) == 0, (_depth, _focus))")
+        }
              $code
          }
          """
@@ -589,7 +590,9 @@ trait VectorPointerClass {
     private def closeTailLeafCode(): Unit = {
         q"""
              val cutIndex = ($focus & 31) + 1
-             ${setDisplay(0, q"$copyOf($display0, cutIndex, cutIndex)")}
+             ${
+            setDisplay(0, q"$copyOf($display0, cutIndex, cutIndex)")
+        }
          """
     }
 

@@ -51,9 +51,18 @@ trait VectorPointerCode {
     val treeInvariants = 1
 
 
+    protected def initFromRootCode(rootParam: TermName, depthParam: TermName, endIndexParam: TermName): Tree = {
+        val cases = matchOnDepth(q"$depthParam", 1 to 6, d => q"${setDisplay(d - 1, q"$rootParam")}")
+        q"""
+            $cases
+            $depth = $depthParam
+            $gotoIndex(0, $endIndexParam)
+         """
+    }
+
     //
 
-    private[codegen] def getElementCode(index: TermName, xor: TermName) = {
+    private[codegen] def getElementCode(index: TermName, xor: TermName): Tree = {
         @tailrec def getElemFromDisplay(display: Tree, level: Int): Tree = {
             val idx = branchIndex(q"$index", q"$level")
             if (level == 0) q"$display($idx).asInstanceOf[$A]"
@@ -92,6 +101,14 @@ trait VectorPointerCode {
         case _ => q"($index >> (5 * $level)) & 31"
     }
 
+    protected def getBranch(display: Tree, index: Tree) = {
+        q"$display($index)"
+    }
+
+    protected def getBranchSizes(display: TermName) = {
+        q"$display($display.length-1).asInstanceOf[Array[Int]]"
+    }
+
     protected def setDisplay(level: Int, newDisplay: Tree) = {
         val display = displayNameAt(level)
         q"$display = $newDisplay"
@@ -107,7 +124,7 @@ trait VectorPointerCode {
         case _ => q"$index < (1 << (5 * ($level + 1)))"
     }
 
-    protected def matchOnDepth(depth: Tree, depths: Range, code: Int => Tree) = {
+    protected def matchOnDepth(depth: Tree, depths: Seq[Int], code: Int => Tree) = {
         depth match {
             case q"${d: Int}" =>
                 if (depths.contains(d))

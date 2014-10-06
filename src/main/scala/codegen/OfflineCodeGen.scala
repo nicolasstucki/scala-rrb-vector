@@ -31,7 +31,8 @@ object OfflineCodeGen extends App {
       with VectorBuilderClass with VectorBuilderCode
       with VectorPointerClass with VectorPointerCode {}
 
-    saveToFile(codeGenerator.filePath, codeGenerator.generateVectorClasses())
+        saveToFile(codeGenerator.filePath, codeGenerator.generateVectorClasses())
+//    println(showCode(codeGenerator.generateVectorClasses()))
 }
 
 
