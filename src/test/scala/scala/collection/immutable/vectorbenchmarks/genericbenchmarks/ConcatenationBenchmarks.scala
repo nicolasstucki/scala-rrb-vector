@@ -5,11 +5,12 @@ import org.scalameter.Key
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
+    // Used in immutable.vector to bound the sizes
+    def to(n: Int): Int = n
 
     performanceOfVectors { height =>
         val (from, to_, by) = fromToBy(height)
         // Avoid benchmarking vector concatenation on big immutable.Vector (too slow)
-        val to = if (vectorName == "Vector") math.min(to_, 3000) else to_
 
         var sideeffect = 0
 
@@ -26,7 +27,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
                     performance of s"Vector_$otherSize ++ vector" in {
 
                         performance of s"Height $height" in {
-                            using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                            using(generateVectors(from, to(to_), by)) curve vectorName in { vec =>
                                 var i = 0
                                 var sum = 0
                                 while (i < times) {
@@ -43,7 +44,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
                     performance of s"vector ++ Vector$otherSize" in {
 
                         performance of s"Height $height" in {
-                            using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                            using(generateVectors(from, to(to_), by)) curve vectorName in { vec =>
                                 var i = 0
                                 var sum = 0
                                 while (i < times) {
