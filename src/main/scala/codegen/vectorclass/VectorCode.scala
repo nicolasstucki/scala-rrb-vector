@@ -6,9 +6,14 @@ private[codegen] trait VectorCode {
 
     val endIndex = TermName("endIndex")
 
-    val appendedBack = TermName("appendedBack")
-    val concatenated = TermName("concatenated")
-    val rebalanced = TermName("rebalanced")
+    val take = TermName("take")
+    val dropRight = TermName("dropRight")
+
+    private[vectorclass] val appendedBack = TermName("appendedBack")
+    private[vectorclass] val takeFront0 = TermName("takeFront0")
+
+    private[vectorclass] val concatenated = TermName("concatenated")
+    private[vectorclass] val rebalanced = TermName("rebalanced")
 
 
     val assertVectorInvariant = TermName("assertVectorInvariant")

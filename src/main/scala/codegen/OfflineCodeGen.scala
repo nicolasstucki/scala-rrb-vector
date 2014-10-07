@@ -31,7 +31,16 @@ object OfflineCodeGen extends App {
       with VectorBuilderClass with VectorBuilderCode
       with VectorPointerClass with VectorPointerCode {}
 
-        saveToFile(codeGenerator.filePath, codeGenerator.generateVectorClasses())
+//    val codeGenerator = new VectorPackage
+//      with VectorClass with VectorCode
+//      with VectorObjectClass with VectorObjectCode
+//      with VectorIteratorClass
+//      with VectorReverseIteratorClass
+//      with VectorBuilderClass with VectorBuilderCode
+//      with VectorPointerClass with writabletail.VectorPointerCode {}
+
+
+    saveToFile(codeGenerator.filePath, codeGenerator.generateVectorPackage())
 //    println(showCode(codeGenerator.generateVectorClasses()))
 }
 

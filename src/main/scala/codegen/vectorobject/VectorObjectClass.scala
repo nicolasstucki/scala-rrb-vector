@@ -16,11 +16,10 @@ trait VectorObjectClass {
 
                 private val NIL = new $vectorClassName[Nothing](0)
 
-                override def empty[A]: $vectorClassName[A] = NIL
+                override def $o_empty[A]: $vectorClassName[A] = NIL
 
                 ${singletonDef()}
 
-                private[immutable] final val useAssertions = false
             }
             """
     }
@@ -33,7 +32,7 @@ trait VectorObjectClass {
     private def singletonDef() = {
         val value = TermName("value")
         val code = singletonCode(value, A)
-        q"private[immutable] final def $singleton[$A]($value: $A): $vectorClassName[$A] = $code"
+        q"private[immutable] final def $o_singleton[$A]($value: $A): $vectorClassName[$A] = $code"
     }
 
 

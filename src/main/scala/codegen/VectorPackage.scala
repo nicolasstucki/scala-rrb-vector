@@ -19,7 +19,7 @@ trait VectorPackage {
 
     def filePath = s"src/main/scala/scala/collection/immutable/${subPackageName.toString}/${vectorClassName.toString}.scala"
 
-    def generateVectorClasses() = {
+    def generateVectorPackage() = {
         val vectorObjectDef = generateVectorObjectClass()
         println(s"Generated $vectorObjectName")
         val vectorClassDef = generateVectorClass()

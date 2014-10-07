@@ -1,12 +1,13 @@
 package codegen.vectorclass
 
 import codegen.VectorPackage
+import codegen.vectorobject.VectorObjectCode
 import codegen.vectorpointer.VectorPointerCode
 
 import scala.reflect.runtime.universe._
 
 private[codegen] trait VectorClass {
-    self: VectorPackage with VectorPointerCode with VectorCode =>
+    self: VectorPackage with VectorObjectCode with VectorPointerCode with VectorCode =>
 
     def generateVectorClass() =
         q"""
@@ -40,6 +41,9 @@ private[codegen] trait VectorClass {
                             apply(0)
                         }
 
+                        ${takeDef()}
+                        ${dropRightDef()}
+
                         override /*IterableLike*/ def slice(from: Int, until: Int): $vectorClassName[A] = take(until).drop(from)
 
                         override /*IterableLike*/ def splitAt(n: Int): ($vectorClassName[A], $vectorClassName[A]) = (take(n), drop(n))
@@ -70,12 +74,12 @@ private[codegen] trait VectorClass {
                         ${withComputedSizesDef()}
                         ${treeSize()}
                         ${copiedAcross()}
+                        ${takeFront0Def()}
 
                         // Invariant
                         ${asserts(assertVectorInvariantDef())}
                 }
             """
-
 
 
     private def companionDef() = q"override def companion: scala.collection.generic.GenericCompanion[$vectorClassName] = $vectorObjectName"
@@ -158,6 +162,31 @@ private[codegen] trait VectorClass {
     // IterableLike
     //
 
+    private def takeDef(): Tree = {
+        q"""
+            override /*IterableLike*/ def $take(n: Int): $vectorClassName[A] = {
+                if (n <= 0)
+                    $vectorObjectName.$o_empty
+                else if (n < $endIndex)
+                    $takeFront0(n)
+                else
+                    this
+            }
+        """
+    }
+
+    private def dropRightDef(): Tree = {
+        q"""
+            override /*IterableLike*/ def $dropRight(n: Int): $vectorClassName[A] = {
+                if (n <= 0)
+                    this
+                else if ($endIndex - n > 0)
+                    $takeFront0($endIndex - n)
+                else
+                    $vectorObjectName.$o_empty
+            }
+        """
+    }
 
     //
     // TraversableLike
@@ -679,5 +708,66 @@ private[codegen] trait VectorClass {
 
                 }
         """
+    }
+
+    private def takeFront0Def(): Tree = {
+        q"""
+            private def $takeFront0(n: Int): $vectorClassName[A] = {
+                val vec = new $vectorClassName[A](n)
+                vec.$initFrom(this)
+
+                if ($depth > 1) {
+                    vec.$gotoIndex(n - 1, n)
+
+                    val d0len = (vec.$focus & 31) + 1
+                    if (d0len != $treeBranchWidth) {
+                        val d0 = new Array[AnyRef](d0len)
+                        Platform.arraycopy(vec.display0, 0, d0, 0, d0len)
+                        vec.display0 = d0
+                    }
+
+                    val cutIndex = vec.$focus | vec.$focusRelax
+                    vec.$cleanTop(cutIndex)
+                    vec.$focusDepth = math.min(vec.$depth, vec.$focusDepth)
+
+                    // Note that cleanTop may change the depth
+                    if (vec.$depth > 1) {
+                        val displaySizes = $allDisplaySizes()
+                        vec.$copyDisplays(vec.$depth, cutIndex)
+                        if (vec.$depth > 2 || d0len != $treeBranchWidth)
+                            vec.$stabilize(vec.$depth, cutIndex)
+                        if (vec.$focusDepth < vec.$depth) {
+                            var offset = 0
+                            var i = vec.$depth
+                            while (i > vec.$focusDepth) {
+                                i -= 1
+                                val oldSizes = displaySizes(i - 1)
+                                if (oldSizes != null) {
+                                    val newLen = (vec.$focusRelax >> (5 * i)) + 1
+                                    val newSizes = new Array[Int](newLen)
+                                    Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen - 1)
+                                    newSizes(newLen - 1) = n - offset
+                                    offset += newSizes(newLen - 2)
+                                    displaySizes(i - 1) = newSizes
+                                }
+                            }
+                            vec.$putDisplaySizes(displaySizes)
+                        }
+
+
+                    }
+                } else if ( /* _depth == 1 && */ n != $treeBranchWidth) {
+                    val d0 = new Array[AnyRef]($treeBranchWidth)
+                    Platform.arraycopy(display0, 0, d0, 0, n)
+                    vec.$display0 = d0
+                    vec.$hasWritableTail = true
+                }
+                vec.focusEnd = n
+
+                ${asserts(q"vec.$assertVectorInvariant()")}
+
+                vec
+            }
+         """
     }
 }

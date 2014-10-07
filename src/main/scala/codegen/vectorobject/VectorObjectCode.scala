@@ -9,7 +9,8 @@ import scala.reflect.runtime.universe._
 trait VectorObjectCode {
     self: VectorPackage with VectorPointerCode =>
 
-    val singleton = TermName("singleton")
+    val o_singleton = TermName("singleton")
+    val o_empty = TermName("empty")
 
     def singletonCode(value: TermName, tp: TypeName) = {
         q"""

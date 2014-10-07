@@ -44,6 +44,7 @@ trait VectorPointerCode {
     val copyDisplays = TermName("copyDisplays")
     val copyDisplaysTop = TermName("copyDisplaysTop")
     val stabilize = TermName("stabilize")
+    val cleanTop = TermName("cleanTop")
     val copyOf = TermName("copyOf")
     val mergeLeafs = TermName("mergeLeafs")
 

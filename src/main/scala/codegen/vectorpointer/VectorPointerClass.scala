@@ -31,6 +31,7 @@ trait VectorPointerClass {
                     ${copyDisplaysDef()}
                     ${copyDisplaysTopDef()}
                     ${stabilizeDef()}
+                    ${cleanTopDef()}
                     ${copyOfDef()}
                     ${mergeLeafsDef()}
 
@@ -40,7 +41,7 @@ trait VectorPointerClass {
 
     // Field definitions
 
-    private def traitFieldsDef(): List[Tree] = {
+    private[vectorpointer] def traitFieldsDef(): List[Tree] = {
         def genPrivateImmutableVar(name: TermName, tpt: Tree, init: Tree): Tree =
             q"private[immutable] var $name: $tpt = $init"
 
@@ -54,7 +55,7 @@ trait VectorPointerClass {
 
     // Method implementations
 
-    private def getDisplayName(_depth: Int): TermName = _depth match {
+    private[vectorpointer] def getDisplayName(_depth: Int): TermName = _depth match {
         case 1 => display0
         case 2 => display1
         case 3 => display2
@@ -63,7 +64,7 @@ trait VectorPointerClass {
         case 6 => display5
     }
 
-    private def getDisplayTree(_depth: Int): Tree = _depth match {
+    private[vectorpointer] def getDisplayTree(_depth: Int): Tree = _depth match {
         case 0 => q"null"
         case 1 => q"$display0"
         case 2 => q"$display1"
@@ -73,7 +74,7 @@ trait VectorPointerClass {
         case 6 => q"$display5"
     }
 
-    private def rootDef() = {
+    private[vectorpointer] def rootDef() = {
         q"""
              private[immutable] def $root(): AnyRef = {
                  ${rootCode(q"$depth")}
@@ -81,7 +82,7 @@ trait VectorPointerClass {
          """
     }
 
-    private def rootCode(depth: Tree) = depth match {
+    private[vectorpointer] def rootCode(depth: Tree) = depth match {
         case q"${d: Int}" =>
             if (0 <= d && d < 6) getDisplayTree(d)
             else q"throw new IllegalStateException"
@@ -90,7 +91,7 @@ trait VectorPointerClass {
             q"$depth match { case ..$cases }"
     }
 
-    private def initFromRootDef() = {
+    private[vectorpointer] def initFromRootDef() = {
         val rootParam = TermName("root")
         val depthParam = TermName("_depth")
         val endIndexParam = TermName("_endIndex")
@@ -101,7 +102,7 @@ trait VectorPointerClass {
          """
     }
 
-    private def initFromDef() = {
+    private[vectorpointer] def initFromDef() = {
         def depthCase(depth: Int) = {
             val stats = (1 to depth) map getDisplayName map (d => q"$d = that.$d")
             q"{..$stats}"
@@ -119,7 +120,7 @@ trait VectorPointerClass {
          """
     }
 
-    private def initFocusDef() = {
+    private[vectorpointer] def initFocusDef() = {
         q"""
              private[immutable] final def $initFocus(_focus: Int, _focusStart: Int, _focusEnd: Int, _focusDepth: Int, _focusRelax: Int) = {
                  this.$focus = _focus
@@ -131,7 +132,7 @@ trait VectorPointerClass {
          """
     }
 
-    private def gotoIndexDef() = {
+    private[vectorpointer] def gotoIndexDef() = {
         q"""
               private[immutable] final def $gotoIndex(index: Int, endIndex: Int) = {
                  val $focusStart = this.$focusStart
@@ -149,7 +150,7 @@ trait VectorPointerClass {
          """
     }
 
-    private def allDisplaySizesDef() = {
+    private[vectorpointer] def allDisplaySizesDef() = {
         val cases =
             (List.range(1, 6) map (i => cq"$i => ${getDisplayTree(i + 1)}.last.asInstanceOf[Array[Int]]")) :::
               cq"_ => null" :: Nil
@@ -164,15 +165,17 @@ trait VectorPointerClass {
          """
     }
 
-    private def putDisplaySizesDef() = {
+    private[vectorpointer] def putDisplaySizesDef() = {
         val currentDepth = TermName("_depth")
         val cases =
-            (List.range(1, 6) map getDisplayTree).zipWithIndex.map { case (d, i) => cq"$i => $d($d.length-1) = allSizes($depth-1)"} :::
+            (List.range(1, 6) map getDisplayTree).zipWithIndex.map { case (d, i) => cq"$i => $d($d.length-1) = allSizes(${i - 1})"} :::
               cq"_ => null" :: Nil
         q"""
              private[immutable] def $putDisplaySizes(allSizes: Array[Array[Int]]): Unit = {
-                 for ($currentDepth <- $focusDepth until $depth) {
-                     $currentDepth match { case ..$cases }
+                 var i = $focusDepth
+                 while (i < $depth) {
+                    i match { case ..$cases }
+                    i += 1
                  }
              }
          """
@@ -501,7 +504,7 @@ trait VectorPointerClass {
         q"..$displayCopies"
     }
 
-    private def copyDisplaysDef() = {
+    private[vectorpointer] def copyDisplaysDef() = {
         val t = TermName("_focus")
         val code = matchOnDepth(q"_depth", 1 to 6, d => copyDisplaysDepth(t, 1 until d))
 
@@ -515,7 +518,7 @@ trait VectorPointerClass {
          """
     }
 
-    private def copyDisplaysTopDef() = {
+    private[vectorpointer] def copyDisplaysTopDef() = {
         q"""
              private[immutable] final def $copyDisplaysTop(_currentDepth: Int, _focusRelax: Int): Unit = {
                  _currentDepth match {
@@ -544,7 +547,45 @@ trait VectorPointerClass {
     }
 
 
-    private def stabilizeDef() = {
+    private[vectorpointer] def cleanTopDef() = {
+        q"""
+            private[immutable] def $cleanTop(cutIndex: Int): Unit = {
+                @tailrec def cleanTopRec(_depth: Int): Unit = {
+                    _depth match {
+                        case 2 =>
+                            if ((cutIndex >> 5) == 0) {
+                                display1 = null
+                                depth = 1
+                            } else depth = 2
+                        case 3 =>
+                            if ((cutIndex >> 10) == 0) {
+                                display2 = null
+                                cleanTopRec(_depth - 1)
+                            } else depth = 3
+                        case 4 =>
+                            if ((cutIndex >> 15) == 0) {
+                                display3 = null
+                                cleanTopRec(_depth - 1)
+                            } else depth = 4
+                        case 5 =>
+                            if ((cutIndex >> 20) == 0) {
+                                display4 = null
+                                cleanTopRec(_depth - 1)
+                            } else depth = 5
+                        case 6 =>
+                            if ((cutIndex >> 25) == 0) {
+                                display5 = null
+                                cleanTopRec(_depth - 1)
+                            } else depth = 6
+                    }
+                }
+
+                cleanTopRec(depth)
+            }
+        """
+    }
+
+    private[vectorpointer] def stabilizeDef() = {
         def stabilizeDepth(depth: Int) = {
             def stabilizeDisplay(i: Int) = updateDisplay(i, q"(_focus >> ${
                 5 * i
@@ -569,7 +610,7 @@ trait VectorPointerClass {
     }
 
 
-    private def copyOfDef() = {
+    private[vectorpointer] def copyOfDef() = {
         val asserts = if (noAssertions) q""
         else q"""
                    assert(a != null)
@@ -587,16 +628,8 @@ trait VectorPointerClass {
          """
     }
 
-    private def closeTailLeafCode(): Unit = {
-        q"""
-             val cutIndex = ($focus & 31) + 1
-             ${
-            setDisplay(0, q"$copyOf($display0, cutIndex, cutIndex)")
-        }
-         """
-    }
 
-    private def mergeLeafsDef() = {
+    private[vectorpointer] def mergeLeafsDef() = {
         val leaf0 = TermName("leaf0")
         val leaf1 = TermName("leaf1")
         val length0 = TermName("length0")
