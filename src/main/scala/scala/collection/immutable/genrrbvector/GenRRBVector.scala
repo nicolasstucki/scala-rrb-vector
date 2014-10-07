@@ -24,8 +24,7 @@ package scala {
             vec.focusDepth = 1;
             vec.hasWritableTail = true;
             vec
-          };
-          final private[immutable] val useAssertions = false
+          }
         }
 
         final class GenRRBVector[+A](val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, GenRRBVector] with scala.collection.IndexedSeqLike[A, GenRRBVector[A]] with GenRRBVectorPointer[A @uncheckedVariance] with Serializable { self =>
@@ -84,6 +83,20 @@ package scala {
               ();
             apply(0)
           };
+          override def take(n: Int): GenRRBVector[A] = if (n.<=(0))
+            GenRRBVector.empty
+          else
+            if (n.<(endIndex))
+              takeFront0(n)
+            else
+              this;
+          override def dropRight(n: Int): GenRRBVector[A] = if (n.<=(0))
+            this
+          else
+            if (endIndex.-(n).>(0))
+              takeFront0(endIndex.-(n))
+            else
+              GenRRBVector.empty;
           override def slice(from: Int, until: Int): GenRRBVector[A] = take(until).drop(from);
           override def splitAt(n: Int): scala.Tuple2[GenRRBVector[A], GenRRBVector[A]] = scala.Tuple2(take(n), drop(n));
           override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[GenRRBVector[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
@@ -538,6 +551,75 @@ else
                 top
               }
           };
+          private def takeFront0(n: Int): GenRRBVector[A] = {
+            val vec = new GenRRBVector[A](n);
+            vec.initFrom(this);
+            if (depth.>(1))
+              {
+                vec.gotoIndex(n.-(1), n);
+                val d0len = vec.focus.&(31).+(1);
+                if (d0len.!=(32))
+                  {
+                    val d0 = new Array[AnyRef](d0len);
+                    Platform.arraycopy(vec.display0, 0, d0, 0, d0len);
+                    vec.display0 = d0
+                  }
+                else
+                  ();
+                val cutIndex = vec.focus.|(vec.focusRelax);
+                vec.cleanTop(cutIndex);
+                vec.focusDepth = math.min(vec.depth, vec.focusDepth);
+                if (vec.depth.>(1))
+                  {
+                    val displaySizes = allDisplaySizes();
+                    vec.copyDisplays(vec.depth, cutIndex);
+                    if (vec.depth.>(2).||(d0len.!=(32)))
+                      vec.stabilize(vec.depth, cutIndex)
+                    else
+                      ();
+                    if (vec.focusDepth.<(vec.depth))
+                      {
+                        var offset = 0;
+                        var i = vec.depth;
+                        while (i.>(vec.focusDepth)) 
+                          {
+                            i.-=(1);
+                            val oldSizes = displaySizes(i.-(1));
+                            if (oldSizes.!=(null))
+                              {
+                                val newLen = vec.focusRelax.>>((5).*(i)).+(1);
+                                val newSizes = new Array[Int](newLen);
+                                Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen.-(1));
+                                newSizes.update(newLen.-(1), n.-(offset));
+                                offset.+=(newSizes(newLen.-(2)));
+                                displaySizes.update(i.-(1), newSizes)
+                              }
+                            else
+                              ()
+                          }
+                        ;
+                        vec.putDisplaySizes(displaySizes)
+                      }
+                    else
+                      ()
+                  }
+                else
+                  ()
+              }
+            else
+              if (n.!=(32))
+                {
+                  val d0 = new Array[AnyRef](32);
+                  Platform.arraycopy(display0, 0, d0, 0, n);
+                  vec.display0 = d0;
+                  vec.hasWritableTail = true
+                }
+              else
+                ();
+            vec.focusEnd = n;
+            ();
+            vec
+          };
           ()
         }
 
@@ -803,14 +885,22 @@ else
             })));
             allSises
           };
-          private[immutable] def putDisplaySizes(allSizes: Array[Array[Int]]): Unit = focusDepth.until(depth).foreach(((_depth) => _depth match {
-            case 0 => display0.update(display0.length.-(1), allSizes(depth.-(1)))
-            case 1 => display1.update(display1.length.-(1), allSizes(depth.-(1)))
-            case 2 => display2.update(display2.length.-(1), allSizes(depth.-(1)))
-            case 3 => display3.update(display3.length.-(1), allSizes(depth.-(1)))
-            case 4 => display4.update(display4.length.-(1), allSizes(depth.-(1)))
-            case _ => null
-          }));
+          private[immutable] def putDisplaySizes(allSizes: Array[Array[Int]]): Unit = {
+            var i = focusDepth;
+            while (i.<(depth)) 
+              {
+                i match {
+                  case 0 => display0.update(display0.length.-(1), allSizes(-1))
+                  case 1 => display1.update(display1.length.-(1), allSizes(0))
+                  case 2 => display2.update(display2.length.-(1), allSizes(1))
+                  case 3 => display3.update(display3.length.-(1), allSizes(2))
+                  case 4 => display4.update(display4.length.-(1), allSizes(3))
+                  case _ => null
+                };
+                i.+=(1)
+              }
+            
+          };
           @tailrec final private[immutable] def gotoPosRelaxed(index: Int, _startIndex: Int, _endIndex: Int, _depth: Int, _focusRelax: Int = 0): Unit = {
             val display = _depth match {
               case 0 => null
@@ -1304,6 +1394,46 @@ else
               }
               case _ => throw new IllegalArgumentException()
             }
+          };
+          private[immutable] def cleanTop(cutIndex: Int): Unit = {
+            @tailrec def cleanTopRec(_depth: Int): Unit = _depth match {
+              case 2 => if (cutIndex.>>(5).==(0))
+                {
+                  display1 = null;
+                  depth = 1
+                }
+              else
+                depth = 2
+              case 3 => if (cutIndex.>>(10).==(0))
+                {
+                  display2 = null;
+                  cleanTopRec(_depth.-(1))
+                }
+              else
+                depth = 3
+              case 4 => if (cutIndex.>>(15).==(0))
+                {
+                  display3 = null;
+                  cleanTopRec(_depth.-(1))
+                }
+              else
+                depth = 4
+              case 5 => if (cutIndex.>>(20).==(0))
+                {
+                  display4 = null;
+                  cleanTopRec(_depth.-(1))
+                }
+              else
+                depth = 5
+              case 6 => if (cutIndex.>>(25).==(0))
+                {
+                  display5 = null;
+                  cleanTopRec(_depth.-(1))
+                }
+              else
+                depth = 6
+            };
+            cleanTopRec(depth)
           };
           final private[immutable] def copyOf(a: Array[AnyRef], numElements: Int, newSize: Int) = {
             ;
