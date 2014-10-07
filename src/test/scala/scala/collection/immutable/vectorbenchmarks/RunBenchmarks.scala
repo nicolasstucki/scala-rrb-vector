@@ -48,7 +48,7 @@ class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
 class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorSplitIntBenchmark]
     include[rrbvector.RRBVectorSplitIntBenchmark]
-//    include[genrrbvector.GenRRBVectorSplitIntBenchmark]
+    include[genrrbvector.GenRRBVectorSplitIntBenchmark]
 }
 
 class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
