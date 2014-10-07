@@ -116,6 +116,42 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
     override /*IterableLike*/ def splitAt(n: Int): (RRBVector[A], RRBVector[A]) = (take(n), drop(n))
 
 
+    override /*IterableLike*/ def take(n: Int): RRBVector[A] = {
+        if (n <= 0)
+            RRBVector.empty
+        else if (n < endIndex)
+            takeFront0(n)
+        else
+            this
+    }
+
+    //    override /*IterableLike*/ def drop(n: Int): RRBVector[A] = {
+    //        if (n <= 0)
+    //            this
+    //        else if (n < endIndex)
+    //            dropFront0(n)
+    //        else
+    //            RRBVector.empty
+    //    }
+
+    //    override /*IterableLike*/ def takeRight(n: Int): RRBVector[A] = {
+    //        if (n <= 0)
+    //            RRBVector.empty
+    //        else if (endIndex - n > 0)
+    //            dropFront0(n)
+    //        else
+    //            this
+    //    }
+
+    override /*IterableLike*/ def dropRight(n: Int): RRBVector[A] = {
+        if (n <= 0)
+            this
+        else if (endIndex - n > 0)
+            takeFront0(endIndex - n)
+        else
+            RRBVector.empty
+    }
+
     //
     // TraversableLike
     //
@@ -522,6 +558,65 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
         else a.asInstanceOf[Array[AnyRef]].length - 1
     }
 
+    private def takeFront0(n: Int): RRBVector[A] = {
+        val vec = new RRBVector[A](n)
+        vec.initFrom(this)
+
+        if (depth > 1) {
+            vec.gotoIndex(n - 1, n)
+
+            val d0len = (vec.focus & 31) + 1
+            if (d0len != TREE_BRANCH_WIDTH) {
+                val d0 = new Array[AnyRef](d0len)
+                Platform.arraycopy(vec.display0, 0, d0, 0, d0len)
+                vec.display0 = d0
+            }
+
+            val cutIndex = vec.focus | vec.focusRelax
+            vec.cleanTop(cutIndex)
+            vec.focusDepth = math.min(vec.depth, vec.focusDepth)
+
+            // Note that cleanTop may change the depth
+            if (vec.depth > 1) {
+                val displaySizes = allDisplaySizes()
+                vec.copyDisplays(vec.depth, cutIndex)
+                if (vec.depth > 2 || d0len != TREE_BRANCH_WIDTH)
+                    vec.stabilize(vec.depth, cutIndex)
+                if (vec.focusDepth < vec.depth) {
+                    var offset = 0
+                    var i = vec.depth
+                    while (i > vec.focusDepth) {
+                        i -= 1
+                        val oldSizes = displaySizes(i - 1)
+                        if (oldSizes != null) {
+                            val newLen = (vec.focusRelax >> (5 * i)) + 1
+                            val newSizes = new Array[Int](newLen)
+                            Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen - 1)
+                            newSizes(newLen - 1) = n - offset
+                            offset += newSizes(newLen - 2)
+                            displaySizes(i - 1) = newSizes
+                        }
+                    }
+                    vec.putDisplaySizes(displaySizes)
+                }
+
+
+            }
+        } else if ( /* _depth == 1 && */ n != TREE_BRANCH_WIDTH) {
+            val d0 = new Array[AnyRef](TREE_BRANCH_WIDTH)
+            Platform.arraycopy(display0, 0, d0, 0, n)
+            display0 = d0
+            vec.hasWritableTail = true
+        }
+        vec.focusEnd = n
+
+        if(RRBVector.useAssertions) {
+            vec.assertVectorInvariant()
+        }
+        vec
+    }
+
+
     private[immutable] def assertVectorInvariant(): Unit = {
         if (RRBVector.useAssertions) {
             assert(0 <= depth && depth <= 6, depth)
@@ -530,12 +625,12 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             assert(isEmpty == (length == 0), (isEmpty, length))
             assert(length == endIndex, (length, endIndex))
 
-            assert((depth == 0 && display0 == null) || (depth > 0 && display0 != null), s"depth==0 <==> display0==null " :+(depth, display0))
-            assert((depth <= 1 && display1 == null) || (depth > 1 && display1 != null), s"depth<=1 <==> display1==null " :+(depth, display1))
-            assert((depth <= 2 && display2 == null) || (depth > 2 && display2 != null), s"depth<=2 <==> display2==null " :+(depth, display2))
-            assert((depth <= 3 && display3 == null) || (depth > 3 && display3 != null), s"depth<=3 <==> display3==null " :+(depth, display3))
-            assert((depth <= 4 && display4 == null) || (depth > 4 && display4 != null), s"depth<=4 <==> display4==null " :+(depth, display4))
-            assert((depth <= 5 && display5 == null) || (depth > 5 && display5 != null), s"depth<=5 <==> display5==null " :+(depth, display5))
+            assert((depth == 0 && display0 == null) || (depth > 0 && display0 != null), s"depth==0 <==> display0==null " +(depth, display0))
+            assert((depth <= 1 && display1 == null) || (depth > 1 && display1 != null), s"depth<=1 <==> display1==null " +(depth, display1))
+            assert((depth <= 2 && display2 == null) || (depth > 2 && display2 != null), s"depth<=2 <==> display2==null " +(depth, display2))
+            assert((depth <= 3 && display3 == null) || (depth > 3 && display3 != null), s"depth<=3 <==> display3==null " +(depth, display3))
+            assert((depth <= 4 && display4 == null) || (depth > 4 && display4 != null), s"depth<=4 <==> display4==null " +(depth, display4))
+            assert((depth <= 5 && display5 == null) || (depth > 5 && display5 != null), s"depth<=5 <==> display5==null " +(depth, display5))
 
             if (display5 != null) {
                 assert(display4 != null)
@@ -608,6 +703,8 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             }
 
 
+        } else {
+            throw new IllegalAccessError("vector assertion are off but the assertVectorInvariant vas called")
         }
     }
 
@@ -936,6 +1033,40 @@ private[immutable] trait RRBVectorPointer[A] {
             // level = 6
             throw new IllegalArgumentException()
         }
+    }
+
+    private[immutable] def cleanTop(cutIndex: Int): Unit = {
+        @tailrec def cleanTopRec(_depth: Int): Unit = {
+            _depth match {
+                case 2 =>
+                    if ((cutIndex >> 5) == 0) {
+                        display1 = null
+                        depth = 1
+                    } else depth = 2
+                case 3 =>
+                    if ((cutIndex >> 10) == 0) {
+                        display2 = null
+                        cleanTopRec(_depth - 1)
+                    } else depth = 3
+                case 4 =>
+                    if ((cutIndex >> 15) == 0) {
+                        display3 = null
+                        cleanTopRec(_depth - 1)
+                    } else depth = 4
+                case 5 =>
+                    if ((cutIndex >> 20) == 0) {
+                        display4 = null
+                        cleanTopRec(_depth - 1)
+                    } else depth = 5
+                case 6 =>
+                    if ((cutIndex >> 25) == 0) {
+                        display5 = null
+                        cleanTopRec(_depth - 1)
+                    } else depth = 6
+            }
+        }
+
+        cleanTopRec(depth)
     }
 
     // USED BY APPENDED
