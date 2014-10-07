@@ -604,13 +604,13 @@ final class RRBVector[+A] private[immutable](val endIndex: Int)
             }
         } else if ( /* _depth == 1 && */ n != TREE_BRANCH_WIDTH) {
             val d0 = new Array[AnyRef](TREE_BRANCH_WIDTH)
-            Platform.arraycopy(display0, 0, d0, 0, n)
-            display0 = d0
+            Platform.arraycopy(vec.display0, 0, d0, 0, n)
+            vec.display0 = d0
             vec.hasWritableTail = true
         }
         vec.focusEnd = n
 
-        if(RRBVector.useAssertions) {
+        if (RRBVector.useAssertions) {
             vec.assertVectorInvariant()
         }
         vec
