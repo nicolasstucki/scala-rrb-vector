@@ -9,3 +9,4 @@ abstract class VectorAbstractIterationBenchmark[A] extends IterationBenchmarks[A
 class VectorIterationIntBenchmark extends VectorAbstractIterationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
 class VectorIterationAnyRefBenchmark extends VectorAbstractIterationBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+

@@ -1,0 +1,13 @@
+package scala.collection.immutable.vectorbenchmarks.rrbvector
+
+import scala.collection.immutable.vectorbenchmarks.RRBVectorBenchmark
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.SplitBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class RRBVectorAbstractSplitBenchmark[A] extends SplitBenchmarks[A] with RRBVectorBenchmark[A]
+
+class RRBVectorSplitIntBenchmark extends RRBVectorAbstractSplitBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class RRBVectorSplitAnyRefBenchmark extends RRBVectorAbstractSplitBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+
