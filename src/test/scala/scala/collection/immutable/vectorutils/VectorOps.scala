@@ -16,4 +16,7 @@ trait VectorOps[A] {
 
     def plusPlus(vec1: Vec, vec2: Vec): Vec
 
+    def take(vec: Vec, n: Int): Vec
+
+    def drop(vec: Vec, n: Int): Vec
 }

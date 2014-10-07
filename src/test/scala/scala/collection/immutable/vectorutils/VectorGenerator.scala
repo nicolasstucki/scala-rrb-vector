@@ -51,6 +51,10 @@ object BaseVectorGenerator {
         override def plus(elem: A, vec: Vec): Vec = elem +: vec
 
         override final def plusPlus(vec1: Vec, vec2: Vec): Vec = vec1 ++ vec2
+
+        override def take(vec: Vec, n: Int): Vec = vec.take(n)
+
+        override def drop(vec: Vec, n: Int): Vec = vec.drop(n)
     }
 
     trait RRBVectorGenerator[A] extends BaseVectorGenerator[A] {
@@ -67,6 +71,10 @@ object BaseVectorGenerator {
         override final def plus(elem: A, vec: Vec): Vec = elem +: vec
 
         override final def plusPlus(vec1: Vec, vec2: Vec): Vec = vec1 ++ vec2
+
+        override def take(vec: Vec, n: Int): Vec = vec.take(n)
+
+        override def drop(vec: Vec, n: Int): Vec = vec.drop(n)
     }
 
     trait GenRRBVectorGenerator[A] extends BaseVectorGenerator[A] {
@@ -83,6 +91,10 @@ object BaseVectorGenerator {
         override final def plus(elem: A, vec: Vec): Vec = elem +: vec
 
         override final def plusPlus(vec1: Vec, vec2: Vec): Vec = vec1 ++ vec2
+
+        override def take(vec: Vec, n: Int): Vec = vec.take(n)
+
+        override def drop(vec: Vec, n: Int): Vec = vec.drop(n)
     }
 
 
