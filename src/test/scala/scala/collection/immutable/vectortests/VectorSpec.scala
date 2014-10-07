@@ -160,6 +160,23 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
             def v = plus(element(42), vector)
             assertResult(n + 1)(v.length)
         }
+        "return a vector with half the elements when take(n/2) is invoked" in {
+            def v = take(vector, n / 2)
+            assertResult(n / 2)(v.length)
+        }
+        "return a vector with a quarter the elements when take(n/4) is invoked" in {
+            def v = take(vector, n / 4)
+            assertResult(n / 4)(v.length)
+        }
+
+        "return a vector with half the elements when drop(n/2) is invoked" in {
+            def v = drop(vector, n / 2)
+            assertResult(vector.length - (n / 2))(v.length)
+        }
+        "return a vector with a three quarters of the elements when drop(n/4) is invoked" in {
+            def v = drop(vector, n / 4)
+            assertResult(vector.length - (n / 4))(v.length)
+        }
     }
 
 }
