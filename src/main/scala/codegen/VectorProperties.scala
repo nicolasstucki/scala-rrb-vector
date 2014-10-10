@@ -1,8 +1,7 @@
 package codegen
 
-/**
- * Created by nicolasstucki on 10/10/2014.
- */
+import scala.reflect.runtime.universe._
+
 trait VectorProperties {
     val blockIndexBits = 5
 
