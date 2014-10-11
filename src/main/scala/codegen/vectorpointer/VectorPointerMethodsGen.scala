@@ -2,8 +2,6 @@ package codegen
 package vectorpointer
 
 
-import codegen.VectorPackage
-
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 

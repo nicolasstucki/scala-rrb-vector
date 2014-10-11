@@ -1,7 +1,6 @@
 package codegen
 package vectoriterator
 
-import codegen.VectorPackage
 import codegen.vectorpointer.VectorPointerCodeGen
 
 import scala.annotation.tailrec

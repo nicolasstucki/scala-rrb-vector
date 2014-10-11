@@ -1,7 +1,7 @@
 package codegen.vectorbuilder
 
 import codegen.vectorpointer.VectorPointerCodeGen
-import codegen.{VectorProperties, VectorPackage}
+import codegen.VectorProperties
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe._

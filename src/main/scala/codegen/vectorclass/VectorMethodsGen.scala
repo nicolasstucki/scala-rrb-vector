@@ -1,7 +1,6 @@
 package codegen
 package vectorclass
 
-import codegen.VectorPackage
 import codegen.vectorobject.VectorObjectCodeGen
 import codegen.vectorpointer.VectorPointerCodeGen
 
