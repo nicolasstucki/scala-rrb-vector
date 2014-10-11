@@ -8,15 +8,17 @@ import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 
 
+trait VectorPointerMethodsGen {
+    self: VectorPointerCodeGen with VectorProperties =>
 
-
-
-trait VectorPointerMethodsGen extends MethodsGen {
-    self: VectorPointerCodeGen with VectorPointerClassGen with VectorProperties =>
-
-    def generateMethods() = {
+    def generateVectorPointerMethods() = {
         val displays = ((0 to 5) map (i => fieldDef(TermName(s"display$i"), tq"Array[AnyRef]")))
-        val fields = fieldDef(depth, tq"Int") +: Seq(focusStart, focusEnd, focusDepth, focus, focusRelax).map(tn => fieldDef(tn, tq"Int", Some(q"0")))
+
+        var fields = Seq.empty[Tree]
+        fields = fields :+ fieldDef(depth, tq"Int")
+        fields = fields ++ Seq(focusStart, focusEnd, focusDepth, focus, focusRelax).map(tn => fieldDef(tn, tq"Int", Some(q"0")))
+        if(useTailWritableOpt) fields = fields :+ fieldDef(hasWritableTail, tq"Boolean", Some(q"false"))
+
         val methods = Seq(rootDef, initFromRootDef, initFromDef, initFromDef, initFocusDef, gotoIndexDef,
             allDisplaySizesDef, putDisplaySizesDef, gotoPosRelaxedDef, getElementDef, gotoPosDef, gotoNextBlockStartDef, gotoPrevBlockStartDef,
             setUpNextBlockStartTailWritableDef, gotoNextBlockStartWritableDef, copyDisplaysDef,

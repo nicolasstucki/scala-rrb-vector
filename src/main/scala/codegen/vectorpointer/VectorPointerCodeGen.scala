@@ -8,9 +8,8 @@ import scala.reflect.runtime.universe._
 trait VectorPointerCodeGen {
     self: VectorProperties =>
 
-    val A = TypeName("A")
-
     // Field names
+    
     val focusStart = TermName("focusStart")
     val focusEnd = TermName("focusEnd")
     val focus = TermName("focus")
@@ -28,7 +27,9 @@ trait VectorPointerCodeGen {
 
     val hasWritableTail = TermName("hasWritableTail")
 
-    // Methods names
+
+    // Method names
+
     val root = TermName("root")
     val initFromRoot = TermName("initFromRoot")
     val initFrom = TermName("initFrom")
@@ -50,6 +51,8 @@ trait VectorPointerCodeGen {
     val copyOf = TermName("copyOf")
     val mergeLeafs = TermName("mergeLeafs")
 
+
+    // Method definitions
 
     private[vectorpointer] def getDisplayName(_depth: Int): TermName = _depth match {
         case 1 => display0

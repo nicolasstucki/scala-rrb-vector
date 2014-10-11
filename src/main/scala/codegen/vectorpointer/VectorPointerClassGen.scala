@@ -3,14 +3,14 @@ package vectorpointer
 
 import scala.reflect.runtime.universe._
 
-trait VectorPointerClassGen extends ClassGen {
-    self: MethodsGen with VectorPointerCodeGen with VectorProperties =>
+trait VectorPointerClassGen {
+    self: VectorPointerMethodsGen with VectorProperties =>
 
-    def generateClassDef(): Tree = {
+    def generateVectorPointerClassDef(): Tree = {
         q"""
-            import scala.annotation.tailrec
-            import scala.compat.Platform
-            private[immutable] trait $vectorPointerClassName[$A] {..${generateMethods()}}
+            private[immutable] trait $vectorPointerClassName[$A] {
+                ..${generateVectorPointerMethods()}
+            }
          """
     }
 }

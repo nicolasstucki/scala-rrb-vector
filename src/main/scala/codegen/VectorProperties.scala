@@ -3,16 +3,31 @@ package codegen
 import scala.reflect.runtime.universe._
 
 trait VectorProperties {
-    val blockIndexBits = 5
+    protected val blockIndexBits = 5
 
-    def blockWidth = 1 << blockIndexBits
+    protected def blockWidth = 1 << blockIndexBits
 
-    def blockMask = (1 << blockIndexBits) - 1
+    protected def blockMask = (1 << blockIndexBits) - 1
 
-    val blockInvariants = 1
+    protected val blockInvariants = 1
 
-    val useAssertions = false
+    protected val useAssertions = false
 
-    val vectorPointerClassName = TypeName("VectorPointer")
+    protected val vectorObjectName = TermName(vectorName)
+    protected val vectorClassName = TypeName(vectorName)
+    protected val vectorPointerClassName = TypeName(vectorName + "Pointer")
+    protected val vectorBuilderClassName = TypeName(vectorName + "Builder")
+    protected val vectorIteratorClassName = TypeName(vectorName + "Iterator")
+    protected val vectorReverseIteratorClassName = TypeName(vectorName + "VectorReverseIterator")
+
+    def subpackage: TermName
+
+    def vectorName: String
+
+    protected val A = TypeName("A")
+    protected val B = TypeName("B")
+
+
+    protected val useTailWritableOpt: Boolean
 
 }
