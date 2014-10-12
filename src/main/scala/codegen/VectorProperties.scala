@@ -27,7 +27,6 @@ trait VectorProperties {
     protected val A = TypeName("A")
     protected val B = TypeName("B")
 
-
-    protected val useTailWritableOpt: Boolean
+    val CLOSED_BLOCKS: Boolean
 
 }

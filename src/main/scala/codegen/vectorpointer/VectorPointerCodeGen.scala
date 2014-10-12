@@ -42,7 +42,7 @@ trait VectorPointerCodeGen {
     val gotoPos = TermName("gotoPos")
     val gotoNextBlockStart = TermName("gotoNextBlockStart")
     val gotoPrevBlockStart = TermName("gotoPrevBlockStart")
-    val setUpNextBlockStartTailWritable = TermName("setUpNextBlockStartTailWritable")
+    val setupNextBlockStartWritable = TermName("setUpNextBlockStartTailWritable")
     val gotoNextBlockStartWritable = TermName("gotoNextBlockStartWritable")
     val copyDisplays = TermName("copyDisplays")
     val copyDisplaysTop = TermName("copyDisplaysTop")

@@ -28,28 +28,38 @@ object GenerateImplementations extends App {
       with VectorBuilderClassGen with VectorBuilderMethodsGen with VectorBuilderCodeGen
       with VectorIteratorClassGen with VectorIteratorMethodsGen with VectorIteratorCodeGen
       with VectorReverseIteratorClassGen with VectorReverseIteratorMethodsGen with VectorReverseIteratorCodeGen
-      with VectorPointerClassGen with VectorPointerMethodsGen with VectorPointerCodeGen
+      with VectorPointerClassGen with VectorPointerMethodsGen with VectorPointerCodeGen {
+
+        def outputFile = {
+            val subpackagePath = subpackage.toString.replace('.', '/')
+            s"./src/main/scala/scala/collection/immutable/generated/$subpackagePath/$vectorName.scala"
+        }
+
+        def exportCodeToFile() = {
+            saveToFile(outputFile, generateVectorPackage())
+        }
+    }
 
     val packageGenerator1 = new VectorImplementation {
 
-        val useTailWritableOpt: Boolean = true
+        def subpackage = TermName("rrbvector.closedblocks")
 
-        def subpackage = TermName("rrbVector1")
+        def vectorName = "Vector"
 
-        def vectorName = "Gen1Vector"
+        val CLOSED_BLOCKS: Boolean = true
+
     }
 
 
     val packageGenerator2 = new VectorImplementation {
 
-        val useTailWritableOpt: Boolean = false
+        def subpackage = TermName("rrbvector.fullblocks")
 
-        def subpackage = TermName("rrbVector2")
+        def vectorName = "Vector"
 
-        def vectorName = "Gen2Vector"
+        val CLOSED_BLOCKS: Boolean = false
     }
 
-
-    saveToFile("./output-test-1.scala", packageGenerator1.generateVectorPackage())
-    saveToFile("./output-test-2.scala", packageGenerator2.generateVectorPackage())
+    packageGenerator1.exportCodeToFile()
+    packageGenerator2.exportCodeToFile()
 }

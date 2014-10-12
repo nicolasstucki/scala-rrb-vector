@@ -10,22 +10,21 @@ trait VectorPointerMethodsGen {
     self: VectorPointerCodeGen with VectorProperties =>
 
     def generateVectorPointerMethods() = {
-        val displays = ((0 to 5) map (i => fieldDef(TermName(s"display$i"), tq"Array[AnyRef]")))
+        val displays = (0 to 5) map (i => fieldDef(TermName(s"display$i"), tq"Array[AnyRef]"))
 
         var fields = Seq.empty[Tree]
         fields = fields :+ fieldDef(depth, tq"Int")
         fields = fields ++ Seq(focusStart, focusEnd, focusDepth, focus, focusRelax).map(tn => fieldDef(tn, tq"Int", Some(q"0")))
-        if(useTailWritableOpt) fields = fields :+ fieldDef(hasWritableTail, tq"Boolean", Some(q"false"))
 
-        val methods = Seq(rootDef, initFromRootDef, initFromDef, initFromDef, initFocusDef, gotoIndexDef,
-            allDisplaySizesDef, putDisplaySizesDef, gotoPosRelaxedDef, getElementDef, gotoPosDef, gotoNextBlockStartDef, gotoPrevBlockStartDef,
-            setUpNextBlockStartTailWritableDef, gotoNextBlockStartWritableDef, copyDisplaysDef,
+        val methods = Seq(rootDef(), initFromRootDef(), initFromDef(), initFocusDef(), gotoIndexDef(), allDisplaySizesDef(),
+            putDisplaySizesDef(), gotoPosRelaxedDef(), getElementDef(), gotoPosDef(), gotoNextBlockStartDef(),
+            gotoPrevBlockStartDef(), setUpNextBlockStartTailWritableDef(), gotoNextBlockStartWritableDef(), copyDisplaysDef(),
             copyDisplaysTopDef(), stabilizeDef(), cleanTopDef(), copyOfDef(), mergeLeafsDef())
 
         displays ++ fields ++ methods
     }
 
-    private def fieldDef(name: TermName, typ: Tree, init: Option[Tree] = None) = init match {
+    private def fieldDef(name: TermName, typ: Tree, initOption: Option[Tree] = None) = initOption match {
         case Some(init) => q"private[immutable] var $name: $typ = $init"
         case None => q"private[immutable] var $name: $typ = _"
     }
@@ -126,7 +125,7 @@ trait VectorPointerMethodsGen {
         val index = TermName("index")
         val xor = TermName("xor")
         val code = setUpNextBlockStartTailWritableCode(q"$index", q"$xor")
-        q"private[immutable] final def $setUpNextBlockStartTailWritable($index: Int, $xor: Int): Unit = $code"
+        q"private[immutable] final def $setupNextBlockStartWritable($index: Int, $xor: Int): Unit = $code"
     }
 
 
