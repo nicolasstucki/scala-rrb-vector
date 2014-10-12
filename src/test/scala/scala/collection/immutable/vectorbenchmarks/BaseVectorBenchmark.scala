@@ -14,8 +14,8 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
     val minHeight = 1
     val maxHeight = 3
     val points = 16
-    val benchRuns = 32
-    val independentSamples = 1
+    val benchRuns = 64
+    val independentSamples = 2
 
 
     /* data */
