@@ -3,7 +3,6 @@ package vectorutils
 
 
 import scala.collection.immutable.IndexedSeq
-import scala.collection.immutable.genrrbvector.GenRRBVector
 import scala.util.Random
 import rrbvector._
 
@@ -76,27 +75,6 @@ object BaseVectorGenerator {
 
         override def drop(vec: Vec, n: Int): Vec = vec.drop(n)
     }
-
-    trait GenRRBVectorGenerator[A] extends BaseVectorGenerator[A] {
-        override type Vec = GenRRBVector[A]
-
-        final def vectorClassName: String = "GenRRBVector"
-
-        override final def tabulatedVector(n: Int): Vec = GenRRBVector.tabulate(n)(element)
-
-        override final def emptyVector: Vec = GenRRBVector.empty[A]
-
-        override final def plus(vec: Vec, elem: A): Vec = vec :+ elem
-
-        override final def plus(elem: A, vec: Vec): Vec = elem +: vec
-
-        override final def plusPlus(vec1: Vec, vec2: Vec): Vec = vec1 ++ vec2
-
-        override def take(vec: Vec, n: Int): Vec = vec.take(n)
-
-        override def drop(vec: Vec, n: Int): Vec = vec.drop(n)
-    }
-
 
 }
 

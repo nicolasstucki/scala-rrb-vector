@@ -50,8 +50,8 @@ trait VectorMethodsGen {
                 takeFront0Def()
             )
 
-        if (!useAssertions) methods
-        else methods :+ assertVectorInvariantDef()
+        if (useAssertions) methods :+ assertVectorInvariantDef()
+        else methods
 
     }
 
@@ -192,7 +192,8 @@ trait VectorMethodsGen {
     protected def appendedBackDef() = {
         val value = TermName("value")
         val code = appendedBackCode(q"$value")
-        q"private def $v_appendedBack[$B >: $A]($value: $B): $vectorClassName[$B] = $code"
+        def assertedCode = q"val res = $code; res.$v_assertVectorInvariant(); res"
+        q"private def $v_appendedBack[$B >: $A]($value: $B): $vectorClassName[$B] = ${if (useAssertions) assertedCode else code}"
     }
 
     protected def appendBackSetupCurrentBlockDef() = {
@@ -208,10 +209,10 @@ trait VectorMethodsGen {
     protected def concatenatedDef() = {
         val that = TermName("that")
         val asserts = Seq(
-            q"this.assertVectorInvariant()",
-            q"that.assertVectorInvariant()",
-            q"assert(this.length > 0)",
-            q"assert(that.length > 0)"
+            q"this.$v_assertVectorInvariant()",
+            q"that.$v_assertVectorInvariant()",
+            q"assert(this.$v_length > 0)",
+            q"assert($that.$v_length > 0)"
         )
         val code = concatenatedCode(q"$that")
         def assertedCode = q"..$asserts; val res = $code; res.$v_assertVectorInvariant(); res"

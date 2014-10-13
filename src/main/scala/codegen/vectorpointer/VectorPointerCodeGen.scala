@@ -9,7 +9,7 @@ trait VectorPointerCodeGen {
     self: VectorProperties =>
 
     // Field names
-    
+
     val focusStart = TermName("focusStart")
     val focusEnd = TermName("focusEnd")
     val focus = TermName("focus")
@@ -96,7 +96,7 @@ trait VectorPointerCodeGen {
             val stats = (1 to depth) map getDisplayName map (d => q"$d = $that.$d")
             q"{..$stats}"
         }
-        val cases = matchOnInt(q"$that.$depth", 1 to 6, depthCase, Some(q"throw new IllegalStateException"))
+        val cases = matchOnInt(q"$that.$depth", 0 to 6, depthCase, Some(q"throw new IllegalStateException"))
         q"""
             $initFocus($that.$focus, $that.$focusStart, $that.$focusEnd, $that.$focusDepth, $that.$focusRelax)
             $depth = $that.$depth
@@ -212,15 +212,15 @@ trait VectorPointerCodeGen {
         def setUpNewBranchFromLevel(lvl: Int) = {
             q"""
                 if (this.$depth == $lvl) {
-                    ${displayAt(lvl)} = new Array(${2 + blockInvariants})
-                    ${displayAt(lvl)}(0) = ${displayAt(lvl)}
+                    ${displayAt(lvl)} = new Array(${if (CLOSED_BLOCKS) 2 + blockInvariants else blockWidth + blockInvariants})
+                    ${displayAt(lvl)}(0) = ${displayAt(lvl - 1)}
                     this.$depth += 1
                 } else {
                     val len = ${displayAt(lvl)}.length;
-                    ${displayAt(lvl)} = $copyOf(${displayAt(lvl)}, len, len.+(1))
+                    ${displayAt(lvl)} = $copyOf(${displayAt(lvl)}, len, ${if (CLOSED_BLOCKS) q"len + 1" else q"${blockWidth + blockInvariants}"})
                 }
-                ${displayAt(0)} = new Array(${blockWidth})
-                ..${(1 until lvl) map (i => q"${displayAt(i)} = new Array(${blockWidth + blockInvariants})")}
+                ${displayAt(0)} = new Array(${if (CLOSED_BLOCKS) 1 else blockWidth})
+                ..${(1 until lvl) map (i => q"${displayAt(i)} = new Array(${if (CLOSED_BLOCKS) 1 + blockInvariants else blockWidth + blockInvariants})")}
              """
         }
         ifInLevel(xor, 1 to 5, setUpNewBranchFromLevel, q"throw new IllegalArgumentException")
@@ -231,7 +231,7 @@ trait VectorPointerCodeGen {
             q"""
                 if (this.$depth == $lvl) {
                     ${displayAt(lvl)} = new Array(${blockWidth + blockInvariants})
-                    ${displayAt(lvl)}(0) = ${displayAt(lvl)}
+                    ${displayAt(lvl)}(0) = ${displayAt(lvl - 1)}
                     this.$depth += 1
                 }
                 ${displayAt(0)} = new Array(${blockWidth})
@@ -248,7 +248,7 @@ trait VectorPointerCodeGen {
             def copyDisplay(i: Int) = {
                 val t = TermName(s"idx_$i")
                 val indexDef = q"val $t = ($focusParam >> ${5 * i}) & $blockMask"
-                val updateWithCopy = q"${displayAt(i)} = $copyOf(${displayAt(i)}, $t + 1, $t + 2)"
+                val updateWithCopy = q"${displayAt(i)} = $copyOf(${displayAt(i)}, $t + 1, ${if (CLOSED_BLOCKS) q"$t + 2" else q"${blockWidth + blockInvariants}"})"
                 Seq(indexDef, updateWithCopy)
             }
             q"..${depths flatMap copyDisplay}"
@@ -338,7 +338,10 @@ trait VectorPointerCodeGen {
     }
 
     protected def getBlockSizes(display: Tree) = {
-        q"$display($display.length - 1).asInstanceOf[Array[Int]]"
+        if (CLOSED_BLOCKS)
+            q"$display($display.length - 1).asInstanceOf[Array[Int]]"
+        else
+            q"$display(${blockWidth + blockInvariants - 1}).asInstanceOf[Array[Int]]"
     }
 
 

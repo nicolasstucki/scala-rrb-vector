@@ -62,7 +62,7 @@ trait VectorCodeGen {
     val v_withComputedSizes = TermName("withComputedSizes")
     val v_treeSize = TermName("treeSize")
 
-    val v_assertVectorInvariant = TermName("rebalanced")
+    val v_assertVectorInvariant = TermName("assertVectorInvariant")
 
     // Private[immutable]
     val v_initIterator = TermName("initIterator")
@@ -221,8 +221,7 @@ trait VectorCodeGen {
             if( elemIndexInBlock != 0 ) vec.$v_appendBackSetupCurrentBlock()
             else vec.$v_appendBackSetupNewBlock()
 
-            $display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
-            vec.focusEnd += 1
+            vec.$display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
 
             vec
          """
@@ -230,31 +229,32 @@ trait VectorCodeGen {
 
     protected def appendBackSetupCurrentBlockCode() = {
         q"""
-            val deltaSize = $blockWidth - $display0.$v_length
-            $display0 = $copyOf($display0, $display0.$v_length, $blockWidth)
+            $focusEnd += 1
+            ${
+            if (CLOSED_BLOCKS)
+                q"$display0 = $copyOf($display0, $display0.$v_length, $display0.$v_length + 1)"
+            else
+                q"$display0 = $copyOf($display0, $blockWidth, $blockWidth)"
+        }
             val _depth = $depth
             if (_depth > 1) {
                 val stabilizationIndex = $focus | $focusRelax
                 val displaySizes = $allDisplaySizes()
                 $copyDisplays(_depth, stabilizationIndex)
                 $stabilize(_depth, stabilizationIndex)
-                if (deltaSize == 0) {
-                    $putDisplaySizes(displaySizes)
-                } else {
-                    var i = $focusDepth
-                    while ( i < _depth ) {
-                        val oldSizes = displaySizes(i - 1)
-                        if (oldSizes != null) {
-                            val newSizes = new Array[Int](oldSizes.length)
-                            val lastIndex = oldSizes.length - 1
-                            Platform.arraycopy(oldSizes, 0, newSizes, 0, lastIndex)
-                            newSizes(lastIndex) = oldSizes(lastIndex) + deltaSize
-                            displaySizes(i - 1) = newSizes
-                        }
-                        i += 1
+                var i = $focusDepth
+                while ( i < _depth ) {
+                    val oldSizes = displaySizes(i - 1)
+                    if (oldSizes != null) {
+                        val newSizes = new Array[Int](${if (CLOSED_BLOCKS) q"oldSizes.length" else q"$blockWidth"})
+                        val lastIndex = oldSizes.length - 1
+                        Platform.arraycopy(oldSizes, 0, newSizes, 0, lastIndex)
+                        newSizes(lastIndex) = oldSizes(lastIndex) + 1
+                        displaySizes(i - 1) = newSizes
                     }
-                    $putDisplaySizes(displaySizes)
+                    i += 1
                 }
+                $putDisplaySizes(displaySizes)
             }
          """
     }
@@ -262,7 +262,6 @@ trait VectorCodeGen {
     protected def appendBackSetupNewBlockCode() = {
         q"""
             ${if (useAssertions) q"assert($v_endIndex - 2 == $focus + $focusStart)" else q""}
-            val elemIndexInBlock = ($v_endIndex - $focusStart - 1) & $blockMask
             val _depth = $depth
 
             // TODO: should only copy the top displays, not the ones affected by setUpNextBlockStartTailWritable
@@ -567,69 +566,6 @@ trait VectorCodeGen {
     }
 
 
-    protected def assertVectorInvariantCode() = {
-        def checkThatDisplayDefinedIffBelowDepth(lvl: Int) = {
-            val p1 = q"($depth <= $lvl && ${displayAt(lvl)} == null)"
-            val p2 = q"($depth > 0 && ${displayAt(lvl)} != null)"
-            val str = s"<=$lvl <==> display$lvl==null "
-            q"""assert($p1 || $p2, $depth.toString +: ${str} :+ ($depth, ${displayAt(lvl)}))"""
-        }
-        def checkDisplayIsCoherentWithTree(lvl: Int) =
-            q"""
-                if (${displayAt(lvl)} != null) {
-                    assert(${displayAt(lvl - 1)}  != null)
-                    if ($focusDepth <= $lvl) assert(${displayAt(lvl)}(($focusRelax >> ${lvl * blockIndexBits}) & $blockIndexBits) == ${displayAt(lvl - 1)})
-                    else assert(${displayAt(lvl)}(($focus >> ${lvl * blockIndexBits}) & $blockIndexBits) == ${displayAt(lvl - 1)})
-                }
-             """
-        q"""
-            assert(0 <= $depth && $depth <= 6, $depth)
-
-            assert($v_isEmpty == ($depth == 0), ($v_isEmpty, $depth))
-            assert(isEmpty == (length == 0), ($v_isEmpty, $v_length))
-            assert(length == endIndex, (length, endIndex))
-
-            ..${(0 to 5) map checkThatDisplayDefinedIffBelowDepth}
-
-            ..${(5 to 1 by -1) map checkDisplayIsCoherentWithTree}
-
-            assert(0 <= $focusStart && $focusStart <= $focusEnd && $focusEnd <= $v_endIndex, ($focusStart, $focusEnd, $v_endIndex))
-            assert($focusStart == $focusEnd || $focusEnd != 0, "focusStart==focusEnd ==> focusEnd==0" +($focusStart, $focusEnd))
-
-            assert(0 <= $focusDepth && $focusDepth <= $depth, ($focusDepth, $depth))
-
-            def checkSize(node: Array[AnyRef], depth: Int, expectedSize: Int, strictSize: Boolean = false): Unit = {
-                if (depth > 1) {
-                    val sizes = node.last.asInstanceOf[Array[Int]]
-                    if (sizes != null) {
-                        assert(node.length == sizes.length + 1)
-                        if (strictSize) {
-                            assert(sizes.last == expectedSize, (sizes.last, expectedSize))
-                        } else {
-                            assert(expectedSize <= sizes.last && sizes.last - 32 < expectedSize)
-                        }
-                        for (i <- 0 until sizes.length - 1)
-                            checkSize(node(i).asInstanceOf[Array[AnyRef]], depth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)), strictSize = true)
-                        checkSize(node(node.length - 2).asInstanceOf[Array[AnyRef]], depth - 1, sizes.last - sizes(sizes.length - 2), strictSize = true)
-                    } else {
-                        for (i <- 0 until node.length - 2)
-                            checkSize(node(i).asInstanceOf[Array[AnyRef]], depth - 1, 1 << (5 * (depth - 1)), strictSize = true)
-                        val expectedLast = expectedSize - (1 << (5 * depth - 5)) * (node.length - 2)
-                        assert(1 <= expectedLast && expectedLast <= (1 << (5 * depth)))
-                        checkSize(node(node.length - 2).asInstanceOf[Array[AnyRef]], depth - 1, expectedLast)
-                    }
-                } else {
-                    if (strictSize) {
-                        assert(node.length == expectedSize, (node.mkString("Array(", ",", ")"), expectedSize))
-                    } else {
-                        assert(node.length == expectedSize || node.length == $blockWidth, (node, expectedSize))
-                    }
-                }
-            }
-            ${matchOnInt(q"$depth", 1 to 6, i => q"checkSize(${displayAt(i)}, $i, $v_endIndex)", Some(q"()"))}
-        """
-    }
-
     protected def takeFront0Code(n: Tree): Tree = {
         val d0len = TermName("d0len")
         q"""
@@ -678,12 +614,106 @@ trait VectorCodeGen {
                 }
             } else if ($n != $blockWidth) {
                 val d0 = new Array[AnyRef](${if (CLOSED_BLOCKS) q"$n" else q"$blockWidth"})
-                Platform.arraycopy(this.$display0, 0, d0, 0, $n)
+                Platform.arraycopy(vec.$display0, 0, d0, 0, $n)
                 vec.$display0 = d0
             }
             vec.$focusEnd = $n
             vec
          """
+    }
+
+    protected def assertVectorInvariantCode() = {
+        def checkThatDisplayDefinedIffBelowDepth(lvl: Int) = {
+            val p1 = q"($depth <= $lvl && ${displayAt(lvl)} == null)"
+            val p2 = q"($depth > 0 && ${displayAt(lvl)} != null)"
+            val str = s"<=$lvl <==> display$lvl==null "
+            q"""assert($p1 || $p2, $depth.toString +: ${str} :+ ($depth, ${displayAt(lvl)}))"""
+        }
+        def checkDisplayIsCoherentWithTree(lvl: Int) =
+            q"""
+                if (${displayAt(lvl)} != null) {
+                    assert(${displayAt(lvl - 1)}  != null)
+                    if ($focusDepth <= $lvl) assert(${displayAt(lvl)}(($focusRelax >> ${lvl * blockIndexBits}) & $blockMask) == ${displayAt(lvl - 1)})
+                    else assert(${displayAt(lvl)}(($focus >> ${lvl * blockIndexBits}) & $blockMask) == ${displayAt(lvl - 1)})
+                }
+             """
+
+        q"""
+            assert(0 <= $depth && $depth <= 6, $depth)
+
+            assert($v_isEmpty == ($depth == 0), ($v_isEmpty, $depth))
+            assert(isEmpty == (length == 0), ($v_isEmpty, $v_length))
+            assert(length == endIndex, (length, endIndex))
+
+            ..${(0 to 5) map checkThatDisplayDefinedIffBelowDepth}
+
+            ..${(5 to 1 by -1) map checkDisplayIsCoherentWithTree}
+
+            assert(0 <= $focusStart && $focusStart <= $focusEnd && $focusEnd <= $v_endIndex, ($focusStart, $focusEnd, $v_endIndex))
+            assert($focusStart == $focusEnd || $focusEnd != 0, "focusStart==focusEnd ==> focusEnd==0" +($focusStart, $focusEnd))
+
+            assert(0 <= $focusDepth && $focusDepth <= $depth, ($focusDepth, $depth))
+
+            ${if (CLOSED_BLOCKS) checkSizesClosedDef() else checkSizesFullDef()}
+
+            ${matchOnInt(q"$depth", 1 to 6, i => q"checkSizes(${displayAt(i - 1)}, $i, $v_endIndex)", Some(q"()"))}
+        """
+
+
+    }
+
+    private def checkSizesClosedDef() = {
+        q"""
+            def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = {
+                if (currentDepth > 1) {
+                    val sizes = node.last.asInstanceOf[Array[Int]]
+                    if (sizes != null) {
+                        assert(node.length == sizes.length + 1)
+                        assert(sizes.last == _endIndex, (sizes.last, _endIndex))
+                        for (i <- 0 until sizes.length - 1)
+                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
+                        checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes.last - sizes(sizes.length - 2))
+                    } else {
+                        for (i <- 0 until node.length - 2)
+                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, 1 << ($blockIndexBits * (currentDepth - 1)))
+                        val expectedLast = _endIndex - (1 << (5 * currentDepth - 5)) * (node.length - 2)
+                        assert(1 <= expectedLast && expectedLast <= (1 << (5 * currentDepth)))
+                        checkSizes(node(node.length-2).asInstanceOf[Array[AnyRef]], currentDepth - 1, expectedLast)
+                    }
+                } else {
+                    assert(node.length == _endIndex)
+                }
+            }
+        """
+    }
+
+    private def checkSizesFullDef() = {
+        q"""
+            def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = {
+                if (currentDepth > 1) {
+                    assert(node.length == ${blockWidth + blockInvariants})
+                    val sizes = node.last.asInstanceOf[Array[Int]]
+                    if (sizes != null) {
+                        assert(node.length == sizes.length + 1)
+                        assert(_endIndex == sizes.last)
+                        for (i <- 0 until sizes.length - 1)
+                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
+                        checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes.last - sizes(sizes.length - 2))
+                    } else {
+                        val fullTreeSize = 1 << ($blockIndexBits * (currentDepth - 1))
+                        for (i <- 0 until (_endIndex / fullTreeSize))
+                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, fullTreeSize)
+                        val lastEndIndex = _endIndex - fullTreeSize * (_endIndex / fullTreeSize)
+                        if((_endIndex % fullTreeSize) != 0) {
+                            assert(1 <= lastEndIndex && lastEndIndex <= fullTreeSize)
+                            checkSizes(node(_endIndex / fullTreeSize).asInstanceOf[Array[AnyRef]], currentDepth - 1, lastEndIndex)
+                        }
+                    }
+                } else {
+                    assert(node.length == $blockWidth)
+                }
+            }
+        """
     }
 
 }

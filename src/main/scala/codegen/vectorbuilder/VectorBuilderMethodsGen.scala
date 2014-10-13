@@ -2,13 +2,14 @@ package codegen
 package vectorbuilder
 
 import codegen.vectorpointer.VectorPointerCodeGen
+import codegen.vectorclass.VectorCodeGen
 
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 
 
 trait VectorBuilderMethodsGen {
-    self: VectorBuilderCodeGen with VectorPointerCodeGen with VectorProperties =>
+    self: VectorBuilderCodeGen with VectorPointerCodeGen with VectorCodeGen with VectorProperties =>
 
     def generateVectorBuilderMethods() = {
         val statements = Seq(
@@ -34,7 +35,11 @@ trait VectorBuilderMethodsGen {
         q"override def $b_plusPlusEq($xs: TraversableOnce[$A]): this.type = $code"
     }
 
-    protected def resultDef = q"def $b_result(): $vectorClassName[$A] = ${resultCode()}"
+    protected def resultDef = {
+        val code = resultCode()
+        def assertedCode = q"val res = $code; res.$v_assertVectorInvariant(); res"
+        q"def $b_result(): $vectorClassName[$A] = ${if (useAssertions) assertedCode else code}"
+    }
 
     protected def clearDef = q"def $b_clear(): Unit = ${clearCode()}"
 

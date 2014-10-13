@@ -56,13 +56,13 @@ trait VectorBuilderCodeGen {
             val $resultVector = new $vectorClassName[A]($size)
 
             $resultVector.$initFrom(this)
+            $resultVector.$display0 = $copyOf($resultVector.$display0, $b_lo, ${if (CLOSED_BLOCKS) q"$b_lo" else q"$blockWidth"})
 
             // TODO: Optimization: check if stabilization is really necessary on all displays based on the last index.
             val $depthResult = $depth
             if ($depthResult > 1) {
                 $resultVector.$copyDisplays($depthResult, $size - 1)
-                if ($depthResult > 2)
-                    $resultVector.$stabilize($depthResult, $size - 1)
+                $resultVector.$stabilize($depthResult, $size - 1)
             }
 
             $resultVector.$gotoPos(0, $size - 1)

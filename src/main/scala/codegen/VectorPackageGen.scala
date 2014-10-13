@@ -19,22 +19,17 @@ trait VectorPackageGen {
       with VectorPointerClassGen =>
 
     def generateVectorPackage() = {
-        q"""
-            package scala {
-                package collection {
-                    package immutable {
-                        package $subpackage {
-                            import scala.annotation.tailrec
-                            import scala.compat.Platform
-                            import scala.annotation.unchecked.uncheckedVariance
-                            import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
+        inPackages(s"scala.collection.immutable.generated".split('.'),
+            q"""
+                package $subpackage {
+                    import scala.annotation.tailrec
+                    import scala.compat.Platform
+                    import scala.annotation.unchecked.uncheckedVariance
+                    import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
 
-                            ..${generateClassesDef()}
-                        }
-                    }
+                    ..${generateClassesDef()}
                 }
-            }
-        """
+             """)
     }
 
     def generateClassesDef(): Seq[Tree] = {
