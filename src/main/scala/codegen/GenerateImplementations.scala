@@ -61,6 +61,7 @@ object GenerateImplementations extends App {
         def vectorName = "GenRRBVector1"
 
         val CLOSED_BLOCKS: Boolean = true
+
         override protected val useAssertions: Boolean = true
     }
 
@@ -72,7 +73,9 @@ object GenerateImplementations extends App {
         def vectorName = "GenRRBVector2"
 
         val CLOSED_BLOCKS: Boolean = false
+
         override protected val useAssertions: Boolean = true
+
     }
 
     packageGenerator1.exportCodeToFiles()

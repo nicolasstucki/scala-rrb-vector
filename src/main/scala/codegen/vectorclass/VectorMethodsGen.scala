@@ -43,10 +43,10 @@ trait VectorMethodsGen {
                 appendBackSetupNewBlockDef(),
                 concatenatedDef(),
                 rebalancedDef(),
+                rebalancedLeafsDef(),
                 computeNewSizesDef(),
                 withComputedSizesDef(),
                 treeSizeDef(),
-                copiedAcrossDef(),
                 takeFront0Def()
             )
 
@@ -227,37 +227,55 @@ trait VectorMethodsGen {
         val displayLeft = TermName("displayLeft")
         val concat = TermName("concat")
         val displayRight = TermName("displayRight")
-        val lengthLeft = TermName("lengthLeft")
-        val lengthConcat = TermName("lengthConcat")
-        val lengthRight = TermName("lengthRight")
         val currentDepth = TermName("currentDepth")
-        val code = rebalancedCode(q"$displayLeft", q"$concat", q"$displayRight", q"$lengthLeft", q"$lengthConcat", q"$lengthRight", q"$currentDepth")
-        q"private def $v_rebalanced($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], $lengthLeft: Int, $lengthConcat: Int, $lengthRight: Int, $currentDepth: Int): Array[AnyRef] = $code"
+        val code = rebalancedCode(q"$displayLeft", q"$concat", q"$displayRight", q"$currentDepth")
+        q"private def $v_rebalanced($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], $currentDepth: Int): Array[AnyRef] = $code"
+    }
+
+    protected def rebalancedLeafsDef() = {
+        val displayLeft = TermName("displayLeft")
+        val displayRight = TermName("displayRight")
+        val leftLength = TermName("leftLength")
+        val rightLength = TermName("rightLength")
+        val code = rebalancedLeafsCode(q"$displayLeft", q"$displayRight", leftLength, rightLength)
+        if (CLOSED_BLOCKS)
+            q"""
+                private def $v_rebalancedLeafs($displayLeft: Array[AnyRef], $displayRight: Array[AnyRef]): Array[AnyRef] = {
+                    val $leftLength = $displayLeft.length
+                    val $rightLength = $displayRight.length
+                    $code
+                }
+            """
+        else q"private def $v_rebalancedLeafs($displayLeft: Array[AnyRef], $displayRight: Array[AnyRef], $leftLength: Int, $rightLength: Int): Array[AnyRef] = $code"
     }
 
 
     protected def computeNewSizesDef() = {
-        val all = TermName("all")
-        val alen = TermName("alen")
+        val displayLeft = TermName("displayLeft")
+        val concat = TermName("concat")
+        val displayRight = TermName("displayRight")
         val currentDepth = TermName("currentDepth")
-        val code = computeNewSizesCode(q"$all", q"$alen", q"$currentDepth")
-        q"private def $v_computeNewSizes($all: Array[AnyRef], $alen: Int, $currentDepth: Int) = $code"
+        val code = computeNewSizesCode(q"$displayLeft", q"$concat", q"$displayRight", q"$currentDepth")
+        q"private def $v_computeNewSizes($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], $currentDepth: Int) = $code"
     }
 
     protected def withComputedSizesDef() = {
         val node = TermName("node")
         val currentDepth = TermName("currentDepth")
+        val endIndex = TermName("_endIndex")
         val asserts = Seq(
             q"assert($node != null)",
             q"assert(0 <= $currentDepth && $currentDepth <= 6)"
         )
-        val code = withComputedSizesCode(q"$node", q"$currentDepth")
+        val code = withComputedSizesCode(q"$node", q"$currentDepth", q"$endIndex")
         q"""
-            private def $v_withComputedSizes($node: Array[AnyRef], $currentDepth: Int): Array[AnyRef] = {
+            private def $v_withComputedSizes($node: Array[AnyRef], $currentDepth: Int, ..${if (!CLOSED_BLOCKS) q"$endIndex: Int" :: Nil else Nil}): Array[AnyRef] = {
                 ..${if (useAssertions) asserts else Nil}
                 $code
             }
         """
+
+
     }
 
     protected def treeSizeDef() = {
@@ -270,26 +288,6 @@ trait VectorMethodsGen {
         val code = treeSizeCode(q"$tree", q"$currentDepth")
         q"""
             private def $v_treeSize($tree: Array[AnyRef], $currentDepth: Int): Int = {
-                ..${if (useAssertions) asserts else Nil}
-                $code
-            }
-        """
-    }
-
-
-    protected def copiedAcrossDef() = {
-        val all = TermName("all")
-        val sizes = TermName("sizes")
-        val lengthSizes = TermName("lengthSizes")
-        val currentDepth = TermName("currentDepth")
-        val asserts = Seq(
-            q"assert($all != null)",
-            q"assert($lengthSizes <= $sizes.length)",
-            q"assert(0 <= $currentDepth && $currentDepth <= 6)"
-        )
-        val code = copiedAcrossCode(q"$all", q"$sizes", q"$lengthSizes", q"$currentDepth")
-        q"""
-            private def $v_copiedAcross($all: Array[AnyRef], $sizes: Array[Int], $lengthSizes: Int, $currentDepth: Int): Array[AnyRef] = {
                 ..${if (useAssertions) asserts else Nil}
                 $code
             }
