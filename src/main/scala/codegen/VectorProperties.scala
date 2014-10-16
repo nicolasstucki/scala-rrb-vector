@@ -5,9 +5,9 @@ import scala.reflect.runtime.universe._
 trait VectorProperties {
     protected val blockIndexBits = 5
 
-    protected def blockWidth = 1 << blockIndexBits
+    protected final def blockWidth = 1 << blockIndexBits
 
-    protected def blockMask = (1 << blockIndexBits) - 1
+    protected final def blockMask = blockWidth - 1
 
     protected val blockInvariants = 1
 

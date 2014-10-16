@@ -227,9 +227,24 @@ trait VectorMethodsGen {
         val displayLeft = TermName("displayLeft")
         val concat = TermName("concat")
         val displayRight = TermName("displayRight")
+        val leftLength = TermName("leftLength")
+        val concatLength = TermName("concatLength")
+        val rightLength = TermName("rightLength")
         val currentDepth = TermName("currentDepth")
-        val code = rebalancedCode(q"$displayLeft", q"$concat", q"$displayRight", q"$currentDepth")
-        q"private def $v_rebalanced($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], $currentDepth: Int): Array[AnyRef] = $code"
+
+        val code = rebalancedCode(q"$displayLeft", q"$concat", q"$displayRight", leftLength, concatLength, rightLength, q"$currentDepth")
+        q"""
+            private def $v_rebalanced($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], ..${if (CLOSED_BLOCKS) Nil else q"$leftLength: Int" :: q"$concatLength: Int" :: q"$rightLength: Int" :: Nil}, $currentDepth: Int): Array[AnyRef] = {
+            ..${
+            if (CLOSED_BLOCKS)
+                q"val $leftLength = if($displayLeft==null) 0 else ($displayLeft.length - $blockInvariants)" ::
+                  q"val $concatLength = if($concat==null) 0 else ($concat.length - $blockInvariants)" ::
+                  q"val $rightLength = if($displayRight==null) 0 else ($displayRight.length - $blockInvariants)" :: Nil
+            else Nil
+        }
+            $code
+            }
+         """
     }
 
     protected def rebalancedLeafsDef() = {
@@ -254,9 +269,24 @@ trait VectorMethodsGen {
         val displayLeft = TermName("displayLeft")
         val concat = TermName("concat")
         val displayRight = TermName("displayRight")
+        val leftLength = TermName("leftLength")
+        val concatLength = TermName("concatLength")
+        val rightLength = TermName("rightLength")
         val currentDepth = TermName("currentDepth")
-        val code = computeNewSizesCode(q"$displayLeft", q"$concat", q"$displayRight", q"$currentDepth")
-        q"private def $v_computeNewSizes($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], $currentDepth: Int) = $code"
+
+        val code = computeNewSizesCode(q"$displayLeft", q"$concat", q"$displayRight", leftLength, concatLength, rightLength, q"$currentDepth")
+        q"""
+            private def $v_computeNewSizes($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], ..${if (CLOSED_BLOCKS) Nil else q"$leftLength: Int" :: q"$concatLength: Int" :: q"$rightLength: Int" :: Nil}, $currentDepth: Int) = {
+                ..${
+            if (CLOSED_BLOCKS)
+                q"val $leftLength = if ($displayLeft == null) 0 else ($displayLeft.length - 2)" ::
+                  q"val $concatLength = if ($concat == null) 0 else $concat.length - 1" ::
+                  q"val $rightLength = if ($displayRight == null) 0 else ($displayRight.length - 2)" :: Nil
+            else Nil
+        }
+                $code
+            }
+         """
     }
 
     protected def withComputedSizesDef() = {

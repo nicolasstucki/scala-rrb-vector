@@ -331,10 +331,26 @@ trait VectorCodeGen {
     def concatenatedCode(that: Tree) = {
         def concatenateVectors(maxLevel: Int) = {
             @inline def concatName(i: Int) = TermName("concat" + i)
+
             q"""
-                val ${concatName(1)} = $v_rebalancedLeafs(this.display0, that.display0, ..${if (CLOSED_BLOCKS) Nil else q"this.$focus & $blockMask" :: q"math.min($blockWidth, that.$focusEnd)" :: Nil})
-                ..${(2 to maxLevel) map (i => q"val ${concatName(i)} = $v_rebalanced(this.${displayNameAt(i - 1)}, ${concatName(i - 1)}, that.${displayNameAt(i - 1)}, $i)")}
-                if (${concatName(maxLevel)}.length == 2) vec.initFromRoot(${concatName(maxLevel)}(0).asInstanceOf[Array[AnyRef]], $maxLevel, newSize)
+                val ${concatName(1)} = $v_rebalancedLeafs(this.display0, that.display0, ..${if (CLOSED_BLOCKS) Nil else q"(this.$focus & $blockMask) + 1" :: q"math.min($blockWidth, that.$focusEnd)" :: Nil})
+                ..${
+                (2 to maxLevel) map (i =>
+                    q"""
+                       val ${concatName(i)} = $v_rebalanced(
+                                    this.${displayNameAt(i - 1)}, ${concatName(i - 1)}, that.${displayNameAt(i - 1)},
+                                   ..${
+                        if (CLOSED_BLOCKS) Nil
+                        else q"(((this.$focus|this.$focusRelax) >> ${blockIndexBits * i}) & $blockMask)" ::
+                          q"if(${concatName(i - 1)}(1) == null) 1 else 2" ::
+                          q"if(that.focusDepth <= $i) (((that.$focusEnd >> ${blockIndexBits * (i - 1)}) & $blockMask) + 1) else ???" :: Nil
+                    }
+                        , $i)
+                                   """
+                  )
+            }
+                if (${if (CLOSED_BLOCKS) q"${concatName(maxLevel)}.length == 2" else q"${concatName(maxLevel)}(1) == null"})
+                    vec.initFromRoot(${concatName(maxLevel)}(0).asInstanceOf[Array[AnyRef]], $maxLevel, newSize)
                 else {
                     ${
                 if (CLOSED_BLOCKS) q"vec.initFromRoot(withComputedSizes(${concatName(maxLevel)}, $maxLevel), $maxLevel + 1, newSize)"
@@ -357,19 +373,19 @@ trait VectorCodeGen {
         """
     }
 
-    protected def rebalancedCode(displayLeft: Tree, concat: Tree, displayRight: Tree, currentDepth: Tree) = {
+    protected def rebalancedCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
         val lengthSizes = TermName("nalen")
         val sizes = TermName("sizes")
-        q"""
-            val tup = computeNewSizes(displayLeft, concat, displayRight, currentDepth);
-            val sizes: Array[Int] = tup._1;
-            val nalen: Int = tup._2;
 
-            val topLen = (nalen >> $blockIndexBits) + (if ((nalen & $blockMask) == 0) 1 else 2);
+        q"""
+            val tup = computeNewSizes(displayLeft, concat, displayRight, ..${if (CLOSED_BLOCKS) Nil else q"$leftLength" :: q"$concatLength" :: q"$rightLength" :: Nil}, currentDepth);
+            val $sizes: Array[Int] = tup._1;
+            val $lengthSizes: Int = tup._2;
+
+            val topLen = ($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2);
             val top = new Array[AnyRef](topLen);
-            val topSizes = new Array[Int](topLen.-(1));
-            top.update(topLen.-(1), topSizes);
-            var mid = new Array[AnyRef](math.min(nalen, $blockWidth) + 1)
+
+            var mid = new Array[AnyRef](math.min($lengthSizes, $blockWidth) + 1)
             var bot: Array[AnyRef] = null
             top(0) = mid
 
@@ -388,39 +404,37 @@ trait VectorCodeGen {
                     case 0 =>
                         if ($displayLeft != null) {
                             currentDisplay = $displayLeft
-                            if ($concat.==(null))
-                                displayEnd = $displayLeft.length - $blockInvariants
-                            else
-                                displayEnd = $displayLeft.length - ${blockInvariants + 1}
+                            if ($concat == null) displayEnd = $leftLength
+                            else displayEnd = $leftLength - 1
                         }
                     case 1 =>
-                        if ($concat.==(null)) {
+                        if ($concat == null) {
                             displayEnd = 0
                         } else {
                             currentDisplay = concat
-                            displayEnd = concat.length - $blockInvariants
+                            displayEnd = $concatLength
                         }
                         i = 0
                     case 2 =>
                         if ($displayRight != null) {
                             currentDisplay = $displayRight
-                            displayEnd = $displayRight.length - $blockInvariants
-                            if ($concat.==(null)) i = 0
+                            displayEnd = $rightLength
+                            if ($concat == null) i = 0
                             else i = 1
                         }
                 }
 
                 while (i < displayEnd) {
                     val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]]
-                    if (iBot == 0 && j == 0 && displayValue.length - 1 == sizes(iSizes)) {
+                    if (iBot == 0 && j == 0 && displayValue.length - 1 == $sizes(iSizes)) {
                         mid(iMid) = displayValue
                         i += 1
                         iMid += 1
                         iSizes += 1
                     } else {
-                        val numElementsToCopy = math.min(displayValue.length - j, sizes(iSizes) - iBot)
+                        val numElementsToCopy = math.min(displayValue.length - j, $sizes(iSizes) - iBot)
                         if (iBot == 0) {
-                            bot = new Array[AnyRef](sizes(iSizes) + (if ($currentDepth == 2) 0 else 1))
+                            bot = new Array[AnyRef]($sizes(iSizes) + (if ($currentDepth == 2) 0 else 1))
                             mid(iMid) = bot
                         }
                         Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
@@ -430,7 +444,7 @@ trait VectorCodeGen {
                             i += 1
                             j = 0
                         }
-                        if (iBot == sizes(iSizes)) {
+                        if (iBot == $sizes(iSizes)) {
                             iMid += 1
                             iBot = 0
                             iSizes += 1
@@ -440,7 +454,7 @@ trait VectorCodeGen {
                         top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
                         iTop += 1
                         iMid = 0
-                        mid = new Array[AnyRef](math.min(nalen - $blockWidth * iTop, $blockWidth) + 1)
+                        mid = new Array[AnyRef](math.min($lengthSizes - $blockWidth * iTop, $blockWidth) + 1)
                     }
                 }
                 d += 1
@@ -480,15 +494,12 @@ trait VectorCodeGen {
          """
     }
 
-    protected def computeNewSizesCode(displayLeft: Tree, concat: Tree, displayRight: Tree, currentDepth: Tree) = {
+    protected def computeNewSizesCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
         q"""
-            val leftLength = if ($displayLeft == null) 0 else ($displayLeft.length - 2)
-            val concatLength = if($concat == null) 0 else $concat.length - 1
-            val rightLength = if ($displayRight == null) 0 else ($displayRight.length - 2)
-            val szs = new Array[Int](leftLength + concatLength + rightLength)
+            val szs = new Array[Int]($leftLength + $concatLength + $rightLength)
             var totalCount = 0
             var i = 0
-            while (i < leftLength) {
+            while (i < $leftLength) {
                 val sz = if ($currentDepth == 1) 1
                          else if ($currentDepth == 2) $displayLeft(i).asInstanceOf[Array[AnyRef]].length
                          else $displayLeft(i).asInstanceOf[Array[AnyRef]].length - 1
@@ -498,7 +509,7 @@ trait VectorCodeGen {
             }
             val offset1 = i
             i = 0
-            while (i < concatLength) {
+            while (i < $concatLength) {
                 val sz = if ($currentDepth == 1) 1
                          else if ($currentDepth == 2) $concat(i).asInstanceOf[Array[AnyRef]].length
                          else $concat(i).asInstanceOf[Array[AnyRef]].length - 1
@@ -508,7 +519,7 @@ trait VectorCodeGen {
             }
             val offset2 = offset1 + i
             i = 0
-            while (i < rightLength) {
+            while (i < $rightLength - 1) {
                 val sz = if ($currentDepth == 1) 1
                          else if ($currentDepth == 2) $displayRight(i+1).asInstanceOf[Array[AnyRef]].length
                          else $displayRight(i+1).asInstanceOf[Array[AnyRef]].length - 1
@@ -524,7 +535,7 @@ trait VectorCodeGen {
 
             val MinWidth = ${blockWidth - 1} // min number of slots allowed...
 
-            var nalen = leftLength + concatLength + rightLength
+            var nalen = $leftLength + $concatLength + $rightLength
             // note - this makes multiple passes, can be done in one.
             // redistribute the smallest slots until only the allowed extras remain
             val EXTRAS = 2
@@ -608,10 +619,6 @@ trait VectorCodeGen {
                 acc + _tree.length
             }
         """
-    }
-
-    protected def copiedAcrossCode(all: Tree, sizes: Tree, lengthSizes: Tree, currentDepth: Tree) = {
-
     }
 
 
