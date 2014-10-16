@@ -42,7 +42,7 @@ trait VectorPointerCodeGen {
     val gotoPos = TermName("gotoPos")
     val gotoNextBlockStart = TermName("gotoNextBlockStart")
     val gotoPrevBlockStart = TermName("gotoPrevBlockStart")
-    val setupNextBlockStartWritable = TermName("setUpNextBlockStartTailWritable")
+    val setupNextBlockStartWritable = TermName("setUpNextBlockNewBranchWritable")
     val gotoNextBlockStartWritable = TermName("gotoNextBlockStartWritable")
     val copyDisplays = TermName("copyDisplays")
     val copyDisplaysTop = TermName("copyDisplaysTop")
@@ -208,13 +208,13 @@ trait VectorPointerCodeGen {
         ifInLevel(xor, 1 to 5, lvl => q"..${(lvl to 1 by -1) map (i => loadDisplayAtIndex(lvl, i))}", q"throw new IllegalArgumentException")
     }
 
-    def setUpNextBlockStartTailWritableCode(index: Tree, xor: Tree) = {
+    def setUpNextBlockNewBranchWritableCode(index: Tree, xor: Tree) = {
         def setUpNewBranchFromLevel(lvl: Int) = {
             q"""
                 if (this.$depth == $lvl) {
                     ${displayAt(lvl)} = new Array(${if (CLOSED_BLOCKS) 2 + blockInvariants else blockWidth + blockInvariants})
                     ${displayAt(lvl)}(0) = ${displayAt(lvl - 1)}
-                    this.$depth += 1
+                    $depth = ${lvl + 1}
                 } else {
                     val len = ${displayAt(lvl)}.length;
                     ${displayAt(lvl)} = $copyOf(${displayAt(lvl)}, len, ${if (CLOSED_BLOCKS) q"len + 1" else q"${blockWidth + blockInvariants}"})

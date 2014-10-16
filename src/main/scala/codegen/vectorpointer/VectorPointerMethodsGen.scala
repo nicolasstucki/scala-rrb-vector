@@ -18,7 +18,7 @@ trait VectorPointerMethodsGen {
 
         val methods = Seq(rootDef(), initFromRootDef(), initFromDef(), initFocusDef(), gotoIndexDef(), allDisplaySizesDef(),
             putDisplaySizesDef(), gotoPosRelaxedDef(), getElementDef(), gotoPosDef(), gotoNextBlockStartDef(),
-            gotoPrevBlockStartDef(), setUpNextBlockStartTailWritableDef(), gotoNextBlockStartWritableDef(), copyDisplaysDef(),
+            gotoPrevBlockStartDef(), setUpNextBlockNewBranchWritableDef(), gotoNextBlockStartWritableDef(), copyDisplaysDef(),
             copyDisplaysTopDef(), stabilizeDef(), cleanTopDef(), copyOfDef(), mergeLeafsDef())
 
         displays ++ fields ++ methods
@@ -121,10 +121,10 @@ trait VectorPointerMethodsGen {
     }
 
 
-    private def setUpNextBlockStartTailWritableDef() = {
+    private def setUpNextBlockNewBranchWritableDef() = {
         val index = TermName("index")
         val xor = TermName("xor")
-        val code = setUpNextBlockStartTailWritableCode(q"$index", q"$xor")
+        val code = setUpNextBlockNewBranchWritableCode(q"$index", q"$xor")
         q"private[immutable] final def $setupNextBlockStartWritable($index: Int, $xor: Int): Unit = $code"
     }
 

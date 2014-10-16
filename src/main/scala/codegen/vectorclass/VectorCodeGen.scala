@@ -283,8 +283,21 @@ trait VectorCodeGen {
                     displaySizes(depth - 1) = newSizes
                 }
             } else {
+                val j = math.max(
+                    if (xor.<(1024)) 1
+                    else if (xor.<(32768)) 2
+                    else if (xor.<(1048576)) 3
+                    else if (xor.<(33554432)) 4
+                    else 5,
+                    $focusDepth)
                 var i = $focusDepth
+                while (i < j) {
+                    displaySizes(i - 1) = null
+                    i += 1
+                }
+
                 while (i < $depth) {
+                    // TODO: load sizes and put them directly back from/to display
                     val oldSizes = displaySizes(i - 1)
                     val display = i match {
                         case 1 => display1
