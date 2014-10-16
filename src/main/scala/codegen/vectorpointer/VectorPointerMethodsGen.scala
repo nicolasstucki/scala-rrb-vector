@@ -13,13 +13,13 @@ trait VectorPointerMethodsGen {
         val displays = (0 to 5) map (i => fieldDef(TermName(s"display$i"), tq"Array[AnyRef]"))
 
         var fields = Seq.empty[Tree]
-        fields = fields :+ fieldDef(depth, tq"Int")
+        fields = fields :+ fieldDef(depth, tq"Int") :+ fieldDef(dirty, tq"Boolean", Some(q"false"))
         fields = fields ++ Seq(focusStart, focusEnd, focusDepth, focus, focusRelax).map(tn => fieldDef(tn, tq"Int", Some(q"0")))
 
         val methods = Seq(rootDef(), initFromRootDef(), initFromDef(), initFocusDef(), gotoIndexDef(), allDisplaySizesDef(),
             putDisplaySizesDef(), gotoPosRelaxedDef(), getElementDef(), gotoPosDef(), gotoNextBlockStartDef(),
             gotoPrevBlockStartDef(), setUpNextBlockNewBranchWritableDef(), gotoNextBlockStartWritableDef(), copyDisplaysDef(),
-            copyDisplaysTopDef(), stabilizeDef(), cleanTopDef(), copyOfDef(), mergeLeafsDef())
+            copyDisplaysTopDef(), stabilizeDef(), cleanTopDef(), copyOfDef())
 
         displays ++ fields ++ methods
     }
@@ -47,7 +47,12 @@ trait VectorPointerMethodsGen {
     private[vectorpointer] def initFromDef() = {
         val that = TermName("that")
         val code = initFromCode(q"$that")
-        q"private[immutable] def $initFrom[U]($that: $vectorPointerClassName[U]): Unit = $code"
+        q"""
+            private[immutable] def $initFrom[U]($that: $vectorPointerClassName[U]): Unit = {
+                ..${assertions(q"!that.$dirty")}
+                $code
+            }
+         """
     }
 
     private[vectorpointer] def initFocusDef() = {
@@ -87,7 +92,12 @@ trait VectorPointerMethodsGen {
         val depthParam = TermName("_depth")
         val focusRelaxParam = TermName("_focusRelax")
         val code = gotoPosRelaxedCode(q"$indexParam", q"$startIndexParam", q"$endIndexParam", q"$depthParam", q"$focusRelaxParam")
-        q"@tailrec private[immutable] final def $gotoPosRelaxed($indexParam: Int, $startIndexParam: Int, $endIndexParam: Int, $depthParam: Int, $focusRelaxParam: Int = 0): Unit = $code"
+        q"""
+            @tailrec private[immutable] final def $gotoPosRelaxed($indexParam: Int, $startIndexParam: Int, $endIndexParam: Int, $depthParam: Int, $focusRelaxParam: Int = 0): Unit = {
+                ..${assertions(q"!this.$dirty")}
+                $code
+            }
+         """
 
     }
 
@@ -102,7 +112,12 @@ trait VectorPointerMethodsGen {
         val index = TermName("index")
         val xor = TermName("xor")
         val code = gotoPosCode(q"$index", q"$xor")
-        q"private[immutable] final def $gotoPos($index: Int, $xor: Int): Unit = $code"
+        q"""
+            private[immutable] final def $gotoPos($index: Int, $xor: Int): Unit = {
+                ..${assertions(q"!this.$dirty")}
+                $code
+            }
+         """
     }
 
     private def gotoNextBlockStartDef() = {
@@ -184,15 +199,5 @@ trait VectorPointerMethodsGen {
         q"private[immutable] final def $copyOf($array: Array[AnyRef], $numElements: Int, $newSize: Int) = $code"
     }
 
-
-    def mergeLeafsDef() = {
-        val leaf0 = TermName("leaf0")
-        val leaf1 = TermName("leaf1")
-        val length0 = TermName("length0")
-        val length1 = TermName("length1")
-        // val asserts = if (useAssertions) q"assert($length0 + $length1 <= $blockWidth)" else q""
-        val code = mergeLeafsCode(q"$leaf0", q"$length0", q"$leaf1", q"$length1")
-        q"private[immutable] final def $mergeLeafs($leaf0: Array[AnyRef], $length0: Int, $leaf1: Array[AnyRef], $length1: Int): Array[AnyRef] = $code"
-    }
 }
 

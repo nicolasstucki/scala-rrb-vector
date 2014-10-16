@@ -36,7 +36,7 @@ trait VectorProperties {
     protected def vectorBenchmarkClassName(method: String) = TypeName(vectorName + method + "Benchmark")
 
 
-    protected val useAssertions = true
+    protected val useAssertions: Boolean
 
     def subpackage: TermName
 
@@ -50,5 +50,10 @@ trait VectorProperties {
             val packageName = TermName(packages.head)
             q"package $packageName { ${inPackages(packages.tail, code)} }"
         } else code
+    }
+
+    protected def assertions(asserts: Tree*): Seq[Tree] = {
+        if (useAssertions) asserts map (a =>q"assert($a)")
+        else Nil
     }
 }

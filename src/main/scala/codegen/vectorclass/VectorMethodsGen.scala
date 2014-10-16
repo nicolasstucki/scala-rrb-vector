@@ -279,9 +279,9 @@ trait VectorMethodsGen {
             private def $v_computeNewSizes($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], ..${if (CLOSED_BLOCKS) Nil else q"$leftLength: Int" :: q"$concatLength: Int" :: q"$rightLength: Int" :: Nil}, $currentDepth: Int) = {
                 ..${
             if (CLOSED_BLOCKS)
-                q"val $leftLength = if ($displayLeft == null) 0 else ($displayLeft.length - 2)" ::
-                  q"val $concatLength = if ($concat == null) 0 else $concat.length - 1" ::
-                  q"val $rightLength = if ($displayRight == null) 0 else ($displayRight.length - 2)" :: Nil
+                q"val $leftLength = if ($displayLeft == null) 0 else ($displayLeft.length - $blockInvariants)" ::
+                  q"val $concatLength = if ($concat == null) 0 else $concat.length - $blockInvariants" ::
+                  q"val $rightLength = if ($displayRight == null) 0 else ($displayRight.length - $blockInvariants)" :: Nil
             else Nil
         }
                 $code

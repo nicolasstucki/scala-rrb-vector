@@ -17,6 +17,7 @@ trait VectorPointerCodeGen {
     val focusRelax = TermName("focusRelax")
 
     val depth = TermName("depth")
+    val dirty = TermName("dirty")
 
     val display0 = TermName("display0")
     val display1 = TermName("display1")
@@ -49,7 +50,6 @@ trait VectorPointerCodeGen {
     val stabilize = TermName("stabilize")
     val cleanTop = TermName("cleanTop")
     val copyOf = TermName("copyOf")
-    val mergeLeafs = TermName("mergeLeafs")
 
 
     // Method definitions
@@ -100,6 +100,7 @@ trait VectorPointerCodeGen {
         q"""
             $initFocus($that.$focus, $that.$focusStart, $that.$focusEnd, $that.$focusDepth, $that.$focusRelax)
             $depth = $that.$depth
+            $dirty = $that.$dirty
             ..$cases
         """
     }
@@ -303,18 +304,6 @@ trait VectorPointerCodeGen {
             $newArray
         """
     }
-
-
-    protected def mergeLeafsCode(leaf0: Tree, length0: Tree, leaf1: Tree, length1: Tree) = {
-        val newLeaf = TermName("newLeaf")
-        q"""
-             val $newLeaf = new Array[AnyRef]($length0 + $length1)
-             Platform.arraycopy($leaf0, 0, $newLeaf, 0, $length0)
-             Platform.arraycopy($leaf1, 0, $newLeaf, $length0, $length1)
-             $newLeaf
-         """
-    }
-
 
     // Helper code
 

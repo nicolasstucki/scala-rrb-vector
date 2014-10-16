@@ -496,10 +496,13 @@ trait VectorCodeGen {
 
     protected def computeNewSizesCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
         q"""
-            val szs = new Array[Int]($leftLength + $concatLength + $rightLength)
+            var szsLength = $leftLength + $concatLength + $rightLength
+            if ($leftLength != 0) szsLength -= 1
+            if ($rightLength != 0) szsLength -= 1
+            val szs = new Array[Int](szsLength)
             var totalCount = 0
             var i = 0
-            while (i < $leftLength) {
+            while (i < $leftLength - 1) {
                 val sz = if ($currentDepth == 1) 1
                          else if ($currentDepth == 2) $displayLeft(i).asInstanceOf[Array[AnyRef]].length
                          else $displayLeft(i).asInstanceOf[Array[AnyRef]].length - 1
@@ -517,12 +520,12 @@ trait VectorCodeGen {
                 totalCount += sz
                 i += 1
             }
-            val offset2 = offset1 + i
-            i = 0
-            while (i < $rightLength - 1) {
+            val offset2 = offset1 + i - 1
+            i = 1
+            while (i < $rightLength) {
                 val sz = if ($currentDepth == 1) 1
-                         else if ($currentDepth == 2) $displayRight(i+1).asInstanceOf[Array[AnyRef]].length
-                         else $displayRight(i+1).asInstanceOf[Array[AnyRef]].length - 1
+                         else if ($currentDepth == 2) $displayRight(i).asInstanceOf[Array[AnyRef]].length
+                         else $displayRight(i).asInstanceOf[Array[AnyRef]].length - 1
                 szs(offset2 + i) = sz
                 totalCount += sz
                 i += 1
@@ -535,11 +538,10 @@ trait VectorCodeGen {
 
             val MinWidth = ${blockWidth - 1} // min number of slots allowed...
 
-            var nalen = $leftLength + $concatLength + $rightLength
             // note - this makes multiple passes, can be done in one.
             // redistribute the smallest slots until only the allowed extras remain
             val EXTRAS = 2
-            while (nalen > effectiveNumberOfSlots + EXTRAS) {
+            while (szsLength > effectiveNumberOfSlots + EXTRAS) {
                 // TR each loop iteration removes the first short block
                 // TR what if no small one is found? doesn't check ix < szs.length,
                 // TR we know there are small ones. what if the small ones are all at the right?
@@ -560,14 +562,14 @@ trait VectorCodeGen {
                 } while (el > 0)
 
                 // shuffle up remaining slot sizes
-                while (ix < nalen - 1) {
+                while (ix < szsLength - 1) {
                     szs(ix) = szs(ix + 1)
                     ix += 1
                 }
-                nalen -= 1
+                szsLength -= 1
             }
 
-            (szs, nalen)
+            (szs, szsLength)
         """
     }
 

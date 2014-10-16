@@ -60,6 +60,8 @@ object GenerateImplementations extends App {
         }
     }
 
+    val USE_ASSERTIONS = true
+
     val packageGenerator1 = new VectorImplementation {
 
         def subpackage = TermName("rrbvector.closedblocks")
@@ -68,7 +70,7 @@ object GenerateImplementations extends App {
 
         val CLOSED_BLOCKS: Boolean = true
 
-        override protected val useAssertions: Boolean = false
+        override protected val useAssertions: Boolean = USE_ASSERTIONS
     }
 
 
@@ -80,7 +82,7 @@ object GenerateImplementations extends App {
 
         val CLOSED_BLOCKS: Boolean = false
 
-        override protected val useAssertions: Boolean = false
+        override protected val useAssertions: Boolean = USE_ASSERTIONS
 
     }
 
