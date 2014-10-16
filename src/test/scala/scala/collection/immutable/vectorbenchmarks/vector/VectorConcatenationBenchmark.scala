@@ -6,7 +6,7 @@ import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 abstract class VectorAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with VectorBenchmark[A] {
     // Used in immutable.vector to bound the sizes
-    override def to(n: Int): Int = math.min(n, 3000)
+    override def to(n: Int): Int = math.min(n, 5200)
 }
 
 class VectorConcatenationIntBenchmark extends VectorAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
