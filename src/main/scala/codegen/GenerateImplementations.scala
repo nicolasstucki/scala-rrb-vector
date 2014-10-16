@@ -1,6 +1,6 @@
 package codegen
 
-import codegen.test.{VectorTestGen, VectorGeneratorGen}
+import codegen.test.{VectorBenchmarksGen, VectorTestGen, VectorGeneratorGen}
 import codegen.vectorbuilder._
 import codegen.vectorclass._
 import codegen.vectoriterator._
@@ -30,7 +30,7 @@ object GenerateImplementations extends App {
       with VectorIteratorClassGen with VectorIteratorMethodsGen with VectorIteratorCodeGen
       with VectorReverseIteratorClassGen with VectorReverseIteratorMethodsGen with VectorReverseIteratorCodeGen
       with VectorPointerClassGen with VectorPointerMethodsGen with VectorPointerCodeGen
-      with VectorGeneratorGen with VectorTestGen {
+      with VectorGeneratorGen with VectorTestGen with VectorBenchmarksGen {
 
         def outputFile = {
             val subpackagePath = subpackage.toString.replace('.', '/')
@@ -47,10 +47,16 @@ object GenerateImplementations extends App {
             s"./src/test/scala/scala/collection/immutable/vectortests/generated/$subpackagePath/$vectorTestClassName.scala"
         }
 
+        def outputBenchmarkFile = {
+            val subpackagePath = subpackage.toString.replace('.', '/')
+            s"./src/test/scala/scala/collection/immutable/vectorbenchmarks/generated/$subpackagePath/$vectorBaseBenchmarkClassName.scala"
+        }
+
         def exportCodeToFiles() = {
             saveToFile(outputFile, showCode(generateVectorPackage()))
             saveToFile(outputGeneratorFile, showCode(generateVectorGeneratorClass()))
             saveToFile(outputTestFile, showCode(generateVectorTestClasses()))
+            saveToFile(outputBenchmarkFile, showCode(generateVectorBenchmarkClasses()))
         }
     }
 
@@ -58,11 +64,11 @@ object GenerateImplementations extends App {
 
         def subpackage = TermName("rrbvector.closedblocks")
 
-        def vectorName = "GenRRBVector1"
+        def vectorName = "GenRRBVectorClosedBlocks"
 
         val CLOSED_BLOCKS: Boolean = true
 
-        override protected val useAssertions: Boolean = true
+        override protected val useAssertions: Boolean = false
     }
 
 
@@ -70,11 +76,11 @@ object GenerateImplementations extends App {
 
         def subpackage = TermName("rrbvector.fullblocks")
 
-        def vectorName = "GenRRBVector2"
+        def vectorName = "GenRRBVectorFullBlocks"
 
         val CLOSED_BLOCKS: Boolean = false
 
-        override protected val useAssertions: Boolean = true
+        override protected val useAssertions: Boolean = false
 
     }
 

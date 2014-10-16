@@ -8,7 +8,7 @@ trait VectorClassGen {
 
     def generateVectorClassDef(): Tree = {
         q"""
-            final class $vectorClassName[+$A] private[immutable](val $v_endIndex: Int)
+            final class $vectorClassName[+$A] private[immutable](private[immutable] val $v_endIndex: Int)
                 extends scala.collection.AbstractSeq[$A]
                 with scala.collection.immutable.IndexedSeq[$A]
                 with scala.collection.generic.GenericTraversableTemplate[$A, $vectorClassName]
