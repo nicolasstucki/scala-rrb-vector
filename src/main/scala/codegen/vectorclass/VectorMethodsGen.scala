@@ -252,16 +252,17 @@ trait VectorMethodsGen {
         val displayRight = TermName("displayRight")
         val leftLength = TermName("leftLength")
         val rightLength = TermName("rightLength")
-        val code = rebalancedLeafsCode(q"$displayLeft", q"$displayRight", leftLength, rightLength)
+        val isTop = TermName("isTop")
+        val code = rebalancedLeafsCode(q"$displayLeft", q"$displayRight", leftLength, rightLength, isTop)
         if (CLOSED_BLOCKS)
             q"""
-                private def $v_rebalancedLeafs($displayLeft: Array[AnyRef], $displayRight: Array[AnyRef]): Array[AnyRef] = {
+                private def $v_rebalancedLeafs($displayLeft: Array[AnyRef], $displayRight: Array[AnyRef], $isTop: Boolean): Array[AnyRef] = {
                     val $leftLength = $displayLeft.length
                     val $rightLength = $displayRight.length
                     $code
                 }
             """
-        else q"private def $v_rebalancedLeafs($displayLeft: Array[AnyRef], $displayRight: Array[AnyRef], $leftLength: Int, $rightLength: Int): Array[AnyRef] = $code"
+        else q"private def $v_rebalancedLeafs($displayLeft: Array[AnyRef], $displayRight: Array[AnyRef], $leftLength: Int, $rightLength: Int, $isTop: Boolean): Array[AnyRef] = $code"
     }
 
 
