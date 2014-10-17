@@ -41,6 +41,7 @@ trait VectorProperties {
     def subpackage: TermName
 
     val CLOSED_BLOCKS: Boolean
+    val FULL_REBALANCE: Boolean
 
     def vectorName: String
 

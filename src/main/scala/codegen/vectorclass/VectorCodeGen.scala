@@ -59,6 +59,7 @@ trait VectorCodeGen {
     val v_rebalanced = TermName("rebalanced")
     val v_rebalancedLeafs = TermName("rebalancedLeafs")
     val v_computeNewSizes = TermName("computeNewSizes")
+    val v_computeBranching = TermName("computeBranching")
     val v_withComputedSizes = TermName("withComputedSizes")
     val v_treeSize = TermName("treeSize")
 
@@ -390,18 +391,22 @@ trait VectorCodeGen {
     protected def rebalancedCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
         val lengthSizes = TermName("nalen")
         val sizes = TermName("sizes")
-
+        val branching = TermName("branching")
+        def computeSizes: Seq[Tree] = {
+            if (FULL_REBALANCE)
+                Seq(q"val $branching = $v_computeBranching($displayLeft, $concat, $displayRight, ..${if (CLOSED_BLOCKS) Nil else q"$leftLength" :: q"$concatLength" :: q"$rightLength" :: Nil}, $currentDepth)")
+            else {
+                Seq(q"val tup = $v_computeNewSizes($displayLeft, $concat, $displayRight, ..${if (CLOSED_BLOCKS) Nil else q"$leftLength" :: q"$concatLength" :: q"$rightLength" :: Nil}, $currentDepth)",
+                    q"val $sizes: Array[Int] = tup._1",
+                    q"val $lengthSizes: Int = tup._2")
+            }
+        }
         q"""
-            val tup = computeNewSizes(displayLeft, concat, displayRight, ..${
-            if (CLOSED_BLOCKS) Nil else q"$leftLength" :: q"$concatLength" :: q"$rightLength" :: Nil
-        }, currentDepth);
-            val $sizes: Array[Int] = tup._1;
-            val $lengthSizes: Int = tup._2;
+            ..${computeSizes}
 
-            val topLen = ($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2);
-            val top = new Array[AnyRef](topLen);
+            val top = new Array[AnyRef](${if (FULL_REBALANCE) q"($branching >> ${2 * blockIndexBits}) + (if(($branching & ${blockMask | (blockMask << blockIndexBits)}) == 0) $blockInvariants else ${blockInvariants + 1})" else q"($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2)"})
 
-            var mid = new Array[AnyRef](math.min($lengthSizes, $blockWidth) + 1)
+            var mid = new Array[AnyRef](${if (FULL_REBALANCE) q"(if (($branching >> ${2 * blockIndexBits}) == 0) ($branching >> $blockIndexBits) + ${1 + blockInvariants} else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
             var bot: Array[AnyRef] = null
             top(0) = mid
 
@@ -442,15 +447,15 @@ trait VectorCodeGen {
 
                 while (i < displayEnd) {
                     val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]]
-                    if (iBot == 0 && j == 0 && displayValue.length - 1 == $sizes(iSizes)) {
+                    if (iBot == 0 && j == 0 && displayValue.length - $blockInvariants == ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
                         mid(iMid) = displayValue
                         i += 1
                         iMid += 1
                         iSizes += 1
                     } else {
-                        val numElementsToCopy = math.min(displayValue.length - j, $sizes(iSizes) - iBot)
+                        val numElementsToCopy = math.min(displayValue.length - j, ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
                         if (iBot == 0) {
-                            bot = new Array[AnyRef]($sizes(iSizes) + (if ($currentDepth == 2) 0 else 1))
+                            bot = new Array[AnyRef](${if (FULL_REBALANCE) q"math.min($branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits), $blockWidth)" else q"$sizes(iSizes)"} + (if ($currentDepth == 2) 0 else $blockInvariants))
                             mid(iMid) = bot
                         }
                         Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
@@ -460,28 +465,23 @@ trait VectorCodeGen {
                             i += 1
                             j = 0
                         }
-                        if (iBot == $sizes(iSizes)) {
+                        if (iBot == ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
                             iMid += 1
                             iBot = 0
                             iSizes += 1
                         }
                     }
                     if (iMid == $blockWidth) {
-                        top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${
-            if (CLOSED_BLOCKS) Nil else q"???" :: Nil
-        })
+                        top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
                         iTop += 1
                         iMid = 0
-                        mid = new Array[AnyRef](math.min($lengthSizes - $blockWidth * iTop, $blockWidth) + 1)
+                        mid = new Array[AnyRef](${if (FULL_REBALANCE) q"val remainingBranches = $branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits); if ((remainingBranches >> ${blockIndexBits}) <= $blockWidth) ((remainingBranches >> ${blockIndexBits}) & $blockMask) + 1 else $blockWidth" else q"math.min($lengthSizes - $blockWidth * iTop, $blockWidth)"} + $blockInvariants)
                     }
                 }
                 d += 1
             } while (d < 3)
 
-            top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${
-            if (CLOSED_BLOCKS) Nil else q"???" :: Nil
-        })
-
+            top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
             top
          """
     }
@@ -596,6 +596,42 @@ trait VectorCodeGen {
             }
 
             (szs, szsLength)
+        """
+    }
+
+    protected def computeBranchingCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
+        val branching = TermName("branching")
+        q"""
+            var $branching = 0
+            if ($currentDepth == 1) {
+                $branching = $leftLength + $concatLength + $rightLength
+                if ($leftLength != 0) $branching -= 1
+                if ($rightLength != 0) $branching -= 1
+            } else {
+                var i = 0
+                while (i < $leftLength - 1) {
+                    $branching += $displayLeft(i).asInstanceOf[Array[AnyRef]].length
+                    i += 1
+                }
+                val offset1 = i
+                i = 0
+                while (i < $concatLength) {
+                    $branching += $concat(i).asInstanceOf[Array[AnyRef]].length
+                    i += 1
+                }
+                val offset2 = offset1 + i - 1
+                i = 1
+                while (i < $rightLength) {
+                    $branching += $displayRight(i).asInstanceOf[Array[AnyRef]].length
+                    i += 1
+                }
+                if ($currentDepth != 2) {
+                    $branching -= $leftLength + $concatLength + $rightLength
+                    if ($leftLength != 0) $branching += 1
+                    if ($rightLength != 0) $branching += 1
+                }
+            }
+            $branching
         """
     }
 

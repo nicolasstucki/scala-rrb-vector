@@ -64,23 +64,36 @@ object GenerateImplementations extends App {
 
     val packageGenerator1 = new VectorImplementation {
 
-        def subpackage = TermName("rrbvector.closedblocks")
+        def subpackage = TermName("rrbvector.closedblocks.fullrebalance")
 
-        def vectorName = "GenRRBVectorClosedBlocks"
+        def vectorName = "GenRRBVectorClosedBlocksFullRebalance"
 
         val CLOSED_BLOCKS: Boolean = true
+        val FULL_REBALANCE: Boolean = true
 
         override protected val useAssertions: Boolean = USE_ASSERTIONS
     }
 
-
     val packageGenerator2 = new VectorImplementation {
+
+        def subpackage = TermName("rrbvector.closedblocks.quickrebalance")
+
+        def vectorName = "GenRRBVectorClosedBlocksQuickRebalance"
+
+        val CLOSED_BLOCKS: Boolean = true
+        val FULL_REBALANCE: Boolean = false
+
+        override protected val useAssertions: Boolean = USE_ASSERTIONS
+    }
+
+    val packageGenerator3 = new VectorImplementation {
 
         def subpackage = TermName("rrbvector.fullblocks")
 
         def vectorName = "GenRRBVectorFullBlocks"
 
         val CLOSED_BLOCKS: Boolean = false
+        val FULL_REBALANCE: Boolean = false
 
         override protected val useAssertions: Boolean = USE_ASSERTIONS
 
@@ -88,4 +101,5 @@ object GenerateImplementations extends App {
 
     packageGenerator1.exportCodeToFiles()
     packageGenerator2.exportCodeToFiles()
+    packageGenerator3.exportCodeToFiles()
 }

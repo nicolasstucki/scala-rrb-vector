@@ -411,12 +411,14 @@ package scala {
               val tup = computeNewSizes(displayLeft, concat, displayRight, leftLength, concatLength, rightLength, currentDepth);
               val sizes: Array[Int] = tup._1;
               val nalen: Int = tup._2;
-              val topLen = nalen.>>(5).+(if (nalen.&(31).==(0))
+              val top = new Array[AnyRef](nalen.>>(5).+(if (nalen.&(31).==(0))
                 1
               else
-                2);
-              val top = new Array[AnyRef](topLen);
-              var mid = new Array[AnyRef](math.min(nalen, 32).+(1));
+                2));
+              var mid = new Array[AnyRef]((if (nalen.<=(32))
+  nalen
+else
+  32).+(1));
               var bot: Array[AnyRef] = null;
               top.update(0, mid);
               var iSizes = 0;
@@ -781,28 +783,28 @@ package scala {
               assert(isEmpty.==(length.==(0)), scala.Tuple2(isEmpty, length));
               assert(length.==(endIndex), scala.Tuple2(length, endIndex));
               assert(depth.<=(0).&&(display0.==(null)).||(depth.>(0).&&(display0.!=(null))), ({
-  val x$7 = depth.toString;
-  "<=0 <==> display0==null ".+:(x$7)
+  val x$13 = depth.toString;
+  "<=0 <==> display0==null ".+:(x$13)
 }).:+(depth, display0));
               assert(depth.<=(1).&&(display1.==(null)).||(depth.>(0).&&(display1.!=(null))), ({
-  val x$8 = depth.toString;
-  "<=1 <==> display1==null ".+:(x$8)
+  val x$14 = depth.toString;
+  "<=1 <==> display1==null ".+:(x$14)
 }).:+(depth, display1));
               assert(depth.<=(2).&&(display2.==(null)).||(depth.>(0).&&(display2.!=(null))), ({
-  val x$9 = depth.toString;
-  "<=2 <==> display2==null ".+:(x$9)
+  val x$15 = depth.toString;
+  "<=2 <==> display2==null ".+:(x$15)
 }).:+(depth, display2));
               assert(depth.<=(3).&&(display3.==(null)).||(depth.>(0).&&(display3.!=(null))), ({
-  val x$10 = depth.toString;
-  "<=3 <==> display3==null ".+:(x$10)
+  val x$16 = depth.toString;
+  "<=3 <==> display3==null ".+:(x$16)
 }).:+(depth, display3));
               assert(depth.<=(4).&&(display4.==(null)).||(depth.>(0).&&(display4.!=(null))), ({
-  val x$11 = depth.toString;
-  "<=4 <==> display4==null ".+:(x$11)
+  val x$17 = depth.toString;
+  "<=4 <==> display4==null ".+:(x$17)
 }).:+(depth, display4));
               assert(depth.<=(5).&&(display5.==(null)).||(depth.>(0).&&(display5.!=(null))), ({
-  val x$12 = depth.toString;
-  "<=5 <==> display5==null ".+:(x$12)
+  val x$18 = depth.toString;
+  "<=5 <==> display5==null ".+:(x$18)
 }).:+(depth, display5));
               if (display5.!=(null))
                 {
@@ -863,7 +865,7 @@ package scala {
                   val sizes = node.last.asInstanceOf[Array[Int]];
                   if (sizes.!=(null))
                     {
-                      val _sizes = sizes.filter(((x$13) => x$13.!=(0)));
+                      val _sizes = sizes.filter(((x$19) => x$19.!=(0)));
                       assert(node.length.==(sizes.length.+(1)));
                       assert(_endIndex.==(_sizes.last));
                       var i = 0;
