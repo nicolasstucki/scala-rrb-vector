@@ -3,6 +3,9 @@ package codegen
 import scala.reflect.runtime.universe._
 
 trait VectorProperties {
+    protected val CLOSED_BLOCKS: Boolean
+    protected val FULL_REBALANCE: Boolean
+
     protected val blockIndexBits = 5
 
     protected final def blockWidth = 1 << blockIndexBits
@@ -40,11 +43,7 @@ trait VectorProperties {
 
     def subpackage: TermName
 
-    val CLOSED_BLOCKS: Boolean
-    val FULL_REBALANCE: Boolean
-
     def vectorName: String
-
 
     protected def inPackages(packages: Seq[String], code: Tree): Tree = {
         if (packages.nonEmpty) {

@@ -406,7 +406,7 @@ trait VectorCodeGen {
 
             val top = new Array[AnyRef](${if (FULL_REBALANCE) q"($branching >> ${2 * blockIndexBits}) + (if(($branching & ${blockMask | (blockMask << blockIndexBits)}) == 0) $blockInvariants else ${blockInvariants + 1})" else q"($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2)"})
 
-            var mid = new Array[AnyRef](${if (FULL_REBALANCE) q"(if (($branching >> ${2 * blockIndexBits}) == 0) ($branching >> $blockIndexBits) + ${1 + blockInvariants} else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
+            var mid = new Array[AnyRef](${if (FULL_REBALANCE) q"(if (($branching >> ${2 * blockIndexBits}) == 0) (($branching + ${blockWidth - 1}) >> $blockIndexBits) + $blockInvariants else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
             var bot: Array[AnyRef] = null
             top(0) = mid
 
@@ -447,21 +447,27 @@ trait VectorCodeGen {
 
                 while (i < displayEnd) {
                     val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]]
-                    if (iBot == 0 && j == 0 && displayValue.length - $blockInvariants == ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
+                    val displayValueEnd = displayValue.length - (if (currentDepth==2) 0 else 1)
+                    if (iBot == 0 && j == 0 && displayValueEnd == ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
+                        if ($currentDepth!=2 && bot!=null) {
+                            withComputedSizes(bot, currentDepth-2, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
+                            bot = null
+                        }
                         mid(iMid) = displayValue
                         i += 1
                         iMid += 1
                         iSizes += 1
                     } else {
-                        val numElementsToCopy = math.min(displayValue.length - j, ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
+                        val numElementsToCopy = math.min(displayValueEnd - j, ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
                         if (iBot == 0) {
+                            if ($currentDepth!=2 && bot!=null) withComputedSizes(bot, currentDepth-2, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
                             bot = new Array[AnyRef](${if (FULL_REBALANCE) q"math.min($branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits), $blockWidth)" else q"$sizes(iSizes)"} + (if ($currentDepth == 2) 0 else $blockInvariants))
                             mid(iMid) = bot
                         }
                         Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
                         j += numElementsToCopy
                         iBot += numElementsToCopy
-                        if (j == displayValue.length) {
+                        if (j == displayValueEnd) {
                             i += 1
                             j = 0
                         }
@@ -475,12 +481,12 @@ trait VectorCodeGen {
                         top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
                         iTop += 1
                         iMid = 0
-                        mid = new Array[AnyRef](${if (FULL_REBALANCE) q"val remainingBranches = $branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits); if ((remainingBranches >> ${blockIndexBits}) <= $blockWidth) ((remainingBranches >> ${blockIndexBits}) & $blockMask) + 1 else $blockWidth" else q"math.min($lengthSizes - $blockWidth * iTop, $blockWidth)"} + $blockInvariants)
+                        mid = new Array[AnyRef](${if (FULL_REBALANCE) q"val remainingBranches = $branching - ((((iTop << $blockIndexBits) | iMid) << $blockIndexBits) | iBot); if ((remainingBranches >> ${2 * blockIndexBits}) == 0) ((remainingBranches + ${blockWidth - 1}) >> $blockIndexBits) + $blockInvariants else ${blockWidth + blockInvariants}" else q"math.min($lengthSizes - $blockWidth * iTop + $blockInvariants, ${blockWidth + blockInvariants})"} )
                     }
                 }
                 d += 1
             } while (d < 3)
-
+            if ($currentDepth!=2 && bot!=null) withComputedSizes(bot, currentDepth-2, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
             top(iTop) = withComputedSizes(mid, $currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
             top
          """
