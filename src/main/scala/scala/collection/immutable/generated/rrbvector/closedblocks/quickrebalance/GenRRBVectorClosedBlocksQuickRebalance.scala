@@ -2,7 +2,7 @@ package scala {
   package collection {
     package immutable {
       package generated {
-        package rrbvector.fullblocks {
+        package rrbvector.closedblocks.quickrebalance {
           import scala.annotation.tailrec
 
           import scala.compat.Platform
@@ -11,14 +11,14 @@ package scala {
 
           import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
 
-          object GenRRBVectorFullBlocks extends scala.collection.generic.IndexedSeqFactory[GenRRBVectorFullBlocks] {
-            def newBuilder[A]: mutable.Builder[A, GenRRBVectorFullBlocks[A]] = new GenRRBVectorFullBlocksBuilder[A]();
-            implicit def canBuildFrom[A]: scala.collection.generic.CanBuildFrom[Coll, A, GenRRBVectorFullBlocks[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]];
-            private val NIL = new GenRRBVectorFullBlocks[Nothing](0);
-            override def empty[A]: GenRRBVectorFullBlocks[A] = NIL;
-            final private[immutable] def singleton[A](value: A): GenRRBVectorFullBlocks[A] = {
-              val vec = new GenRRBVectorFullBlocks[A](1);
-              vec.display0 = new Array[AnyRef](32);
+          object GenRRBVectorClosedBlocksQuickRebalance extends scala.collection.generic.IndexedSeqFactory[GenRRBVectorClosedBlocksQuickRebalance] {
+            def newBuilder[A]: mutable.Builder[A, GenRRBVectorClosedBlocksQuickRebalance[A]] = new GenRRBVectorClosedBlocksQuickRebalanceBuilder[A]();
+            implicit def canBuildFrom[A]: scala.collection.generic.CanBuildFrom[Coll, A, GenRRBVectorClosedBlocksQuickRebalance[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]];
+            private val NIL = new GenRRBVectorClosedBlocksQuickRebalance[Nothing](0);
+            override def empty[A]: GenRRBVectorClosedBlocksQuickRebalance[A] = NIL;
+            final private[immutable] def singleton[A](value: A): GenRRBVectorClosedBlocksQuickRebalance[A] = {
+              val vec = new GenRRBVectorClosedBlocksQuickRebalance[A](1);
+              vec.display0 = new Array[AnyRef](1);
               vec.display0.update(0, value.asInstanceOf[AnyRef]);
               vec.depth = 1;
               vec.focusEnd = 1;
@@ -27,31 +27,31 @@ package scala {
             }
           }
 
-          final class GenRRBVectorFullBlocks[+A](private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, GenRRBVectorFullBlocks] with scala.collection.IndexedSeqLike[A, GenRRBVectorFullBlocks[A]] with GenRRBVectorFullBlocksPointer[A @uncheckedVariance] with Serializable { self =>
-            override def companion: scala.collection.generic.GenericCompanion[GenRRBVectorFullBlocks] = GenRRBVectorFullBlocks;
+          final class GenRRBVectorClosedBlocksQuickRebalance[+A](private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, GenRRBVectorClosedBlocksQuickRebalance] with scala.collection.IndexedSeqLike[A, GenRRBVectorClosedBlocksQuickRebalance[A]] with GenRRBVectorClosedBlocksQuickRebalancePointer[A @uncheckedVariance] with Serializable { self =>
+            override def companion: scala.collection.generic.GenericCompanion[GenRRBVectorClosedBlocksQuickRebalance] = GenRRBVectorClosedBlocksQuickRebalance;
             def length(): Int = endIndex;
             override def lengthCompare(len: Int): Int = endIndex.-(len);
-            private[collection] def initIterator[B >: A](it: GenRRBVectorFullBlocksIterator[B]): scala.Unit = {
+            private[collection] def initIterator[B >: A](it: GenRRBVectorClosedBlocksQuickRebalanceIterator[B]): scala.Unit = {
               it.initFrom(this);
               if (depth.>(0))
                 it.resetIterator()
               else
                 ()
             };
-            private[collection] def initIterator[B >: A](it: GenRRBVectorFullBlocksReverseIterator[B]): scala.Unit = {
+            private[collection] def initIterator[B >: A](it: GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[B]): scala.Unit = {
               it.initFrom(this);
               if (depth.>(0))
                 it.resetIterator()
               else
                 ()
             };
-            override def iterator: GenRRBVectorFullBlocksIterator[A] = {
-              val it = new GenRRBVectorFullBlocksIterator[A](0, endIndex);
+            override def iterator: GenRRBVectorClosedBlocksQuickRebalanceIterator[A] = {
+              val it = new GenRRBVectorClosedBlocksQuickRebalanceIterator[A](0, endIndex);
               this.initIterator(it);
               it
             };
-            override def reverseIterator: GenRRBVectorFullBlocksReverseIterator[A] = {
-              val it = new GenRRBVectorFullBlocksReverseIterator[A](0, endIndex);
+            override def reverseIterator: GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[A] = {
+              val it = new GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[A](0, endIndex);
               this.initIterator(it);
               it
             };
@@ -71,7 +71,7 @@ package scala {
                 else
                   throw new IndexOutOfBoundsException(index.toString)
             };
-            override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[GenRRBVectorFullBlocks[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
+            override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[GenRRBVectorClosedBlocksQuickRebalance[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
               appendedBack(elem).asInstanceOf[That]
             else
               super.:+(elem)(bf);
@@ -80,29 +80,29 @@ package scala {
               apply(0)
             else
               throw new UnsupportedOperationException("empty.head");
-            override def take(n: Int): GenRRBVectorFullBlocks[A] = if (n.<=(0))
-              GenRRBVectorFullBlocks.empty
+            override def take(n: Int): GenRRBVectorClosedBlocksQuickRebalance[A] = if (n.<=(0))
+              GenRRBVectorClosedBlocksQuickRebalance.empty
             else
               if (n.<(endIndex))
                 takeFront0(n)
               else
                 this;
-            override def dropRight(n: Int): GenRRBVectorFullBlocks[A] = if (n.<=(0))
+            override def dropRight(n: Int): GenRRBVectorClosedBlocksQuickRebalance[A] = if (n.<=(0))
               this
             else
               if (n.<(endIndex))
                 takeFront0(endIndex.-(n))
               else
-                GenRRBVectorFullBlocks.empty;
-            override def slice(from: Int, until: Int): GenRRBVectorFullBlocks[A] = take(until).drop(from);
-            override def splitAt(n: Int): scala.Tuple2[GenRRBVectorFullBlocks[A], GenRRBVectorFullBlocks[A]] = scala.Tuple2(take(n), drop(n));
-            override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[GenRRBVectorFullBlocks[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
+                GenRRBVectorClosedBlocksQuickRebalance.empty;
+            override def slice(from: Int, until: Int): GenRRBVectorClosedBlocksQuickRebalance[A] = take(until).drop(from);
+            override def splitAt(n: Int): scala.Tuple2[GenRRBVectorClosedBlocksQuickRebalance[A], GenRRBVectorClosedBlocksQuickRebalance[A]] = scala.Tuple2(take(n), drop(n));
+            override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[GenRRBVectorClosedBlocksQuickRebalance[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
               if (that.isEmpty)
                 this.asInstanceOf[That]
               else
-                if (that.isInstanceOf[GenRRBVectorFullBlocks[B]])
+                if (that.isInstanceOf[GenRRBVectorClosedBlocksQuickRebalance[B]])
                   {
-                    val vec = that.asInstanceOf[GenRRBVectorFullBlocks[B]];
+                    val vec = that.asInstanceOf[GenRRBVectorClosedBlocksQuickRebalance[B]];
                     if (this.isEmpty)
                       vec.asInstanceOf[That]
                     else
@@ -112,7 +112,7 @@ package scala {
                   super.++(that)
             else
               super.++(that.seq);
-            override def tail: GenRRBVectorFullBlocks[A] = if (this.endIndex.!=(0))
+            override def tail: GenRRBVectorClosedBlocksQuickRebalance[A] = if (this.endIndex.!=(0))
               this.drop(1)
             else
               throw new UnsupportedOperationException("empty.tail");
@@ -120,17 +120,17 @@ package scala {
               this.apply(this.length.-(1))
             else
               throw new UnsupportedOperationException("empty.last");
-            override def init: GenRRBVectorFullBlocks[A] = if (this.endIndex.!=(0))
+            override def init: GenRRBVectorClosedBlocksQuickRebalance[A] = if (this.endIndex.!=(0))
               dropRight(1)
             else
               throw new UnsupportedOperationException("empty.init");
-            private def appendedBack[B >: A](value: B): GenRRBVectorFullBlocks[B] = {
+            private def appendedBack[B >: A](value: B): GenRRBVectorClosedBlocksQuickRebalance[B] = {
               if (this.endIndex.==(0))
-                return GenRRBVectorFullBlocks.singleton[B](value)
+                return GenRRBVectorClosedBlocksQuickRebalance.singleton[B](value)
               else
                 ();
               val _endIndex = this.endIndex;
-              val vec = new GenRRBVectorFullBlocks[B](_endIndex.+(1));
+              val vec = new GenRRBVectorClosedBlocksQuickRebalance[B](_endIndex.+(1));
               vec.initFrom(this);
               vec.gotoIndex(_endIndex.-(1), _endIndex.-(1));
               val elemIndexInBlock = _endIndex.-(vec.focusStart).&(31);
@@ -143,7 +143,7 @@ package scala {
             };
             private def appendBackSetupCurrentBlock() = {
               focusEnd.+=(1);
-              display0 = copyOf(display0, 32, 32);
+              display0 = copyOf(display0, display0.length, display0.length.+(1));
               val _depth = depth;
               if (_depth.>(1))
                 {
@@ -157,7 +157,7 @@ package scala {
                       val oldSizes = displaySizes(i.-(1));
                       if (oldSizes.!=(null))
                         {
-                          val newSizes = new Array[Int](32);
+                          val newSizes = new Array[Int](oldSizes.length);
                           val lastIndex = oldSizes.length.-(1);
                           Platform.arraycopy(oldSizes, 0, newSizes, 0, lastIndex);
                           newSizes.update(lastIndex, oldSizes(lastIndex).+(1));
@@ -241,426 +241,368 @@ package scala {
               else
                 initFocus(0, endIndex.-(1), endIndex, 1, newRelaxedIndex.&(-32))
             };
-            private[immutable] def concatenated[B >: A](that: GenRRBVectorFullBlocks[B]): GenRRBVectorFullBlocks[B] = {
+            private[immutable] def concatenated[B >: A](that: GenRRBVectorClosedBlocksQuickRebalance[B]): GenRRBVectorClosedBlocksQuickRebalance[B] = {
               this.gotoIndex(this.endIndex.-(1), this.endIndex);
               that.gotoIndex(0, that.endIndex);
               val newSize = this.endIndex.+(that.endIndex);
-              val vec = new GenRRBVectorFullBlocks[B](newSize);
+              val vec = new GenRRBVectorClosedBlocksQuickRebalance[B](newSize);
               math.max(this.depth, that.depth) match {
                 case 1 => {
-                  val concat1 = rebalancedLeafs(this.display0, that.display0, this.focus.&(31).+(1), math.min(32, that.focusEnd), true);
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, true);
                   vec.initFromRoot(concat1, if (newSize.<=(32))
                     1
                   else
                     2, newSize)
                 }
                 case 2 => {
-                  val concat1 = rebalancedLeafs(this.display0, that.display0, this.focus.&(31).+(1), math.min(32, that.focusEnd), false);
-                  val concat2 = rebalanced(this.display1, concat1, that.display1, this.focus.|(this.focusRelax).>>(10).&(31), if (concat1(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(2))
-                    that.focusEnd.>>(5).&(31).+(1)
-                  else
-                    ???, 2);
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
                   if (concat2.length.==(2))
                     vec.initFromRoot(concat2(0).asInstanceOf[Array[AnyRef]], 2, newSize)
                   else
-                    vec.initFromRoot(withComputedSizes(concat2, 3, newSize), 3, newSize)
+                    vec.initFromRoot(withComputedSizes(concat2, 3), 3, newSize)
                 }
                 case 3 => {
-                  val concat1 = rebalancedLeafs(this.display0, that.display0, this.focus.&(31).+(1), math.min(32, that.focusEnd), false);
-                  val concat2 = rebalanced(this.display1, concat1, that.display1, this.focus.|(this.focusRelax).>>(10).&(31), if (concat1(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(2))
-                    that.focusEnd.>>(5).&(31).+(1)
-                  else
-                    ???, 2);
-                  val concat3 = rebalanced(this.display2, concat2, that.display2, this.focus.|(this.focusRelax).>>(15).&(31), if (concat2(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(3))
-                    that.focusEnd.>>(10).&(31).+(1)
-                  else
-                    ???, 3);
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
                   if (concat3.length.==(2))
                     vec.initFromRoot(concat3(0).asInstanceOf[Array[AnyRef]], 3, newSize)
                   else
-                    vec.initFromRoot(withComputedSizes(concat3, 4, newSize), 4, newSize)
+                    vec.initFromRoot(withComputedSizes(concat3, 4), 4, newSize)
                 }
                 case 4 => {
-                  val concat1 = rebalancedLeafs(this.display0, that.display0, this.focus.&(31).+(1), math.min(32, that.focusEnd), false);
-                  val concat2 = rebalanced(this.display1, concat1, that.display1, this.focus.|(this.focusRelax).>>(10).&(31), if (concat1(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(2))
-                    that.focusEnd.>>(5).&(31).+(1)
-                  else
-                    ???, 2);
-                  val concat3 = rebalanced(this.display2, concat2, that.display2, this.focus.|(this.focusRelax).>>(15).&(31), if (concat2(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(3))
-                    that.focusEnd.>>(10).&(31).+(1)
-                  else
-                    ???, 3);
-                  val concat4 = rebalanced(this.display3, concat3, that.display3, this.focus.|(this.focusRelax).>>(20).&(31), if (concat3(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(4))
-                    that.focusEnd.>>(15).&(31).+(1)
-                  else
-                    ???, 4);
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
                   if (concat4.length.==(2))
                     vec.initFromRoot(concat4(0).asInstanceOf[Array[AnyRef]], 4, newSize)
                   else
-                    vec.initFromRoot(withComputedSizes(concat4, 5, newSize), 5, newSize)
+                    vec.initFromRoot(withComputedSizes(concat4, 5), 5, newSize)
                 }
                 case 5 => {
-                  val concat1 = rebalancedLeafs(this.display0, that.display0, this.focus.&(31).+(1), math.min(32, that.focusEnd), false);
-                  val concat2 = rebalanced(this.display1, concat1, that.display1, this.focus.|(this.focusRelax).>>(10).&(31), if (concat1(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(2))
-                    that.focusEnd.>>(5).&(31).+(1)
-                  else
-                    ???, 2);
-                  val concat3 = rebalanced(this.display2, concat2, that.display2, this.focus.|(this.focusRelax).>>(15).&(31), if (concat2(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(3))
-                    that.focusEnd.>>(10).&(31).+(1)
-                  else
-                    ???, 3);
-                  val concat4 = rebalanced(this.display3, concat3, that.display3, this.focus.|(this.focusRelax).>>(20).&(31), if (concat3(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(4))
-                    that.focusEnd.>>(15).&(31).+(1)
-                  else
-                    ???, 4);
-                  val concat5 = rebalanced(this.display4, concat4, that.display4, this.focus.|(this.focusRelax).>>(25).&(31), if (concat4(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(5))
-                    that.focusEnd.>>(20).&(31).+(1)
-                  else
-                    ???, 5);
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
+                  val concat5 = rebalanced(this.display4, concat4, that.display4, 5);
                   if (concat5.length.==(2))
                     vec.initFromRoot(concat5(0).asInstanceOf[Array[AnyRef]], 5, newSize)
                   else
-                    vec.initFromRoot(withComputedSizes(concat5, 6, newSize), 6, newSize)
+                    vec.initFromRoot(withComputedSizes(concat5, 6), 6, newSize)
                 }
                 case 6 => {
-                  val concat1 = rebalancedLeafs(this.display0, that.display0, this.focus.&(31).+(1), math.min(32, that.focusEnd), false);
-                  val concat2 = rebalanced(this.display1, concat1, that.display1, this.focus.|(this.focusRelax).>>(10).&(31), if (concat1(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(2))
-                    that.focusEnd.>>(5).&(31).+(1)
-                  else
-                    ???, 2);
-                  val concat3 = rebalanced(this.display2, concat2, that.display2, this.focus.|(this.focusRelax).>>(15).&(31), if (concat2(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(3))
-                    that.focusEnd.>>(10).&(31).+(1)
-                  else
-                    ???, 3);
-                  val concat4 = rebalanced(this.display3, concat3, that.display3, this.focus.|(this.focusRelax).>>(20).&(31), if (concat3(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(4))
-                    that.focusEnd.>>(15).&(31).+(1)
-                  else
-                    ???, 4);
-                  val concat5 = rebalanced(this.display4, concat4, that.display4, this.focus.|(this.focusRelax).>>(25).&(31), if (concat4(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(5))
-                    that.focusEnd.>>(20).&(31).+(1)
-                  else
-                    ???, 5);
-                  val concat6 = rebalanced(this.display5, concat5, that.display5, this.focus.|(this.focusRelax).>>(30).&(31), if (concat5(1).==(null))
-                    1
-                  else
-                    2, if (that.focusDepth.<=(6))
-                    that.focusEnd.>>(25).&(31).+(1)
-                  else
-                    ???, 6);
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
+                  val concat5 = rebalanced(this.display4, concat4, that.display4, 5);
+                  val concat6 = rebalanced(this.display5, concat5, that.display5, 6);
                   vec.initFromRoot(concat6, 6, newSize)
                 }
                 case _ => throw new IllegalStateException()
               };
               vec
             };
-            private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], leftLength: Int, concatLength: Int, rightLength: Int, currentDepth: Int): Array[AnyRef] = {
-              val tup = computeNewSizes(displayLeft, concat, displayRight, leftLength, concatLength, rightLength, currentDepth);
-              val sizes: Array[Int] = tup._1;
-              val nalen: Int = tup._2;
-              val top = new Array[AnyRef](nalen.>>(5).+(if (nalen.&(31).==(0))
-                1
+            private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+              val leftLength = if (displayLeft.==(null))
+                0
               else
-                2));
-              var mid = new Array[AnyRef]((if (nalen.<=(32))
+                displayLeft.length.-(1);
+              val concatLength = if (concat.==(null))
+                0
+              else
+                concat.length.-(1);
+              val rightLength = if (displayRight.==(null))
+                0
+              else
+                displayRight.length.-(1);
+              {
+                val tup = computeNewSizes(displayLeft, concat, displayRight, currentDepth);
+                val sizes: Array[Int] = tup._1;
+                val nalen: Int = tup._2;
+                val top = new Array[AnyRef](nalen.>>(5).+(if (nalen.&(31).==(0))
+                  1
+                else
+                  2));
+                var mid = new Array[AnyRef]((if (nalen.<=(32))
   nalen
 else
   32).+(1));
-              var bot: Array[AnyRef] = null;
-              top.update(0, mid);
-              var iSizes = 0;
-              var iTop = 0;
-              var iMid = 0;
-              var iBot = 0;
-              var i = 0;
-              var j = 0;
-              var d = 0;
-              var currentDisplay: Array[AnyRef] = null;
-              var displayEnd = 0;
-              do 
-                {
-                  d match {
-                    case 0 => if (displayLeft.!=(null))
-                      {
-                        currentDisplay = displayLeft;
-                        if (concat.==(null))
-                          displayEnd = leftLength
-                        else
-                          displayEnd = leftLength.-(1)
-                      }
-                    else
-                      ()
-                    case 1 => {
-                      if (concat.==(null))
-                        displayEnd = 0
-                      else
+                var bot: Array[AnyRef] = null;
+                top.update(0, mid);
+                var iSizes = 0;
+                var iTop = 0;
+                var iMid = 0;
+                var iBot = 0;
+                var i = 0;
+                var j = 0;
+                var d = 0;
+                var currentDisplay: Array[AnyRef] = null;
+                var displayEnd = 0;
+                do 
+                  {
+                    d match {
+                      case 0 => if (displayLeft.!=(null))
                         {
-                          currentDisplay = concat;
-                          displayEnd = concatLength
-                        };
-                      i = 0
-                    }
-                    case 2 => if (displayRight.!=(null))
-                      {
-                        currentDisplay = displayRight;
-                        displayEnd = rightLength;
-                        if (concat.==(null))
-                          i = 0
-                        else
-                          i = 1
-                      }
-                    else
-                      ()
-                  };
-                  while (i.<(displayEnd)) 
-                    {
-                      val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]];
-                      val displayValueEnd = displayValue.length.-(if (currentDepth.==(2))
-                        0
-                      else
-                        1);
-                      if (iBot.==(0).&&(j.==(0)).&&(displayValueEnd.==(sizes(iSizes))))
-                        {
-                          if (currentDepth.!=(2).&&(bot.!=(null)))
-                            {
-                              withComputedSizes(bot, currentDepth.-(2), ???);
-                              bot = null
-                            }
+                          currentDisplay = displayLeft;
+                          if (concat.==(null))
+                            displayEnd = leftLength
                           else
-                            ();
-                          mid.update(iMid, displayValue);
-                          i.+=(1);
-                          iMid.+=(1);
-                          iSizes.+=(1)
-                        }
-                      else
-                        {
-                          val numElementsToCopy = math.min(displayValueEnd.-(j), sizes(iSizes).-(iBot));
-                          if (iBot.==(0))
-                            {
-                              if (currentDepth.!=(2).&&(bot.!=(null)))
-                                withComputedSizes(bot, currentDepth.-(2), ???)
-                              else
-                                ();
-                              bot = new Array[AnyRef](sizes(iSizes).+(if (currentDepth.==(2))
-                                0
-                              else
-                                1));
-                              mid.update(iMid, bot)
-                            }
-                          else
-                            ();
-                          Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy);
-                          j.+=(numElementsToCopy);
-                          iBot.+=(numElementsToCopy);
-                          if (j.==(displayValueEnd))
-                            {
-                              i.+=(1);
-                              j = 0
-                            }
-                          else
-                            ();
-                          if (iBot.==(sizes(iSizes)))
-                            {
-                              iMid.+=(1);
-                              iBot = 0;
-                              iSizes.+=(1)
-                            }
-                          else
-                            ()
-                        };
-                      if (iMid.==(32))
-                        {
-                          top.update(iTop, withComputedSizes(mid, currentDepth.-(1), ???));
-                          iTop.+=(1);
-                          iMid = 0;
-                          mid = new Array[AnyRef](math.min(nalen.-((32).*(iTop)).+(1), 33))
+                            displayEnd = leftLength.-(1)
                         }
                       else
                         ()
-                    }
-                  ;
-                  d.+=(1)
-                }
-               while (d.<(3)) ;
-              if (currentDepth.!=(2).&&(bot.!=(null)))
-                withComputedSizes(bot, currentDepth.-(2), ???)
-              else
-                ();
-              top.update(iTop, withComputedSizes(mid, currentDepth.-(1), ???));
-              top
-            };
-            private def rebalancedLeafs(displayLeft: Array[AnyRef], displayRight: Array[AnyRef], leftLength: Int, rightLength: Int, isTop: Boolean): Array[AnyRef] = if (leftLength.==(32))
-              {
-                val top = new Array[AnyRef](33);
-                top.update(0, displayLeft);
-                top.update(1, displayRight);
+                      case 1 => {
+                        if (concat.==(null))
+                          displayEnd = 0
+                        else
+                          {
+                            currentDisplay = concat;
+                            displayEnd = concatLength
+                          };
+                        i = 0
+                      }
+                      case 2 => if (displayRight.!=(null))
+                        {
+                          currentDisplay = displayRight;
+                          displayEnd = rightLength;
+                          if (concat.==(null))
+                            i = 0
+                          else
+                            i = 1
+                        }
+                      else
+                        ()
+                    };
+                    while (i.<(displayEnd)) 
+                      {
+                        val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]];
+                        val displayValueEnd = displayValue.length.-(if (currentDepth.==(2))
+                          0
+                        else
+                          1);
+                        if (iBot.==(0).&&(j.==(0)).&&(displayValueEnd.==(sizes(iSizes))))
+                          {
+                            if (currentDepth.!=(2).&&(bot.!=(null)))
+                              {
+                                withComputedSizes(bot, currentDepth.-(2));
+                                bot = null
+                              }
+                            else
+                              ();
+                            mid.update(iMid, displayValue);
+                            i.+=(1);
+                            iMid.+=(1);
+                            iSizes.+=(1)
+                          }
+                        else
+                          {
+                            val numElementsToCopy = math.min(displayValueEnd.-(j), sizes(iSizes).-(iBot));
+                            if (iBot.==(0))
+                              {
+                                if (currentDepth.!=(2).&&(bot.!=(null)))
+                                  withComputedSizes(bot, currentDepth.-(2))
+                                else
+                                  ();
+                                bot = new Array[AnyRef](sizes(iSizes).+(if (currentDepth.==(2))
+                                  0
+                                else
+                                  1));
+                                mid.update(iMid, bot)
+                              }
+                            else
+                              ();
+                            Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy);
+                            j.+=(numElementsToCopy);
+                            iBot.+=(numElementsToCopy);
+                            if (j.==(displayValueEnd))
+                              {
+                                i.+=(1);
+                                j = 0
+                              }
+                            else
+                              ();
+                            if (iBot.==(sizes(iSizes)))
+                              {
+                                iMid.+=(1);
+                                iBot = 0;
+                                iSizes.+=(1)
+                              }
+                            else
+                              ()
+                          };
+                        if (iMid.==(32))
+                          {
+                            top.update(iTop, withComputedSizes(mid, currentDepth.-(1)));
+                            iTop.+=(1);
+                            iMid = 0;
+                            mid = new Array[AnyRef](math.min(nalen.-((32).*(iTop)).+(1), 33))
+                          }
+                        else
+                          ()
+                      }
+                    ;
+                    d.+=(1)
+                  }
+                 while (d.<(3)) ;
+                if (currentDepth.!=(2).&&(bot.!=(null)))
+                  withComputedSizes(bot, currentDepth.-(2))
+                else
+                  ();
+                top.update(iTop, withComputedSizes(mid, currentDepth.-(1)));
                 top
               }
-            else
-              if (leftLength.+(rightLength).<=(32))
-                {
-                  val mergedDisplay = new Array[AnyRef](32);
-                  Platform.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength);
-                  Platform.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength);
-                  if (isTop)
-                    mergedDisplay
-                  else
-                    {
-                      val top = new Array[AnyRef](33);
-                      top.update(0, mergedDisplay);
-                      top
-                    }
-                }
-              else
-                {
-                  val top = new Array[AnyRef](33);
-                  val arr0 = new Array[AnyRef](32);
-                  val arr1 = new Array[AnyRef](32);
-                  top.update(0, arr0);
-                  top.update(1, arr1);
-                  Platform.arraycopy(displayLeft, 0, arr0, 0, leftLength);
-                  Platform.arraycopy(displayRight, 0, arr0, leftLength, (32).-(leftLength));
-                  Platform.arraycopy(displayRight, (32).-(leftLength), arr1, 0, rightLength.-(32).+(leftLength));
-                  top
-                };
-            private def computeNewSizes(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], leftLength: Int, concatLength: Int, rightLength: Int, currentDepth: Int) = {
-              var szsLength = leftLength.+(concatLength).+(rightLength);
-              if (leftLength.!=(0))
-                szsLength.-=(1)
-              else
-                ();
-              if (rightLength.!=(0))
-                szsLength.-=(1)
-              else
-                ();
-              val szs = new Array[Int](szsLength);
-              var totalCount = 0;
-              var i = 0;
-              while (i.<(leftLength.-(1))) 
-                {
-                  val sz = if (currentDepth.==(1))
-                    1
-                  else
-                    if (currentDepth.==(2))
-                      displayLeft(i).asInstanceOf[Array[AnyRef]].length
-                    else
-                      displayLeft(i).asInstanceOf[Array[AnyRef]].length.-(1);
-                  szs.update(i, sz);
-                  totalCount.+=(sz);
-                  i.+=(1)
-                }
-              ;
-              val offset1 = i;
-              i = 0;
-              while (i.<(concatLength)) 
-                {
-                  val sz = if (currentDepth.==(1))
-                    1
-                  else
-                    if (currentDepth.==(2))
-                      concat(i).asInstanceOf[Array[AnyRef]].length
-                    else
-                      concat(i).asInstanceOf[Array[AnyRef]].length.-(1);
-                  szs.update(offset1.+(i), sz);
-                  totalCount.+=(sz);
-                  i.+=(1)
-                }
-              ;
-              val offset2 = offset1.+(i).-(1);
-              i = 1;
-              while (i.<(rightLength)) 
-                {
-                  val sz = if (currentDepth.==(1))
-                    1
-                  else
-                    if (currentDepth.==(2))
-                      displayRight(i).asInstanceOf[Array[AnyRef]].length
-                    else
-                      displayRight(i).asInstanceOf[Array[AnyRef]].length.-(1);
-                  szs.update(offset2.+(i), sz);
-                  totalCount.+=(sz);
-                  i.+=(1)
-                }
-              ;
-              val effectiveNumberOfSlots = totalCount./(32).+(1);
-              val MinWidth = 31;
-              val EXTRAS = 2;
-              while (szsLength.>(effectiveNumberOfSlots.+(EXTRAS))) 
-                {
-                  var ix = 0;
-                  while (szs(ix).>(MinWidth)) 
-                    ix.+=(1)
-                  ;
-                  var el = szs(ix);
-                  do 
-                    {
-                      val msz = math.min(el.+(szs(ix.+(1))), 32);
-                      szs.update(ix, msz);
-                      el = el.+(szs(ix.+(1))).-(msz);
-                      ix.+=(1)
-                    }
-                   while (el.>(0)) ;
-                  while (ix.<(szsLength.-(1))) 
-                    {
-                      szs.update(ix, szs(ix.+(1)));
-                      ix.+=(1)
-                    }
-                  ;
-                  szsLength.-=(1)
-                }
-              ;
-              scala.Tuple2(szs, szsLength)
             };
-            private def withComputedSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Array[AnyRef] = {
+            private def rebalancedLeafs(displayLeft: Array[AnyRef], displayRight: Array[AnyRef], isTop: Boolean): Array[AnyRef] = {
+              val leftLength = displayLeft.length;
+              val rightLength = displayRight.length;
+              if (leftLength.==(32))
+                {
+                  val top = new Array[AnyRef](3);
+                  top.update(0, displayLeft);
+                  top.update(1, displayRight);
+                  top
+                }
+              else
+                if (leftLength.+(rightLength).<=(32))
+                  {
+                    val mergedDisplay = new Array[AnyRef](leftLength.+(rightLength));
+                    Platform.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength);
+                    Platform.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength);
+                    if (isTop)
+                      mergedDisplay
+                    else
+                      {
+                        val top = new Array[AnyRef](2);
+                        top.update(0, mergedDisplay);
+                        top
+                      }
+                  }
+                else
+                  {
+                    val top = new Array[AnyRef](3);
+                    val arr0 = new Array[AnyRef](32);
+                    val arr1 = new Array[AnyRef](leftLength.+(rightLength).-(32));
+                    top.update(0, arr0);
+                    top.update(1, arr1);
+                    Platform.arraycopy(displayLeft, 0, arr0, 0, leftLength);
+                    Platform.arraycopy(displayRight, 0, arr0, leftLength, (32).-(leftLength));
+                    Platform.arraycopy(displayRight, (32).-(leftLength), arr1, 0, rightLength.-(32).+(leftLength));
+                    top
+                  }
+            };
+            private def computeNewSizes(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int) = {
+              val leftLength = if (displayLeft.==(null))
+                0
+              else
+                displayLeft.length.-(1);
+              val concatLength = if (concat.==(null))
+                0
+              else
+                concat.length.-(1);
+              val rightLength = if (displayRight.==(null))
+                0
+              else
+                displayRight.length.-(1);
+              {
+                var szsLength = leftLength.+(concatLength).+(rightLength);
+                if (leftLength.!=(0))
+                  szsLength.-=(1)
+                else
+                  ();
+                if (rightLength.!=(0))
+                  szsLength.-=(1)
+                else
+                  ();
+                val szs = new Array[Int](szsLength);
+                var totalCount = 0;
+                var i = 0;
+                while (i.<(leftLength.-(1))) 
+                  {
+                    val sz = if (currentDepth.==(1))
+                      1
+                    else
+                      if (currentDepth.==(2))
+                        displayLeft(i).asInstanceOf[Array[AnyRef]].length
+                      else
+                        displayLeft(i).asInstanceOf[Array[AnyRef]].length.-(1);
+                    szs.update(i, sz);
+                    totalCount.+=(sz);
+                    i.+=(1)
+                  }
+                ;
+                val offset1 = i;
+                i = 0;
+                while (i.<(concatLength)) 
+                  {
+                    val sz = if (currentDepth.==(1))
+                      1
+                    else
+                      if (currentDepth.==(2))
+                        concat(i).asInstanceOf[Array[AnyRef]].length
+                      else
+                        concat(i).asInstanceOf[Array[AnyRef]].length.-(1);
+                    szs.update(offset1.+(i), sz);
+                    totalCount.+=(sz);
+                    i.+=(1)
+                  }
+                ;
+                val offset2 = offset1.+(i).-(1);
+                i = 1;
+                while (i.<(rightLength)) 
+                  {
+                    val sz = if (currentDepth.==(1))
+                      1
+                    else
+                      if (currentDepth.==(2))
+                        displayRight(i).asInstanceOf[Array[AnyRef]].length
+                      else
+                        displayRight(i).asInstanceOf[Array[AnyRef]].length.-(1);
+                    szs.update(offset2.+(i), sz);
+                    totalCount.+=(sz);
+                    i.+=(1)
+                  }
+                ;
+                val effectiveNumberOfSlots = totalCount./(32).+(1);
+                val MinWidth = 31;
+                val EXTRAS = 2;
+                while (szsLength.>(effectiveNumberOfSlots.+(EXTRAS))) 
+                  {
+                    var ix = 0;
+                    while (szs(ix).>(MinWidth)) 
+                      ix.+=(1)
+                    ;
+                    var el = szs(ix);
+                    do 
+                      {
+                        val msz = math.min(el.+(szs(ix.+(1))), 32);
+                        szs.update(ix, msz);
+                        el = el.+(szs(ix.+(1))).-(msz);
+                        ix.+=(1)
+                      }
+                     while (el.>(0)) ;
+                    while (ix.<(szsLength.-(1))) 
+                      {
+                        szs.update(ix, szs(ix.+(1)));
+                        ix.+=(1)
+                      }
+                    ;
+                    szsLength.-=(1)
+                  }
+                ;
+                scala.Tuple2(szs, szsLength)
+              }
+            };
+            private def withComputedSizes(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
               if (currentDepth.>(1))
                 {
                   var i = 0;
                   var acc = 0;
-                  val end = 32;
+                  val end = node.length.-(1);
                   val sizes = new Array[Int](end);
-                  while (acc.<(_endIndex)) 
+                  while (i.<(end)) 
                     {
                       acc.+=(treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1)));
                       sizes.update(i, acc);
@@ -673,9 +615,9 @@ else
                 {
                   var i = 0;
                   var acc = 0;
-                  val end = 32;
+                  val end = node.length.-(1);
                   val sizes = new Array[Int](end);
-                  while (acc.<(_endIndex)) 
+                  while (i.<(end)) 
                     {
                       acc.+=(node(i).asInstanceOf[Array[AnyRef]].length);
                       sizes.update(i, acc);
@@ -705,8 +647,8 @@ else
                   acc.+(_tree.length)
                 }
             };
-            private def takeFront0(n: Int): GenRRBVectorFullBlocks[A] = {
-              val vec = new GenRRBVectorFullBlocks[A](n);
+            private def takeFront0(n: Int): GenRRBVectorClosedBlocksQuickRebalance[A] = {
+              val vec = new GenRRBVectorClosedBlocksQuickRebalance[A](n);
               vec.initFrom(this);
               if (depth.>(1))
                 {
@@ -714,7 +656,7 @@ else
                   val d0len = vec.focus.&(31).+(1);
                   if (d0len.!=(32))
                     {
-                      val d0 = new Array[AnyRef](32);
+                      val d0 = new Array[AnyRef](d0len);
                       Platform.arraycopy(vec.display0, 0, d0, 0, d0len);
                       vec.display0 = d0
                     }
@@ -763,7 +705,7 @@ else
               else
                 if (n.!=(32))
                   {
-                    val d0 = new Array[AnyRef](32);
+                    val d0 = new Array[AnyRef](n);
                     Platform.arraycopy(vec.display0, 0, d0, 0, n);
                     vec.display0 = d0
                   }
@@ -774,7 +716,7 @@ else
             }
           }
 
-          final class GenRRBVectorFullBlocksBuilder[A] extends mutable.Builder[A, GenRRBVectorFullBlocks[A]] with GenRRBVectorFullBlocksPointer[A @uncheckedVariance] {
+          final class GenRRBVectorClosedBlocksQuickRebalanceBuilder[A] extends mutable.Builder[A, GenRRBVectorClosedBlocksQuickRebalance[A]] with GenRRBVectorClosedBlocksQuickRebalancePointer[A @uncheckedVariance] {
             display0 = new Array[AnyRef](32);
             depth = 1;
             private var blockIndex = 0;
@@ -794,15 +736,15 @@ else
               this
             };
             override def ++=(xs: TraversableOnce[A]): this.type = super.++=(xs);
-            def result(): GenRRBVectorFullBlocks[A] = {
+            def result(): GenRRBVectorClosedBlocksQuickRebalance[A] = {
               val size = blockIndex.+(lo);
               if (size.==(0))
-                return GenRRBVectorFullBlocks.empty
+                return GenRRBVectorClosedBlocksQuickRebalance.empty
               else
                 ();
-              val resultVector = new GenRRBVectorFullBlocks[A](size);
+              val resultVector = new GenRRBVectorClosedBlocksQuickRebalance[A](size);
               resultVector.initFrom(this);
-              resultVector.display0 = copyOf(resultVector.display0, lo, 32);
+              resultVector.display0 = copyOf(resultVector.display0, lo, lo);
               val _depth = depth;
               if (_depth.>(1))
                 {
@@ -830,7 +772,7 @@ else
             }
           }
 
-          class GenRRBVectorFullBlocksIterator[+A](startIndex: Int, endIndex: Int) extends AbstractIterator[A] with Iterator[A] with GenRRBVectorFullBlocksPointer[A @uncheckedVariance] {
+          class GenRRBVectorClosedBlocksQuickRebalanceIterator[+A](startIndex: Int, endIndex: Int) extends AbstractIterator[A] with Iterator[A] with GenRRBVectorClosedBlocksQuickRebalancePointer[A @uncheckedVariance] {
             private var blockIndex: Int = _;
             private var lo: Int = _;
             private var endLo: Int = _;
@@ -871,7 +813,7 @@ else
               throw new NoSuchElementException("reached iterator end")
           }
 
-          class GenRRBVectorFullBlocksReverseIterator[+A](startIndex: Int, endIndex: Int) extends AbstractIterator[A] with Iterator[A] with GenRRBVectorFullBlocksPointer[A @uncheckedVariance] {
+          class GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[+A](startIndex: Int, endIndex: Int) extends AbstractIterator[A] with Iterator[A] with GenRRBVectorClosedBlocksQuickRebalancePointer[A @uncheckedVariance] {
             private var blockIndex: Int = _;
             private var lo: Int = _;
             private var endLo: Int = _;
@@ -922,7 +864,7 @@ else
               throw new NoSuchElementException("reached iterator end")
           }
 
-          private[immutable] trait GenRRBVectorFullBlocksPointer[A] {
+          private[immutable] trait GenRRBVectorClosedBlocksQuickRebalancePointer[A] {
             private[immutable] var display0: Array[AnyRef] = _;
             private[immutable] var display1: Array[AnyRef] = _;
             private[immutable] var display2: Array[AnyRef] = _;
@@ -957,7 +899,7 @@ else
               depth = _depth;
               gotoIndex(0, _endIndex)
             };
-            private[immutable] def initFrom[U](that: GenRRBVectorFullBlocksPointer[U]): Unit = {
+            private[immutable] def initFrom[U](that: GenRRBVectorClosedBlocksQuickRebalancePointer[U]): Unit = {
               initFocus(that.focus, that.focusStart, that.focusEnd, that.focusDepth, that.focusRelax);
               depth = that.depth;
               dirty = that.dirty;
@@ -1025,11 +967,11 @@ else
               while (currentDepth.<(depth)) 
                 {
                   allSizes.update(currentDepth.-(1), currentDepth match {
-                    case 1 => display1(32).asInstanceOf[Array[Int]]
-                    case 2 => display2(32).asInstanceOf[Array[Int]]
-                    case 3 => display3(32).asInstanceOf[Array[Int]]
-                    case 4 => display4(32).asInstanceOf[Array[Int]]
-                    case 5 => display5(32).asInstanceOf[Array[Int]]
+                    case 1 => display1(display1.length.-(1)).asInstanceOf[Array[Int]]
+                    case 2 => display2(display2.length.-(1)).asInstanceOf[Array[Int]]
+                    case 3 => display3(display3.length.-(1)).asInstanceOf[Array[Int]]
+                    case 4 => display4(display4.length.-(1)).asInstanceOf[Array[Int]]
+                    case 5 => display5(display5.length.-(1)).asInstanceOf[Array[Int]]
                     case _ => null
                   });
                   currentDepth.+=(1)
@@ -1066,7 +1008,7 @@ else
               };
               if (_depth.>(1).&&(display(display.length.-(1)).!=(null)))
                 {
-                  val sizes = display(32).asInstanceOf[Array[Int]];
+                  val sizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
                   val indexInSubTree = index.-(_startIndex);
                   var is = 0;
                   while (sizes(is).<=(indexInSubTree)) 
@@ -1223,90 +1165,90 @@ else
               {
                 if (this.depth.==(1))
                   {
-                    display1 = new Array(33);
+                    display1 = new Array(3);
                     display1.update(0, display0);
                     depth = 2
                   }
                 else
                   {
                     val len = display1.length;
-                    display1 = copyOf(display1, len, 33)
+                    display1 = copyOf(display1, len, len.+(1))
                   };
-                display0 = new Array(32)
+                display0 = new Array(1)
               }
             else
               if (xor.<(32768))
                 {
                   if (this.depth.==(2))
                     {
-                      display2 = new Array(33);
+                      display2 = new Array(3);
                       display2.update(0, display1);
                       depth = 3
                     }
                   else
                     {
                       val len = display2.length;
-                      display2 = copyOf(display2, len, 33)
+                      display2 = copyOf(display2, len, len.+(1))
                     };
-                  display0 = new Array(32);
-                  display1 = new Array(33)
+                  display0 = new Array(1);
+                  display1 = new Array(2)
                 }
               else
                 if (xor.<(1048576))
                   {
                     if (this.depth.==(3))
                       {
-                        display3 = new Array(33);
+                        display3 = new Array(3);
                         display3.update(0, display2);
                         depth = 4
                       }
                     else
                       {
                         val len = display3.length;
-                        display3 = copyOf(display3, len, 33)
+                        display3 = copyOf(display3, len, len.+(1))
                       };
-                    display0 = new Array(32);
-                    display1 = new Array(33);
-                    display2 = new Array(33)
+                    display0 = new Array(1);
+                    display1 = new Array(2);
+                    display2 = new Array(2)
                   }
                 else
                   if (xor.<(33554432))
                     {
                       if (this.depth.==(4))
                         {
-                          display4 = new Array(33);
+                          display4 = new Array(3);
                           display4.update(0, display3);
                           depth = 5
                         }
                       else
                         {
                           val len = display4.length;
-                          display4 = copyOf(display4, len, 33)
+                          display4 = copyOf(display4, len, len.+(1))
                         };
-                      display0 = new Array(32);
-                      display1 = new Array(33);
-                      display2 = new Array(33);
-                      display3 = new Array(33)
+                      display0 = new Array(1);
+                      display1 = new Array(2);
+                      display2 = new Array(2);
+                      display3 = new Array(2)
                     }
                   else
                     if (xor.<(1073741824))
                       {
                         if (this.depth.==(5))
                           {
-                            display5 = new Array(33);
+                            display5 = new Array(3);
                             display5.update(0, display4);
                             depth = 6
                           }
                         else
                           {
                             val len = display5.length;
-                            display5 = copyOf(display5, len, 33)
+                            display5 = copyOf(display5, len, len.+(1))
                           };
-                        display0 = new Array(32);
-                        display1 = new Array(33);
-                        display2 = new Array(33);
-                        display3 = new Array(33);
-                        display4 = new Array(33)
+                        display0 = new Array(1);
+                        display1 = new Array(2);
+                        display2 = new Array(2);
+                        display3 = new Array(2);
+                        display4 = new Array(2)
                       }
                     else
                       throw new IllegalArgumentException();
@@ -1405,43 +1347,43 @@ else
               case 1 => ()
               case 2 => {
                 val idx_1 = _focus.>>(5).&(31);
-                display1 = copyOf(display1, idx_1.+(1), 33)
+                display1 = copyOf(display1, idx_1.+(1), idx_1.+(2))
               }
               case 3 => {
                 val idx_1 = _focus.>>(5).&(31);
-                display1 = copyOf(display1, idx_1.+(1), 33);
+                display1 = copyOf(display1, idx_1.+(1), idx_1.+(2));
                 val idx_2 = _focus.>>(10).&(31);
-                display2 = copyOf(display2, idx_2.+(1), 33)
+                display2 = copyOf(display2, idx_2.+(1), idx_2.+(2))
               }
               case 4 => {
                 val idx_1 = _focus.>>(5).&(31);
-                display1 = copyOf(display1, idx_1.+(1), 33);
+                display1 = copyOf(display1, idx_1.+(1), idx_1.+(2));
                 val idx_2 = _focus.>>(10).&(31);
-                display2 = copyOf(display2, idx_2.+(1), 33);
+                display2 = copyOf(display2, idx_2.+(1), idx_2.+(2));
                 val idx_3 = _focus.>>(15).&(31);
-                display3 = copyOf(display3, idx_3.+(1), 33)
+                display3 = copyOf(display3, idx_3.+(1), idx_3.+(2))
               }
               case 5 => {
                 val idx_1 = _focus.>>(5).&(31);
-                display1 = copyOf(display1, idx_1.+(1), 33);
+                display1 = copyOf(display1, idx_1.+(1), idx_1.+(2));
                 val idx_2 = _focus.>>(10).&(31);
-                display2 = copyOf(display2, idx_2.+(1), 33);
+                display2 = copyOf(display2, idx_2.+(1), idx_2.+(2));
                 val idx_3 = _focus.>>(15).&(31);
-                display3 = copyOf(display3, idx_3.+(1), 33);
+                display3 = copyOf(display3, idx_3.+(1), idx_3.+(2));
                 val idx_4 = _focus.>>(20).&(31);
-                display4 = copyOf(display4, idx_4.+(1), 33)
+                display4 = copyOf(display4, idx_4.+(1), idx_4.+(2))
               }
               case 6 => {
                 val idx_1 = _focus.>>(5).&(31);
-                display1 = copyOf(display1, idx_1.+(1), 33);
+                display1 = copyOf(display1, idx_1.+(1), idx_1.+(2));
                 val idx_2 = _focus.>>(10).&(31);
-                display2 = copyOf(display2, idx_2.+(1), 33);
+                display2 = copyOf(display2, idx_2.+(1), idx_2.+(2));
                 val idx_3 = _focus.>>(15).&(31);
-                display3 = copyOf(display3, idx_3.+(1), 33);
+                display3 = copyOf(display3, idx_3.+(1), idx_3.+(2));
                 val idx_4 = _focus.>>(20).&(31);
-                display4 = copyOf(display4, idx_4.+(1), 33);
+                display4 = copyOf(display4, idx_4.+(1), idx_4.+(2));
                 val idx_5 = _focus.>>(25).&(31);
-                display5 = copyOf(display5, idx_5.+(1), 33)
+                display5 = copyOf(display5, idx_5.+(1), idx_5.+(2))
               }
             };
             final private[immutable] def copyDisplaysTop(currentDepth: Int, _focusRelax: Int): Unit = {
