@@ -20,7 +20,6 @@ class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.RRBVectorAppendIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceAppendIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.xunbalanced.GenRRBVectorClosedBlocksFullRebalanceAppendIntBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceAppendIntBenchmark]
     include[generated.rrbvector.closedblocks.quickrebalance.xunbalanced.GenRRBVectorClosedBlocksQuickRebalanceAppendIntBenchmark]
 }
 
@@ -29,7 +28,6 @@ class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.RRBVectorApplyIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceApplyIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.xunbalanced.GenRRBVectorClosedBlocksFullRebalanceApplyIntBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceApplyIntBenchmark]
     include[generated.rrbvector.closedblocks.quickrebalance.xunbalanced.GenRRBVectorClosedBlocksQuickRebalanceApplyIntBenchmark]
 }
 
@@ -37,9 +35,7 @@ class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorBuilderIntBenchmark]
     include[rrbvector.RRBVectorBuilderIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceBuilderIntBenchmark]
-    include[generated.rrbvector.closedblocks.fullrebalance.xunbalanced.GenRRBVectorClosedBlocksFullRebalanceBuilderIntBenchmark]
     include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceBuilderIntBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.xunbalanced.GenRRBVectorClosedBlocksQuickRebalanceBuilderIntBenchmark]
 }
 
 class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport {
@@ -56,7 +52,6 @@ class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.RRBVectorIterationIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceIterationIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.xunbalanced.GenRRBVectorClosedBlocksFullRebalanceIterationIntBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceIterationIntBenchmark]
     include[generated.rrbvector.closedblocks.quickrebalance.xunbalanced.GenRRBVectorClosedBlocksQuickRebalanceIterationIntBenchmark]
 }
 
@@ -65,7 +60,6 @@ class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.RRBVectorSplitIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceSplitIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.xunbalanced.GenRRBVectorClosedBlocksFullRebalanceSplitIntBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceSplitIntBenchmark]
     include[generated.rrbvector.closedblocks.quickrebalance.xunbalanced.GenRRBVectorClosedBlocksQuickRebalanceSplitIntBenchmark]
 }
 
@@ -74,6 +68,5 @@ class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.RRBVectorIntMemoryAllocation]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceIntMemoryAllocationBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.xunbalanced.GenRRBVectorClosedBlocksFullRebalanceIntMemoryAllocationBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceIntMemoryAllocationBenchmark]
     include[generated.rrbvector.closedblocks.quickrebalance.xunbalanced.GenRRBVectorClosedBlocksQuickRebalanceIntMemoryAllocationBenchmark]
 }
