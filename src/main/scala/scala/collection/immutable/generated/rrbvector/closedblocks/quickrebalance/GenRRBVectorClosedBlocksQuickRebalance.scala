@@ -787,30 +787,37 @@ else
               endLo = math.min(focusEnd.-(blockIndex), 32)
             };
             def hasNext = _hasNext;
-            def next(): A = if (_hasNext)
-              {
-                val res = display0(lo).asInstanceOf[A];
-                lo.+=(1);
-                if (lo.==(endLo))
-                  {
-                    val newBlockIndex = blockIndex.+(endLo);
-                    if (newBlockIndex.<(focusEnd))
-                      gotoNextBlockStart(newBlockIndex, newBlockIndex.^(blockIndex))
-                    else
-                      if (newBlockIndex.<(endIndex))
-                        gotoPosRelaxed(newBlockIndex, 0, endIndex, depth)
-                      else
-                        _hasNext = false;
-                    blockIndex = newBlockIndex;
-                    lo = 0;
-                    endLo = math.min(focusEnd.-(blockIndex), 32)
-                  }
-                else
-                  ();
+            def next(): A = {
+              val _lo = lo;
+              val res = display0(_lo).asInstanceOf[A];
+              lo = _lo.+(1);
+              val _endLo = endLo;
+              if (_lo.+(1).!=(_endLo))
                 res
-              }
-            else
-              throw new NoSuchElementException("reached iterator end")
+              else
+                {
+                  val oldBlockIndex = blockIndex;
+                  val newBlockIndex = oldBlockIndex.+(_endLo);
+                  blockIndex = newBlockIndex;
+                  lo = 0;
+                  if (newBlockIndex.<(focusEnd))
+                    gotoNextBlockStart(newBlockIndex, newBlockIndex.^(oldBlockIndex))
+                  else
+                    if (newBlockIndex.<(endIndex))
+                      gotoPosRelaxed(newBlockIndex, 0, endIndex, depth)
+                    else
+                      {
+                        lo = focusEnd.-(newBlockIndex).-(1);
+                        blockIndex = endIndex;
+                        if (_hasNext)
+                          _hasNext = false
+                        else
+                          throw new NoSuchElementException("reached iterator end")
+                      };
+                  endLo = math.min(focusEnd.-(newBlockIndex), 32);
+                  res
+                }
+            }
           }
 
           class GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[+A](startIndex: Int, endIndex: Int) extends AbstractIterator[A] with Iterator[A] with GenRRBVectorClosedBlocksQuickRebalancePointer[A @uncheckedVariance] {

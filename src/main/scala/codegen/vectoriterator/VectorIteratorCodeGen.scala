@@ -43,30 +43,40 @@ trait VectorIteratorCodeGen {
     }
 
     protected def nextCode() = {
+        val oldBlockIndex = TermName("oldBlockIndex")
+        val newBlockIndex = TermName("newBlockIndex")
+        val localLo = TermName("_lo")
+        val localEndLo = TermName("_endLo")
+        val res = TermName("res")
         q"""
-            if ($it_hasNextVar) {
-                val res = $display0($it_lo).asInstanceOf[A]
-                $it_lo += 1
-
-                if ($it_lo == $it_endLo) {
-                    val newBlockIndex = $it_blockIndex + $it_endLo
-                    if (newBlockIndex < $focusEnd) {
-                        $gotoNextBlockStart(newBlockIndex, newBlockIndex ^ $it_blockIndex)
-                    } else if (newBlockIndex < $it_endIndex) {
-                        $gotoPosRelaxed(newBlockIndex, 0, $it_endIndex, $depth)
-                    } else {
-                        $it_hasNextVar = false
-                    }
-                    $it_blockIndex = newBlockIndex
-                    $it_lo = 0
-                    $it_endLo = math.min($focusEnd - $it_blockIndex, $blockWidth)
-                }
-
-                res
+            val $localLo = lo
+            val $res = display0($localLo).asInstanceOf[A]
+            lo = $localLo + 1
+            val $localEndLo = $it_endLo
+            if ( $localLo + 1 != $localEndLo ) {
+                $res
             } else {
-                throw new NoSuchElementException("reached iterator end")
+                val $oldBlockIndex = $it_blockIndex
+                val $newBlockIndex = $oldBlockIndex + $localEndLo
+                $it_blockIndex = $newBlockIndex;
+                lo = 0;
+                if ( $newBlockIndex < $focusEnd ) {
+                    $gotoNextBlockStart($newBlockIndex, $newBlockIndex ^ $oldBlockIndex)
+                } else if ( $newBlockIndex < $it_endIndex ) {
+                    $gotoPosRelaxed($newBlockIndex, 0, $it_endIndex, $depth)
+                } else {
+                    $it_lo = $focusEnd - $newBlockIndex - 1
+                    $it_blockIndex = $it_endIndex
+                    if ( $it_hasNextVar ) {
+                        $it_hasNextVar = false
+                    } else {
+                        throw new NoSuchElementException("reached iterator end")
+                    }
+                }
+                $it_endLo = math.min($focusEnd.-($newBlockIndex), $blockWidth)
+                $res
             }
-        """
+         """
     }
 
 }
