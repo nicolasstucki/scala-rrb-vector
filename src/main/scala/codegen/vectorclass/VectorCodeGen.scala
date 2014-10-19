@@ -113,7 +113,7 @@ trait VectorCodeGen {
                 $getElement($indexInFocus, $indexInFocus ^ $focus).asInstanceOf[$A]
             } else if (0 <= $index && $index < $v_endIndex) {
                 $gotoPosRelaxed($index, 0, $v_endIndex, $depth)
-                $display0(($index - $focusStartLocal) & $blockMask).asInstanceOf[$A]
+                $display0(($index - $focusStart) & $blockMask).asInstanceOf[$A]
             } else {
                 throw new IndexOutOfBoundsException($index.toString)
             }

@@ -66,7 +66,7 @@ package scala {
                 if ((0).<=(index).&&(index.<(endIndex)))
                   {
                     gotoPosRelaxed(index, 0, endIndex, depth);
-                    display0(index.-(_focusStart).&(31)).asInstanceOf[A]
+                    display0(index.-(focusStart).&(31)).asInstanceOf[A]
                   }
                 else
                   throw new IndexOutOfBoundsException(index.toString)

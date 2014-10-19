@@ -8,11 +8,9 @@ trait VectorBenchmarksGen {
     self: VectorProperties =>
 
     def generateVectorBenchmarkClasses() = {
-
-        inPackages(
-            s"scala.collection.immutable.vectorbenchmarks.generated".split('.'),
+        def testSet(vecGen: Tree, pack: TermName, variant: String) ={
             q"""
-                package $subpackage {
+                package $pack {
                     import scala.collection.immutable.vectorbenchmarks.genericbenchmarks._
                     import scala.collection.immutable.vectorutils.VectorGeneratorType
                     import scala.collection.immutable.vectorutils.generated.$subpackage._
@@ -21,7 +19,8 @@ trait VectorBenchmarksGen {
                     trait $vectorBaseBenchmarkClassName[A] extends BaseVectorBenchmark[A] with $vectorGeneratorClassName[A] {
                         override def generateVectors(from: Int, to: Int, by: Int): org.scalameter.Gen[$vectorClassName[A]] = for {
                             size <- sizes(from, to, by)
-                        } yield $vectorObjectName.tabulate(size)(element)
+                        } yield $vecGen
+                        override def vectorName: String = super.vectorName + $variant
                     }
 
                     abstract class ${vectorBenchmarkClassName("Append")}[A] extends AppendBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
@@ -98,6 +97,16 @@ trait VectorBenchmarksGen {
                     abstract class ${vectorBenchmarkClassName("Split")}[A] extends SplitBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
                     class ${vectorBenchmarkClassName("SplitInt")} extends ${vectorBenchmarkClassName("Split")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("SplitAnyRef")} extends ${vectorBenchmarkClassName("Split")}[AnyRef] with VectorGeneratorType.AnyRefGenerator
+                }
+             """
+        }
+
+        inPackages(
+            s"scala.collection.immutable.vectorbenchmarks.generated".split('.'),
+            q"""
+                package $subpackage {
+                    ${testSet(q"tabulatedVector(size)", TermName("balanced"), "Balanced")}
+                    ${testSet(q"randomVectorOfSize(size)(defaultVectorConfig())", TermName("xunbalanced"), "XUnbalanced")}
                 }
              """)
 

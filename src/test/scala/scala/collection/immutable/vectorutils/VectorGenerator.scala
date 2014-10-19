@@ -15,6 +15,8 @@ trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
     def tabulatedVector(n: Int): Vec
 
+    final def defaultVectorConfig() = BaseVectorGenerator.defaultVectorConfig()
+
     final def randomVectorOfSize[A](n: Int)(implicit config: BaseVectorGenerator.Config): Vec = n match {
         case 0 => emptyVector
         case n if n > 0 && config.maxSplitSize < n =>
@@ -32,9 +34,9 @@ trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
 object BaseVectorGenerator {
 
-    case class Config(rnd: Random, maxSplitSize: Int)
+    final def defaultVectorConfig() = BaseVectorGenerator.Config(new scala.util.Random(111), 6)
 
-    final def defaultConfig() = Config(new scala.util.Random(111), 6)
+    case class Config(rnd: Random, maxSplitSize: Int)
 
     trait VectorGenerator[A] extends BaseVectorGenerator[A] {
         override type Vec = Vector[A]
