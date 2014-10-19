@@ -35,7 +35,6 @@ class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorBuilderIntBenchmark]
     include[rrbvector.RRBVectorBuilderIntBenchmark]
     include[generated.rrbvector.closedblocks.fullrebalance.balanced.GenRRBVectorClosedBlocksFullRebalanceBuilderIntBenchmark]
-    include[generated.rrbvector.closedblocks.quickrebalance.balanced.GenRRBVectorClosedBlocksQuickRebalanceBuilderIntBenchmark]
 }
 
 class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport {
