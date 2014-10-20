@@ -12,7 +12,7 @@ trait VectorReverseIteratorMethodsGen {
 
     def generateVectorReverseIteratorMethods() = {
         val fields = Seq(
-            q"private var $rit_blockIndexInFocus: Int = _",
+            q"private var $rit_lastIndexOfBlock: Int = _",
             q"private var $rit_lo: Int = _",
             q"private var $rit_endLo: Int = _",
             q"private var $rit_hasNextVar: Boolean = $rit_startIndex < $rit_endIndex"

@@ -331,7 +331,6 @@ package scala {
 else
   32).+(1));
                 var bot: Array[AnyRef] = null;
-                top.update(0, mid);
                 var iSizes = 0;
                 var iTop = 0;
                 var iMid = 0;
@@ -387,7 +386,7 @@ else
                           {
                             if (currentDepth.!=(2).&&(bot.!=(null)))
                               {
-                                withComputedSizes(bot, currentDepth.-(2));
+                                withComputedSizes(bot, currentDepth.-(1));
                                 bot = null
                               }
                             else
@@ -403,7 +402,7 @@ else
                             if (iBot.==(0))
                               {
                                 if (currentDepth.!=(2).&&(bot.!=(null)))
-                                  withComputedSizes(bot, currentDepth.-(2))
+                                  withComputedSizes(bot, currentDepth.-(1))
                                 else
                                   ();
                                 bot = new Array[AnyRef](sizes(iSizes).+(if (currentDepth.==(2))
@@ -435,10 +434,13 @@ else
                           };
                         if (iMid.==(32))
                           {
-                            top.update(iTop, withComputedSizes(mid, currentDepth.-(1)));
+                            top.update(iTop, withComputedSizes(mid, currentDepth));
                             iTop.+=(1);
                             iMid = 0;
-                            mid = new Array[AnyRef](math.min(nalen.-((32).*(iTop)).+(1), 33))
+                            if (nalen.-(iTop.<<(5)).!=(0))
+                              mid = new Array[AnyRef](math.min(nalen.-(iTop.<<(5)).+(1), 33))
+                            else
+                              mid = null
                           }
                         else
                           ()
@@ -448,10 +450,13 @@ else
                   }
                  while (d.<(3)) ;
                 if (currentDepth.!=(2).&&(bot.!=(null)))
-                  withComputedSizes(bot, currentDepth.-(2))
+                  withComputedSizes(bot, currentDepth.-(1))
                 else
                   ();
-                top.update(iTop, withComputedSizes(mid, currentDepth.-(1)));
+                if (mid.!=(null))
+                  top.update(iTop, withComputedSizes(mid, currentDepth))
+                else
+                  ();
                 top
               }
             };
@@ -596,12 +601,12 @@ else
               }
             };
             private def withComputedSizes(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+              var i = 0;
+              var acc = 0;
+              val end = node.length.-(1);
+              val sizes = new Array[Int](end);
               if (currentDepth.>(1))
                 {
-                  var i = 0;
-                  var acc = 0;
-                  val end = node.length.-(1);
-                  val sizes = new Array[Int](end);
                   while (i.<(end)) 
                     {
                       acc.+=(treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1)));
@@ -609,14 +614,14 @@ else
                       i.+=(1)
                     }
                   ;
-                  node.update(end, sizes)
+                  val last = node(end.-(1)).asInstanceOf[Array[AnyRef]];
+                  if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<((5).*(currentDepth.-(1))))).||(currentDepth.>(2).&&(last(last.length.-(1)).!=(null))))
+                    node.update(end, sizes)
+                  else
+                    ()
                 }
               else
                 {
-                  var i = 0;
-                  var acc = 0;
-                  val end = node.length.-(1);
-                  val sizes = new Array[Int](end);
                   while (i.<(end)) 
                     {
                       acc.+=(node(i).asInstanceOf[Array[AnyRef]].length);
@@ -624,29 +629,35 @@ else
                       i.+=(1)
                     }
                   ;
-                  node.update(end, sizes)
+                  if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<(5))))
+                    node.update(end, sizes)
+                  else
+                    ()
                 };
               node
             };
-            private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = {
-              val treeSizes = tree(tree.length.-(1)).asInstanceOf[Array[Int]];
-              if (treeSizes.!=(null))
-                treeSizes(treeSizes.length.-(1))
-              else
-                {
-                  var _tree = tree;
-                  var _currentDepth = currentDepth;
-                  var acc = 0;
-                  while (_currentDepth.>(0)) 
-                    {
-                      acc.+=(_tree.length.-(2).*((1).<<((5).*(_currentDepth))));
-                      _currentDepth.-=(1);
-                      _tree = _tree(_tree.length.-(2)).asInstanceOf[Array[AnyRef]]
-                    }
-                  ;
-                  acc.+(_tree.length)
-                }
-            };
+            private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = if (currentDepth.==(1))
+              tree.length
+            else
+              {
+                val treeSizes = tree(tree.length.-(1)).asInstanceOf[Array[Int]];
+                if (treeSizes.!=(null))
+                  treeSizes(treeSizes.length.-(1))
+                else
+                  {
+                    var _tree = tree;
+                    var _currentDepth = currentDepth;
+                    var acc = 0;
+                    while (_currentDepth.>(1)) 
+                      {
+                        acc.+=(_tree.length.-(2).*((1).<<((5).*(_currentDepth.-(1)))));
+                        _currentDepth.-=(1);
+                        _tree = _tree(_tree.length.-(2)).asInstanceOf[Array[AnyRef]]
+                      }
+                    ;
+                    acc.+(_tree.length)
+                  }
+              };
             private def takeFront0(n: Int): GenRRBVectorClosedBlocksQuickRebalance[A] = {
               val vec = new GenRRBVectorClosedBlocksQuickRebalance[A](n);
               vec.initFrom(this);
@@ -801,7 +812,11 @@ else
                   blockIndex = newBlockIndex;
                   lo = 0;
                   if (newBlockIndex.<(focusEnd))
-                    gotoNextBlockStart(newBlockIndex, newBlockIndex.^(oldBlockIndex))
+                    {
+                      val _focusStart = focusStart;
+                      val newBlockIndexInFocus = newBlockIndex.-(_focusStart);
+                      gotoNextBlockStart(newBlockIndexInFocus, newBlockIndexInFocus.^(oldBlockIndex.-(_focusStart)))
+                    }
                   else
                     if (newBlockIndex.<(endIndex))
                       gotoPosRelaxed(newBlockIndex, 0, endIndex, depth)
@@ -821,7 +836,7 @@ else
           }
 
           class GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[+A](startIndex: Int, endIndex: Int) extends AbstractIterator[A] with Iterator[A] with GenRRBVectorClosedBlocksQuickRebalancePointer[A @uncheckedVariance] {
-            private var blockIndex: Int = _;
+            private var lastIndexOfBlock: Int = _;
             private var lo: Int = _;
             private var endLo: Int = _;
             private var _hasNext: Boolean = startIndex.<(endIndex);
@@ -831,10 +846,9 @@ else
                 gotoPos(idx, idx.^(focus))
               else
                 gotoPosRelaxed(idx, 0, endIndex, depth);
-              val indexInFocus = idx.-(focusStart);
-              blockIndex = indexInFocus.&(-32);
-              lo = indexInFocus.&(31);
-              endLo = math.max(startIndex.-(focusStart).-(blockIndex), 0)
+              lastIndexOfBlock = idx;
+              lo = idx.-(focusStart).&(31);
+              endLo = math.max(startIndex.-(focusStart).-(lastIndexOfBlock), 0)
             };
             def hasNext = _hasNext;
             def next(): A = if (_hasNext)
@@ -843,22 +857,24 @@ else
                 lo.-=(1);
                 if (lo.<(endLo))
                   {
-                    val newBlockIndex = blockIndex.-(32);
+                    val newBlockIndex = lastIndexOfBlock.-(32);
                     if (focusStart.<=(newBlockIndex))
                       {
-                        gotoPrevBlockStart(newBlockIndex, newBlockIndex.^(blockIndex));
-                        blockIndex = newBlockIndex;
+                        val _focusStart = focusStart;
+                        val newBlockIndexInFocus = newBlockIndex.-(_focusStart);
+                        gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus.^(lastIndexOfBlock.-(_focusStart)));
+                        lastIndexOfBlock = newBlockIndex;
                         lo = 31;
                         endLo = math.max(startIndex.-(focusStart).-(focus), 0)
                       }
                     else
-                      if (startIndex.<=(blockIndex.-(1)))
+                      if (startIndex.<(focusStart))
                         {
-                          val newIndexInFocus = blockIndex.-(1);
-                          gotoPosRelaxed(newIndexInFocus, 0, endIndex, depth);
-                          blockIndex = newIndexInFocus.&(-32);
-                          lo = newIndexInFocus.&(31);
-                          endLo = math.max(startIndex.-(focusStart).-(blockIndex), 0)
+                          val newIndex = focusStart.-(1);
+                          gotoPosRelaxed(newIndex, 0, endIndex, depth);
+                          lastIndexOfBlock = newIndex;
+                          lo = newIndex.-(focusStart).&(31);
+                          endLo = math.max(startIndex.-(focusStart).-(lastIndexOfBlock), 0)
                         }
                       else
                         _hasNext = false

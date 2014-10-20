@@ -61,7 +61,9 @@ trait VectorIteratorCodeGen {
                 $it_blockIndex = $newBlockIndex;
                 lo = 0;
                 if ( $newBlockIndex < $focusEnd ) {
-                    $gotoNextBlockStart($newBlockIndex, $newBlockIndex ^ $oldBlockIndex)
+                    val _focusStart = focusStart
+                    val newBlockIndexInFocus = newBlockIndex - _focusStart
+                    $gotoNextBlockStart(newBlockIndexInFocus, newBlockIndexInFocus.^($oldBlockIndex - _focusStart))
                 } else if ( $newBlockIndex < $it_endIndex ) {
                     $gotoPosRelaxed($newBlockIndex, 0, $it_endIndex, $depth)
                 } else {

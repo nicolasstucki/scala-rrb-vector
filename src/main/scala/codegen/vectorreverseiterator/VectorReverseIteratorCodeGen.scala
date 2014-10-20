@@ -15,7 +15,7 @@ trait VectorReverseIteratorCodeGen {
     val rit_startIndex = TermName("startIndex")
     val rit_endIndex = TermName("endIndex")
 
-    val rit_blockIndexInFocus = TermName("blockIndex")
+    val rit_lastIndexOfBlock = TermName("lastIndexOfBlock")
     val rit_lo = TermName("lo")
     val rit_endLo = TermName("endLo")
     val rit_hasNextVar = TermName("_hasNext")
@@ -38,10 +38,9 @@ trait VectorReverseIteratorCodeGen {
             } else {
                 $gotoPosRelaxed(idx, 0, $rit_endIndex, $depth)
             }
-            val indexInFocus = idx - $focusStart
-            $rit_blockIndexInFocus = indexInFocus & ${~blockMask}
-            $rit_lo = indexInFocus & ${blockMask}
-            $rit_endLo = math.max($rit_startIndex - $focusStart - $rit_blockIndexInFocus, 0)
+            $rit_lastIndexOfBlock = idx
+            $rit_lo = (idx - $focusStart) & $blockMask
+            $rit_endLo = math.max($rit_startIndex - $focusStart - $rit_lastIndexOfBlock, 0)
          """
     }
 
@@ -52,18 +51,20 @@ trait VectorReverseIteratorCodeGen {
                 $rit_lo -= 1
 
                 if ($rit_lo < $rit_endLo) {
-                    val newBlockIndex = $rit_blockIndexInFocus - $blockWidth
+                    val newBlockIndex = $rit_lastIndexOfBlock - $blockWidth
                     if ($focusStart <= newBlockIndex) {
-                        $gotoPrevBlockStart(newBlockIndex, newBlockIndex ^ $rit_blockIndexInFocus)
-                        $rit_blockIndexInFocus = newBlockIndex
+                        val _focusStart = $focusStart
+                        val newBlockIndexInFocus = newBlockIndex - _focusStart
+                        $gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ ($rit_lastIndexOfBlock - _focusStart))
+                        $rit_lastIndexOfBlock = newBlockIndex
                         $rit_lo = $blockMask
                         $rit_endLo = math.max($rit_startIndex - $focusStart - $focus, 0)
-                    } else if (startIndex <= $rit_blockIndexInFocus - 1) {
-                        val newIndexInFocus = $rit_blockIndexInFocus - 1
-                        $gotoPosRelaxed(newIndexInFocus, 0, $rit_endIndex, $depth)
-                        $rit_blockIndexInFocus = newIndexInFocus & ${~blockMask}
-                        $rit_lo = newIndexInFocus & $blockMask
-                        $rit_endLo = math.max($rit_startIndex - $focusStart - $rit_blockIndexInFocus, 0)
+                    } else if (startIndex < $focusStart) {
+                        val newIndex = $focusStart - 1
+                        $gotoPosRelaxed(newIndex, 0, $rit_endIndex, $depth)
+                        $rit_lastIndexOfBlock = newIndex
+                        $rit_lo = (newIndex - $focusStart) & $blockMask
+                        $rit_endLo = math.max($rit_startIndex - $focusStart - $rit_lastIndexOfBlock, 0)
                     } else {
                         $rit_hasNextVar = false
                     }
