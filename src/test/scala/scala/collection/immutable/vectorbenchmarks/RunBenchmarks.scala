@@ -10,6 +10,7 @@ class RunAllBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[RunBuilderBenchmarks]
     include[RunConcatenationBenchmarks]
     include[RunIterationBenchmarks]
+    include[RunSplitBenchmarks]
     include[RunMemoryAllocation]
 
 }
