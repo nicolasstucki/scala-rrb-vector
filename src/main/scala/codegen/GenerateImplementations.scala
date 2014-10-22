@@ -60,7 +60,7 @@ object GenerateImplementations extends App {
         }
     }
 
-    val USE_ASSERTIONS = false
+    val USE_ASSERTIONS = true
 
     val packageGenerator1 = new VectorImplementation {
 
