@@ -51,7 +51,6 @@ trait VectorCodeGen {
 
     // Private
     val v_appendedBack = TermName("appendedBack")
-    val v_appendBackSetupCurrentBlock = TermName("appendBackSetupCurrentBlock")
     val v_appendBackSetupNewBlock = TermName("appendBackSetupNewBlock")
     val v_takeFront0 = TermName("takeFront0")
 
@@ -77,10 +76,20 @@ trait VectorCodeGen {
     def lengthCompareCode(len: Tree) = q"${lengthCode()} - $len"
 
     def initIteratorCode(it: Tree) =
-        q"$it.$initFrom(this); if ($depth > 0) $it.$it_resetIterator()"
+        q"""
+            ${stabilizeIfNeeded()}
+            $it.$initFrom(this)
+            if ($depth > 0)
+                $it.$it_resetIterator()
+         """
 
     def initReverseIteratorCode(rit: Tree) =
-        q"$rit.$initFrom(this); if ($depth > 0) $rit.$rit_resetIterator()"
+        q"""
+            ${stabilizeIfNeeded()}
+            $rit.$initFrom(this)
+            if ($depth > 0)
+                $rit.$rit_resetIterator()
+         """
 
 
     def iteratorCode() = {
@@ -209,7 +218,6 @@ trait VectorCodeGen {
     // Private methods
 
     protected def appendedBackCode(value: Tree) = {
-
         q"""
             if (${isEmptyCode()}) return $vectorObjectName.singleton[$B]($value)
 
@@ -219,50 +227,31 @@ trait VectorCodeGen {
             vec.$gotoIndex(_endIndex - 1, _endIndex - 1)
 
             val elemIndexInBlock = (_endIndex - vec.$focusStart) & $blockMask
-            if( elemIndexInBlock != 0 ) vec.$v_appendBackSetupCurrentBlock()
-            else vec.$v_appendBackSetupNewBlock()
-
-            vec.$display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
-
-            vec
-         """
-    }
-
-    protected def appendBackSetupCurrentBlockCode() = {
-        q"""
-            $focusEnd += 1
-            ${
-            if (CLOSED_BLOCKS)
-                q"$display0 = $copyOf($display0, $display0.$v_length, $display0.$v_length + 1)"
-            else
-                q"$display0 = $copyOf($display0, $blockWidth, $blockWidth)"
-        }
-            val _depth = $depth
-            if (_depth > 1) {
-                val stabilizationIndex = $focus | $focusRelax
-                val displaySizes = $allDisplaySizes()
-                $copyDisplays(_depth, stabilizationIndex)
-                $stabilize(_depth, stabilizationIndex)
-                var i = $focusDepth
-                while ( i < _depth ) {
-                    val oldSizes = displaySizes(i - 1)
-                    if (oldSizes != null) {
-                        val newSizes = new Array[Int](${if (CLOSED_BLOCKS) q"oldSizes.length" else q"$blockWidth"})
-                        val lastIndex = oldSizes.length - 1
-                        Platform.arraycopy(oldSizes, 0, newSizes, 0, lastIndex)
-                        newSizes(lastIndex) = oldSizes(lastIndex) + 1
-                        displaySizes(i - 1) = newSizes
-                    }
-                    i += 1
-                }
-                $putDisplaySizes(displaySizes)
+            if( elemIndexInBlock == 0 ) {
+                vec.$v_appendBackSetupNewBlock()
+                vec.$display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
+                vec
+            } else {
+                vec.$focusEnd += 1
+                if (!vec.$dirty)
+                    vec.$dirty = true
+                val d0 = new Array[AnyRef](${if (CLOSED_BLOCKS) q"elemIndexInBlock + 1" else q"$blockWidth"})
+                Platform.arraycopy(vec.$display0, 0, d0, 0, ${if (CLOSED_BLOCKS) q"elemIndexInBlock" else q"$blockWidth"})
+                d0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
+                vec.$display0 = d0
+                vec
             }
          """
+//        vec.$display0 = vec.$copyOf(vec.$display0, ${if (CLOSED_BLOCKS) q"elemIndexInBlock" else q"$blockWidth"}, ${if (CLOSED_BLOCKS) q"elemIndexInBlock + 1" else q"$blockWidth"})
+//        vec.$display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
+//        vec
     }
 
     protected def appendBackSetupNewBlockCode() = {
         q"""
-            ${if (useAssertions) q"assert($v_endIndex - 2 == $focus + $focusStart)" else q""}
+            ${stabilizeIfNeeded()}
+
+            ..${assertions(q"$v_endIndex - 2 == $focus + $focusStart", q"!$dirty")}
             val _depth = $depth
 
             // TODO: should only copy the top displays, not the ones affected by setUpNextBlockStartTailWritable
@@ -272,7 +261,7 @@ trait VectorCodeGen {
             val newRelaxedIndex = ($v_endIndex - $focusStart - 1) + $focusRelax
             val xor = newRelaxedIndex ^ ($focus | $focusRelax)
             $setupNextBlockStartWritable(newRelaxedIndex, xor)
-            $stabilize($depth, newRelaxedIndex)
+            $stabilizeDisplayPath($depth, newRelaxedIndex)
 
             if (_depth != $depth) {
                 if ($v_endIndex - 1 == (1 << ($blockIndexBits * ($depth - 1)))) {
@@ -374,11 +363,17 @@ trait VectorCodeGen {
                 val ${concatName(1)} = $v_rebalancedLeafs(this.${displayNameAt(0)}, that.${displayNameAt(0)}, ..${if (CLOSED_BLOCKS) Nil else q"(this.$focus & $blockMask) + 1" :: q"math.min($blockWidth, that.$focusEnd)" :: Nil}, ${maxLevel == 1})
                 ..${(2 to maxLevel) map concatenatedLevel}
                 ${initVector}
+                ..${assertions(q"vec.$v_assertVectorInvariant()")}
              """
         }
 
         val concatOnVec = matchOnInt(q"math.max(this.$depth, that.$depth)", 1 to 6, concatenateVectors, Some(q"throw new IllegalStateException"))
         q"""
+            ..${assertions(q"this.$v_assertVectorInvariant()", q"that.$v_assertVectorInvariant()", q"this.$v_length > 0", q"$that.$v_length > 0")}
+            ${stabilizeIfNeeded(q"this")}
+            ${stabilizeIfNeeded(q"that")}
+            ..${assertions(q"!this.$dirty", q"!that.$dirty", q"this.$v_assertVectorInvariant()", q"that.$v_assertVectorInvariant()")}
+
             this.$gotoIndex(this.$v_endIndex - 1, this.$v_endIndex)
             that.$gotoIndex(0, that.$v_endIndex)
             val newSize = this.$v_endIndex + that.$v_endIndex
@@ -722,6 +717,9 @@ trait VectorCodeGen {
     protected def takeFront0Code(n: Tree): Tree = {
         val d0len = TermName("d0len")
         q"""
+            ${stabilizeIfNeeded()}
+            ..${assertions(q"!$dirty")}
+
             val vec = new $vectorClassName[$A]($n)
             vec.$initFrom(this)
 
@@ -744,7 +742,7 @@ trait VectorCodeGen {
                     val displaySizes = $allDisplaySizes()
                     vec.$copyDisplays(vec.$depth, cutIndex)
                     if (vec.$depth > 2 || $d0len != $blockWidth)
-                        vec.$stabilize(vec.$depth, cutIndex)
+                        vec.$stabilizeDisplayPath(vec.$depth, cutIndex)
                     if (vec.$focusDepth < vec.$depth) {
                         var offset = 0
                         var i = vec.$depth
@@ -782,15 +780,21 @@ trait VectorCodeGen {
             val str = s"<=$lvl <==> display$lvl==null "
             q"""assert($p1 || $p2, $depth.toString +: ${str} :+ ($depth, ${displayAt(lvl)}))"""
         }
-        def checkDisplayIsCoherentWithTree(lvl: Int) =
+        def checkDisplayIsCoherentWithTree(lvl: Int) = {
+            val checkCoherence =
+                q"""
+                    if ($focusDepth <= $lvl)
+                        assert(${displayAt(lvl)}(($focusRelax >> ${lvl * blockIndexBits}) & $blockMask) == ${displayAt(lvl - 1)})
+                    else
+                       assert(${displayAt(lvl)}(($focus >> ${lvl * blockIndexBits}) & $blockMask) == ${displayAt(lvl - 1)})
+                 """
             q"""
                 if (${displayAt(lvl)} != null) {
                     assert(${displayAt(lvl - 1)}  != null)
-                    if ($focusDepth <= $lvl)
-                        assert(${displayAt(lvl)}(($focusRelax >> ${lvl * blockIndexBits}) & $blockMask) == ${displayAt(lvl - 1)})
-                    else assert(${displayAt(lvl)}(($focus >> ${lvl * blockIndexBits}) & $blockMask) == ${displayAt(lvl - 1)})
+                    ${if (lvl == 1) q"if(!dirty) $checkCoherence" else checkCoherence}
                 }
              """
+        }
 
         q"""
             assert(0 <= $depth && $depth <= 6, $depth)
@@ -811,6 +815,8 @@ trait VectorCodeGen {
             ${if (CLOSED_BLOCKS) checkSizesClosedDef() else checkSizesFullDef()}
 
             ${matchOnInt(q"$depth", 1 to 6, i => q"checkSizes(${displayAt(i - 1)}, $i, $v_endIndex)", Some(q"()"))}
+
+            true
         """
 
 
@@ -823,7 +829,8 @@ trait VectorCodeGen {
                     val sizes = node.last.asInstanceOf[Array[Int]]
                     if (sizes != null) {
                         assert(node.length == sizes.length + 1)
-                        assert(sizes.last == _endIndex, (sizes.last, _endIndex))
+                        if(!$dirty)
+                            assert(sizes.last == _endIndex, (sizes.last, _endIndex))
                         for (i <- 0 until sizes.length - 1)
                             checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
                         checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, if(sizes.length > 1) sizes.last -  sizes(sizes.length - 2) else sizes.last)
@@ -834,7 +841,7 @@ trait VectorCodeGen {
                         assert(1 <= expectedLast && expectedLast <= (1 << (5 * currentDepth)))
                         checkSizes(node(node.length-2).asInstanceOf[Array[AnyRef]], currentDepth - 1, expectedLast)
                     }
-                } else {
+                } else if (!$dirty) {
                     assert(node.length == _endIndex)
                 }
             }

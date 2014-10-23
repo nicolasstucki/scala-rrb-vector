@@ -39,7 +39,6 @@ trait VectorMethodsGen {
                 initDef(),
                 // Private methods
                 appendedBackDef(),
-                appendBackSetupCurrentBlockDef(),
                 appendBackSetupNewBlockDef(),
                 concatenatedDef(),
                 rebalancedDef(),
@@ -196,11 +195,6 @@ trait VectorMethodsGen {
         q"private def $v_appendedBack[$B >: $A]($value: $B): $vectorClassName[$B] = ${if (useAssertions) assertedCode else code}"
     }
 
-    protected def appendBackSetupCurrentBlockDef() = {
-        val code = appendBackSetupCurrentBlockCode()
-        q"private def $v_appendBackSetupCurrentBlock() = $code"
-    }
-
     protected def appendBackSetupNewBlockDef() = {
         val code = appendBackSetupNewBlockCode()
         q"private def $v_appendBackSetupNewBlock() = $code"
@@ -208,19 +202,8 @@ trait VectorMethodsGen {
 
     protected def concatenatedDef() = {
         val that = TermName("that")
-        val asserts = Seq(
-            q"this.$v_assertVectorInvariant()",
-            q"that.$v_assertVectorInvariant()",
-            q"assert(this.$v_length > 0)",
-            q"assert($that.$v_length > 0)"
-        )
         val code = concatenatedCode(q"$that")
-        def assertedCode = q"..$asserts; val res = $code; res.$v_assertVectorInvariant(); res"
-        q"""
-            private[immutable] def $v_concatenated[$B >: $A]($that: $vectorClassName[$B]): $vectorClassName[$B] = {
-                ${if (useAssertions) assertedCode else code}
-            }
-        """
+        q"private[immutable] def $v_concatenated[$B >: $A]($that: $vectorClassName[$B]): $vectorClassName[$B] = $code"
     }
 
     protected def rebalancedDef() = {
@@ -349,15 +332,6 @@ trait VectorMethodsGen {
         """
     }
 
-    //
-    // Invariant
-    //
-
-    protected def assertVectorInvariantDef() = {
-        val code = assertVectorInvariantCode()
-        q"private[immutable] def $v_assertVectorInvariant(): Unit = $code"
-    }
-
     protected def takeFront0Def(): Tree = {
         val n = TermName("n")
         val code = takeFront0Code(q"$n")
@@ -367,6 +341,15 @@ trait VectorMethodsGen {
                 ${if (useAssertions) assertedCode else code}
             }
          """
+    }
+
+    //
+    // Invariant
+    //
+
+    protected def assertVectorInvariantDef() = {
+        val code = assertVectorInvariantCode()
+        q"private[immutable] def $v_assertVectorInvariant(): Boolean = $code"
     }
 
 

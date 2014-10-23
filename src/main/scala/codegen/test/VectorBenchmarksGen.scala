@@ -25,6 +25,31 @@ trait VectorBenchmarksGen {
 
                     abstract class ${vectorBenchmarkClassName("Append")}[A] extends AppendBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
                     class ${vectorBenchmarkClassName("AppendInt")} extends ${vectorBenchmarkClassName("Append")}[Int] with VectorGeneratorType.IntGenerator {
+
+                        def sum1(vec: $vectorClassName[Int], times: Int): Int = {
+                            var i = 0
+                            var v = vec
+                            var sum = 0
+                            while (i < times) {
+                                v = vec :+ 0
+                                sum += v.length
+                                i += 1
+                            }
+                            sum
+                        }
+
+                        def sum8(vec: $vectorClassName[Int], times: Int): Int = {
+                            var i = 0
+                            var v = vec
+                            var sum = 0
+                            while (i < times) {
+                                v = vec :+ 0 :+ 0 :+ 0 :+ 0 :+ 0 :+ 0 :+ 0 :+ 0
+                                sum += v.length
+                                i += 1
+                            }
+                            sum
+                        }
+
                         def sum32(vec: $vectorClassName[Int], times: Int): Int = {
                             var i = 0
                             var v = vec
@@ -39,7 +64,28 @@ trait VectorBenchmarksGen {
                     }
                     class ${vectorBenchmarkClassName("AppendAnyRef")} extends ${vectorBenchmarkClassName("Append")}[AnyRef] with VectorGeneratorType.AnyRefGenerator {
                         val obj = new Object
-
+                        def sum1(vec: $vectorClassName[AnyRef], times: Int): Int = {
+                            var i = 0
+                            var v = vec
+                            var sum = 0
+                            while (i < times) {
+                                v = vec :+ obj
+                                sum += v.length
+                                i += 1
+                            }
+                            sum
+                        }
+                        def sum8(vec: $vectorClassName[AnyRef], times: Int): Int = {
+                            var i = 0
+                            var v = vec
+                            var sum = 0
+                            while (i < times) {
+                                v = vec :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj
+                                sum += v.length
+                                i += 1
+                            }
+                            sum
+                        }
                         def sum32(vec: $vectorClassName[AnyRef], times: Int): Int = {
                             var i = 0
                             var v = vec

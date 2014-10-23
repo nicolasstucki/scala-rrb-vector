@@ -10,6 +10,30 @@ import scala.collection.immutable.vectorutils._
 abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with RRBVectorBenchmark[A]
 
 class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
+    def sum1(vec: RRBVector[Int], times: Int): Int = {
+        var i = 0
+        var v = vec
+        var sum = 0
+        while (i < times) {
+            v = vec :+ 0
+            sum += v.length
+            i += 1
+        }
+        sum
+    }
+
+    def sum8(vec: RRBVector[Int], times: Int): Int = {
+        var i = 0
+        var v = vec
+        var sum = 0
+        while (i < times) {
+            v = vec :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7
+            sum += v.length
+            i += 1
+        }
+        sum
+    }
+
     def sum32(vec: RRBVector[Int], times: Int): Int = {
         var i = 0
         var v = vec
@@ -26,6 +50,29 @@ class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] 
 
 class RRBVectorAppendAnyRefBenchmark extends RRBVectorAbstractAppendBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator {
     val obj = new Object
+    def sum1(vec: Vec, times: Int): Int = {
+        var i = 0
+        var v = vec
+        var sum = 0
+        while (i < times) {
+            v = vec :+ obj
+            sum += v.length
+            i += 1
+        }
+        sum
+    }
+
+    def sum8(vec: RRBVector[AnyRef], times: Int): Int = {
+        var i = 0
+        var v = vec
+        var sum = 0
+        while (i < times) {
+            v = vec :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj
+            sum += v.length
+            i += 1
+        }
+        sum
+    }
 
     def sum32(vec: RRBVector[AnyRef], times: Int): Int = {
         var i = 0

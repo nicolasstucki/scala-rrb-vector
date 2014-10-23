@@ -21,6 +21,32 @@ package scala {
               abstract class GenRRBVectorClosedBlocksQuickRebalanceAppendBenchmark[A] extends AppendBenchmarks[A] with GenRRBVectorClosedBlocksQuickRebalanceBenchmark[A]
 
               class GenRRBVectorClosedBlocksQuickRebalanceAppendIntBenchmark extends GenRRBVectorClosedBlocksQuickRebalanceAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
+                def sum1(vec: GenRRBVectorClosedBlocksQuickRebalance[Int], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(0);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
+                def sum8(vec: GenRRBVectorClosedBlocksQuickRebalance[Int], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
                 def sum32(vec: GenRRBVectorClosedBlocksQuickRebalance[Int], times: Int): Int = {
                   var i = 0;
                   var v = vec;
@@ -38,6 +64,32 @@ package scala {
 
               class GenRRBVectorClosedBlocksQuickRebalanceAppendAnyRefBenchmark extends GenRRBVectorClosedBlocksQuickRebalanceAppendBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator {
                 val obj = new Object();
+                def sum1(vec: GenRRBVectorClosedBlocksQuickRebalance[AnyRef], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(obj);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
+                def sum8(vec: GenRRBVectorClosedBlocksQuickRebalance[AnyRef], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(obj).:+(obj).:+(obj).:+(obj).:+(obj).:+(obj).:+(obj).:+(obj);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
                 def sum32(vec: GenRRBVectorClosedBlocksQuickRebalance[AnyRef], times: Int): Int = {
                   var i = 0;
                   var v = vec;
@@ -130,6 +182,32 @@ package scala {
               abstract class GenRRBVectorClosedBlocksQuickRebalanceAppendBenchmark[A] extends AppendBenchmarks[A] with GenRRBVectorClosedBlocksQuickRebalanceBenchmark[A]
 
               class GenRRBVectorClosedBlocksQuickRebalanceAppendIntBenchmark extends GenRRBVectorClosedBlocksQuickRebalanceAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
+                def sum1(vec: GenRRBVectorClosedBlocksQuickRebalance[Int], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(0);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
+                def sum8(vec: GenRRBVectorClosedBlocksQuickRebalance[Int], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
                 def sum32(vec: GenRRBVectorClosedBlocksQuickRebalance[Int], times: Int): Int = {
                   var i = 0;
                   var v = vec;
@@ -147,6 +225,32 @@ package scala {
 
               class GenRRBVectorClosedBlocksQuickRebalanceAppendAnyRefBenchmark extends GenRRBVectorClosedBlocksQuickRebalanceAppendBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator {
                 val obj = new Object();
+                def sum1(vec: GenRRBVectorClosedBlocksQuickRebalance[AnyRef], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(obj);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
+                def sum8(vec: GenRRBVectorClosedBlocksQuickRebalance[AnyRef], times: Int): Int = {
+                  var i = 0;
+                  var v = vec;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      v = vec.:+(obj).:+(obj).:+(obj).:+(obj).:+(obj).:+(obj).:+(obj).:+(obj);
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                };
                 def sum32(vec: GenRRBVectorClosedBlocksQuickRebalance[AnyRef], times: Int): Int = {
                   var i = 0;
                   var v = vec;

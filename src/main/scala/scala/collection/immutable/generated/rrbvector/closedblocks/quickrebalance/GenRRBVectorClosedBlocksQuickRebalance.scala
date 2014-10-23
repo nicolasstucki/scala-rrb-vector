@@ -32,6 +32,10 @@ package scala {
             def length(): Int = endIndex;
             override def lengthCompare(len: Int): Int = endIndex.-(len);
             private[collection] def initIterator[B >: A](it: GenRRBVectorClosedBlocksQuickRebalanceIterator[B]): scala.Unit = {
+              if (this.dirty)
+                this.stabilize()
+              else
+                ();
               it.initFrom(this);
               if (depth.>(0))
                 it.resetIterator()
@@ -39,6 +43,10 @@ package scala {
                 ()
             };
             private[collection] def initIterator[B >: A](it: GenRRBVectorClosedBlocksQuickRebalanceReverseIterator[B]): scala.Unit = {
+              if (this.dirty)
+                this.stabilize()
+              else
+                ();
               it.initFrom(this);
               if (depth.>(0))
                 it.resetIterator()
@@ -135,57 +143,43 @@ package scala {
                 vec.initFrom(this);
                 vec.gotoIndex(_endIndex.-(1), _endIndex.-(1));
                 val elemIndexInBlock = _endIndex.-(vec.focusStart).&(31);
-                if (elemIndexInBlock.!=(0))
-                  vec.appendBackSetupCurrentBlock()
+                if (elemIndexInBlock.==(0))
+                  {
+                    vec.appendBackSetupNewBlock();
+                    vec.display0.update(elemIndexInBlock, value.asInstanceOf[AnyRef]);
+                    vec
+                  }
                 else
-                  vec.appendBackSetupNewBlock();
-                vec.display0.update(elemIndexInBlock, value.asInstanceOf[AnyRef]);
-                vec
+                  {
+                    vec.focusEnd.+=(1);
+                    if (vec.dirty.`unary_!`)
+                      vec.dirty = true
+                    else
+                      ();
+                    val d0 = new Array[AnyRef](elemIndexInBlock.+(1));
+                    Platform.arraycopy(vec.display0, 0, d0, 0, elemIndexInBlock);
+                    d0.update(elemIndexInBlock, value.asInstanceOf[AnyRef]);
+                    vec.display0 = d0;
+                    vec
+                  }
               };
               res.assertVectorInvariant();
               res
             };
-            private def appendBackSetupCurrentBlock() = {
-              focusEnd.+=(1);
-              display0 = copyOf(display0, display0.length, display0.length.+(1));
-              val _depth = depth;
-              if (_depth.>(1))
-                {
-                  val stabilizationIndex = focus.|(focusRelax);
-                  val displaySizes = allDisplaySizes();
-                  copyDisplays(_depth, stabilizationIndex);
-                  stabilize(_depth, stabilizationIndex);
-                  var i = focusDepth;
-                  while (i.<(_depth)) 
-                    {
-                      val oldSizes = displaySizes(i.-(1));
-                      if (oldSizes.!=(null))
-                        {
-                          val newSizes = new Array[Int](oldSizes.length);
-                          val lastIndex = oldSizes.length.-(1);
-                          Platform.arraycopy(oldSizes, 0, newSizes, 0, lastIndex);
-                          newSizes.update(lastIndex, oldSizes(lastIndex).+(1));
-                          displaySizes.update(i.-(1), newSizes)
-                        }
-                      else
-                        ();
-                      i.+=(1)
-                    }
-                  ;
-                  putDisplaySizes(displaySizes)
-                }
-              else
-                ()
-            };
             private def appendBackSetupNewBlock() = {
+              if (this.dirty)
+                this.stabilize()
+              else
+                ();
               assert(endIndex.-(2).==(focus.+(focusStart)));
+              assert(dirty.`unary_!`);
               val _depth = depth;
               val displaySizes = allDisplaySizes();
               copyDisplays(_depth, focus.|(focusRelax));
               val newRelaxedIndex = endIndex.-(focusStart).-(1).+(focusRelax);
               val xor = newRelaxedIndex.^(focus.|(focusRelax));
               setUpNextBlockNewBranchWritable(newRelaxedIndex, xor);
-              stabilize(depth, newRelaxedIndex);
+              stabilizeDisplayPath(depth, newRelaxedIndex);
               if (_depth.!=(depth))
                 if (endIndex.-(1).==((1).<<((5).*(depth.-(1)))))
                   displaySizes.update(depth.-(1), null)
@@ -246,76 +240,90 @@ package scala {
                 initFocus(0, endIndex.-(1), endIndex, 1, newRelaxedIndex.&(-32))
             };
             private[immutable] def concatenated[B >: A](that: GenRRBVectorClosedBlocksQuickRebalance[B]): GenRRBVectorClosedBlocksQuickRebalance[B] = {
-              this.assertVectorInvariant();
-              that.assertVectorInvariant();
+              assert(this.assertVectorInvariant());
+              assert(that.assertVectorInvariant());
               assert(this.length.>(0));
               assert(that.length.>(0));
-              val res = {
-                this.gotoIndex(this.endIndex.-(1), this.endIndex);
-                that.gotoIndex(0, that.endIndex);
-                val newSize = this.endIndex.+(that.endIndex);
-                val vec = new GenRRBVectorClosedBlocksQuickRebalance[B](newSize);
-                math.max(this.depth, that.depth) match {
-                  case 1 => {
-                    val concat1 = rebalancedLeafs(this.display0, that.display0, true);
-                    vec.initFromRoot(concat1, if (newSize.<=(32))
-                      1
-                    else
-                      2, newSize)
-                  }
-                  case 2 => {
-                    val concat1 = rebalancedLeafs(this.display0, that.display0, false);
-                    val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
-                    if (concat2.length.==(2))
-                      vec.initFromRoot(concat2(0).asInstanceOf[Array[AnyRef]], 2, newSize)
-                    else
-                      vec.initFromRoot(withComputedSizes(concat2, 3), 3, newSize)
-                  }
-                  case 3 => {
-                    val concat1 = rebalancedLeafs(this.display0, that.display0, false);
-                    val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
-                    val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
-                    if (concat3.length.==(2))
-                      vec.initFromRoot(concat3(0).asInstanceOf[Array[AnyRef]], 3, newSize)
-                    else
-                      vec.initFromRoot(withComputedSizes(concat3, 4), 4, newSize)
-                  }
-                  case 4 => {
-                    val concat1 = rebalancedLeafs(this.display0, that.display0, false);
-                    val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
-                    val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
-                    val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
-                    if (concat4.length.==(2))
-                      vec.initFromRoot(concat4(0).asInstanceOf[Array[AnyRef]], 4, newSize)
-                    else
-                      vec.initFromRoot(withComputedSizes(concat4, 5), 5, newSize)
-                  }
-                  case 5 => {
-                    val concat1 = rebalancedLeafs(this.display0, that.display0, false);
-                    val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
-                    val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
-                    val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
-                    val concat5 = rebalanced(this.display4, concat4, that.display4, 5);
-                    if (concat5.length.==(2))
-                      vec.initFromRoot(concat5(0).asInstanceOf[Array[AnyRef]], 5, newSize)
-                    else
-                      vec.initFromRoot(withComputedSizes(concat5, 6), 6, newSize)
-                  }
-                  case 6 => {
-                    val concat1 = rebalancedLeafs(this.display0, that.display0, false);
-                    val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
-                    val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
-                    val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
-                    val concat5 = rebalanced(this.display4, concat4, that.display4, 5);
-                    val concat6 = rebalanced(this.display5, concat5, that.display5, 6);
-                    vec.initFromRoot(concat6, 6, newSize)
-                  }
-                  case _ => throw new IllegalStateException()
-                };
-                vec
+              if (this.dirty)
+                this.stabilize()
+              else
+                ();
+              if (that.dirty)
+                that.stabilize()
+              else
+                ();
+              assert(this.dirty.`unary_!`);
+              assert(that.dirty.`unary_!`);
+              assert(this.assertVectorInvariant());
+              assert(that.assertVectorInvariant());
+              this.gotoIndex(this.endIndex.-(1), this.endIndex);
+              that.gotoIndex(0, that.endIndex);
+              val newSize = this.endIndex.+(that.endIndex);
+              val vec = new GenRRBVectorClosedBlocksQuickRebalance[B](newSize);
+              math.max(this.depth, that.depth) match {
+                case 1 => {
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, true);
+                  vec.initFromRoot(concat1, if (newSize.<=(32))
+                    1
+                  else
+                    2, newSize);
+                  assert(vec.assertVectorInvariant())
+                }
+                case 2 => {
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  if (concat2.length.==(2))
+                    vec.initFromRoot(concat2(0).asInstanceOf[Array[AnyRef]], 2, newSize)
+                  else
+                    vec.initFromRoot(withComputedSizes(concat2, 3), 3, newSize);
+                  assert(vec.assertVectorInvariant())
+                }
+                case 3 => {
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  if (concat3.length.==(2))
+                    vec.initFromRoot(concat3(0).asInstanceOf[Array[AnyRef]], 3, newSize)
+                  else
+                    vec.initFromRoot(withComputedSizes(concat3, 4), 4, newSize);
+                  assert(vec.assertVectorInvariant())
+                }
+                case 4 => {
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
+                  if (concat4.length.==(2))
+                    vec.initFromRoot(concat4(0).asInstanceOf[Array[AnyRef]], 4, newSize)
+                  else
+                    vec.initFromRoot(withComputedSizes(concat4, 5), 5, newSize);
+                  assert(vec.assertVectorInvariant())
+                }
+                case 5 => {
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
+                  val concat5 = rebalanced(this.display4, concat4, that.display4, 5);
+                  if (concat5.length.==(2))
+                    vec.initFromRoot(concat5(0).asInstanceOf[Array[AnyRef]], 5, newSize)
+                  else
+                    vec.initFromRoot(withComputedSizes(concat5, 6), 6, newSize);
+                  assert(vec.assertVectorInvariant())
+                }
+                case 6 => {
+                  val concat1 = rebalancedLeafs(this.display0, that.display0, false);
+                  val concat2 = rebalanced(this.display1, concat1, that.display1, 2);
+                  val concat3 = rebalanced(this.display2, concat2, that.display2, 3);
+                  val concat4 = rebalanced(this.display3, concat3, that.display3, 4);
+                  val concat5 = rebalanced(this.display4, concat4, that.display4, 5);
+                  val concat6 = rebalanced(this.display5, concat5, that.display5, 6);
+                  vec.initFromRoot(concat6, 6, newSize);
+                  assert(vec.assertVectorInvariant())
+                }
+                case _ => throw new IllegalStateException()
               };
-              res.assertVectorInvariant();
-              res
+              vec
             };
             private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
               val leftLength = if (displayLeft.==(null))
@@ -680,6 +688,11 @@ else
             };
             private def takeFront0(n: Int): GenRRBVectorClosedBlocksQuickRebalance[A] = {
               val res = {
+                if (this.dirty)
+                  this.stabilize()
+                else
+                  ();
+                assert(dirty.`unary_!`);
                 val vec = new GenRRBVectorClosedBlocksQuickRebalance[A](n);
                 vec.initFrom(this);
                 if (depth.>(1))
@@ -702,7 +715,7 @@ else
                         val displaySizes = allDisplaySizes();
                         vec.copyDisplays(vec.depth, cutIndex);
                         if (vec.depth.>(2).||(d0len.!=(32)))
-                          vec.stabilize(vec.depth, cutIndex)
+                          vec.stabilizeDisplayPath(vec.depth, cutIndex)
                         else
                           ();
                         if (vec.focusDepth.<(vec.depth))
@@ -749,7 +762,7 @@ else
               res.assertVectorInvariant();
               res
             };
-            private[immutable] def assertVectorInvariant(): Unit = {
+            private[immutable] def assertVectorInvariant(): Boolean = {
               assert((0).<=(depth).&&(depth.<=(6)), depth);
               assert(isEmpty.==(depth.==(0)), scala.Tuple2(isEmpty, depth));
               assert(isEmpty.==(length.==(0)), scala.Tuple2(isEmpty, length));
@@ -821,10 +834,13 @@ else
               if (display1.!=(null))
                 {
                   assert(display0.!=(null));
-                  if (focusDepth.<=(1))
-                    assert(display1(focusRelax.>>(5).&(31)).==(display0))
+                  if (dirty.`unary_!`)
+                    if (focusDepth.<=(1))
+                      assert(display1(focusRelax.>>(5).&(31)).==(display0))
+                    else
+                      assert(display1(focus.>>(5).&(31)).==(display0))
                   else
-                    assert(display1(focus.>>(5).&(31)).==(display0))
+                    ()
                 }
               else
                 ();
@@ -837,7 +853,10 @@ else
                   if (sizes.!=(null))
                     {
                       assert(node.length.==(sizes.length.+(1)));
-                      assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex));
+                      if (dirty.`unary_!`)
+                        assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex))
+                      else
+                        ();
                       0.until(sizes.length.-(1)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0))
                         0
                       else
@@ -856,7 +875,10 @@ else
                     }
                 }
               else
-                assert(node.length.==(_endIndex));
+                if (dirty.`unary_!`)
+                  assert(node.length.==(_endIndex))
+                else
+                  ();
               depth match {
                 case 1 => checkSizes(display0, 1, endIndex)
                 case 2 => checkSizes(display1, 2, endIndex)
@@ -865,7 +887,8 @@ else
                 case 5 => checkSizes(display4, 5, endIndex)
                 case 6 => checkSizes(display5, 6, endIndex)
                 case _ => ()
-              }
+              };
+              true
             }
           }
 
@@ -903,7 +926,7 @@ else
                 if (_depth.>(1))
                   {
                     resultVector.copyDisplays(_depth, size.-(1));
-                    resultVector.stabilize(_depth, size.-(1))
+                    resultVector.stabilizeDisplayPath(_depth, size.-(1))
                   }
                 else
                   ();
@@ -1069,46 +1092,43 @@ else
               gotoIndex(0, _endIndex)
             };
             private[immutable] def initFrom[U](that: GenRRBVectorClosedBlocksQuickRebalancePointer[U]): Unit = {
-              assert(that.dirty.`unary_!`);
-              {
-                initFocus(that.focus, that.focusStart, that.focusEnd, that.focusDepth, that.focusRelax);
-                depth = that.depth;
-                dirty = that.dirty;
-                that.depth match {
-                  case 0 => ()
-                  case 1 => display0 = that.display0
-                  case 2 => {
-                    display0 = that.display0;
-                    display1 = that.display1
-                  }
-                  case 3 => {
-                    display0 = that.display0;
-                    display1 = that.display1;
-                    display2 = that.display2
-                  }
-                  case 4 => {
-                    display0 = that.display0;
-                    display1 = that.display1;
-                    display2 = that.display2;
-                    display3 = that.display3
-                  }
-                  case 5 => {
-                    display0 = that.display0;
-                    display1 = that.display1;
-                    display2 = that.display2;
-                    display3 = that.display3;
-                    display4 = that.display4
-                  }
-                  case 6 => {
-                    display0 = that.display0;
-                    display1 = that.display1;
-                    display2 = that.display2;
-                    display3 = that.display3;
-                    display4 = that.display4;
-                    display5 = that.display5
-                  }
-                  case _ => throw new IllegalStateException()
+              initFocus(that.focus, that.focusStart, that.focusEnd, that.focusDepth, that.focusRelax);
+              depth = that.depth;
+              dirty = that.dirty;
+              that.depth match {
+                case 0 => ()
+                case 1 => display0 = that.display0
+                case 2 => {
+                  display0 = that.display0;
+                  display1 = that.display1
                 }
+                case 3 => {
+                  display0 = that.display0;
+                  display1 = that.display1;
+                  display2 = that.display2
+                }
+                case 4 => {
+                  display0 = that.display0;
+                  display1 = that.display1;
+                  display2 = that.display2;
+                  display3 = that.display3
+                }
+                case 5 => {
+                  display0 = that.display0;
+                  display1 = that.display1;
+                  display2 = that.display2;
+                  display3 = that.display3;
+                  display4 = that.display4
+                }
+                case 6 => {
+                  display0 = that.display0;
+                  display1 = that.display1;
+                  display2 = that.display2;
+                  display3 = that.display3;
+                  display4 = that.display4;
+                  display5 = that.display5
+                }
+                case _ => throw new IllegalStateException()
               }
             };
             final private[immutable] def initFocus(_focus: Int, _focusStart: Int, _focusEnd: Int, _focusDepth: Int, _focusRelax: Int) = {
@@ -1127,11 +1147,23 @@ else
                   if (xor.<(32))
                     ()
                   else
-                    gotoPos(indexInFocus, xor);
+                    {
+                      if (this.dirty)
+                        this.stabilize()
+                      else
+                        ();
+                      gotoPos(indexInFocus, xor)
+                    };
                   focus = indexInFocus
                 }
               else
-                gotoPosRelaxed(index, 0, endIndex, this.depth)
+                {
+                  if (this.dirty)
+                    this.stabilize()
+                  else
+                    ();
+                  gotoPosRelaxed(index, 0, endIndex, this.depth)
+                }
             };
             private[immutable] def allDisplaySizes(): Array[Array[Int]] = {
               val allSizes: Array[Array[Int]] = new Array(5);
@@ -1593,7 +1625,90 @@ else
               else
                 ()
             };
-            final private[immutable] def stabilize(_depth: Int, _focus: Int): Unit = _depth match {
+            final private[immutable] def stabilize(): Unit = {
+              if (depth.>(1))
+                {
+                  val _depth = depth;
+                  if (_depth.>(1))
+                    {
+                      val _focusDepth = focusDepth;
+                      val stabilizationIndex = focus.|(focusRelax);
+                      val deltaSize = display0.length.-(display1(stabilizationIndex.>>(5).&(31)).asInstanceOf[Array[AnyRef]].length);
+                      copyDisplays(_focusDepth, stabilizationIndex);
+                      stabilizeDisplayPath(_focusDepth, stabilizationIndex);
+                      var currentDepth = _focusDepth.+(1);
+                      while (currentDepth.<=(_depth)) 
+                        {
+                          currentDepth match {
+                            case 2 => {
+                              val oldSizes = display1(display1.length.-(1)).asInstanceOf[Array[Int]];
+                              val newSizes = new Array[Int](oldSizes.length);
+                              val lastSizesIndex = oldSizes.length.-(1);
+                              Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
+                              newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
+                              val idx = stabilizationIndex.>>(5).&(31);
+                              display1 = copyOf(display1, idx, idx.+(2));
+                              display1.update(idx, display0);
+                              display1.update(display1.length.-(1), newSizes)
+                            }
+                            case 3 => {
+                              val oldSizes = display2(display2.length.-(1)).asInstanceOf[Array[Int]];
+                              val newSizes = new Array[Int](oldSizes.length);
+                              val lastSizesIndex = oldSizes.length.-(1);
+                              Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
+                              newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
+                              val idx = stabilizationIndex.>>(10).&(31);
+                              display2 = copyOf(display2, idx, idx.+(2));
+                              display2.update(idx, display1);
+                              display2.update(display2.length.-(1), newSizes)
+                            }
+                            case 4 => {
+                              val oldSizes = display3(display3.length.-(1)).asInstanceOf[Array[Int]];
+                              val newSizes = new Array[Int](oldSizes.length);
+                              val lastSizesIndex = oldSizes.length.-(1);
+                              Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
+                              newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
+                              val idx = stabilizationIndex.>>(15).&(31);
+                              display3 = copyOf(display3, idx, idx.+(2));
+                              display3.update(idx, display2);
+                              display3.update(display3.length.-(1), newSizes)
+                            }
+                            case 5 => {
+                              val oldSizes = display4(display4.length.-(1)).asInstanceOf[Array[Int]];
+                              val newSizes = new Array[Int](oldSizes.length);
+                              val lastSizesIndex = oldSizes.length.-(1);
+                              Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
+                              newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
+                              val idx = stabilizationIndex.>>(20).&(31);
+                              display4 = copyOf(display4, idx, idx.+(2));
+                              display4.update(idx, display3);
+                              display4.update(display4.length.-(1), newSizes)
+                            }
+                            case 6 => {
+                              val oldSizes = display5(display5.length.-(1)).asInstanceOf[Array[Int]];
+                              val newSizes = new Array[Int](oldSizes.length);
+                              val lastSizesIndex = oldSizes.length.-(1);
+                              Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
+                              newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
+                              val idx = stabilizationIndex.>>(25).&(31);
+                              display5 = copyOf(display5, idx, idx.+(2));
+                              display5.update(idx, display4);
+                              display5.update(display5.length.-(1), newSizes)
+                            }
+                            case _ => 
+                          };
+                          currentDepth.+=(1)
+                        }
+                      
+                    }
+                  else
+                    ()
+                }
+              else
+                ();
+              dirty = false
+            };
+            final private[immutable] def stabilizeDisplayPath(_depth: Int, _focus: Int): Unit = _depth match {
               case 1 => ()
               case 2 => display1.update(_focus.>>(5).&(31), display0)
               case 3 => {

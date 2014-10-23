@@ -62,7 +62,7 @@ trait VectorBuilderCodeGen {
             val $depthResult = $depth
             if ($depthResult > 1) {
                 $resultVector.$copyDisplays($depthResult, $size - 1)
-                $resultVector.$stabilize($depthResult, $size - 1)
+                $resultVector.$stabilizeDisplayPath($depthResult, $size - 1)
             }
 
             $resultVector.$gotoPos(0, $size - 1)

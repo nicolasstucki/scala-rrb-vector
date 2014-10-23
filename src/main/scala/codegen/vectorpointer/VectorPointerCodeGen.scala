@@ -48,6 +48,7 @@ trait VectorPointerCodeGen {
     val copyDisplays = TermName("copyDisplays")
     val copyDisplaysTop = TermName("copyDisplaysTop")
     val stabilize = TermName("stabilize")
+    val stabilizeDisplayPath = TermName("stabilizeDisplayPath")
     val cleanTop = TermName("cleanTop")
     val copyOf = TermName("copyOf")
 
@@ -123,13 +124,16 @@ trait VectorPointerCodeGen {
             if ($focusStart <= $index && $index < $focusEnd) {
                 val $indexInFocus = $index - $focusStart
                 val $xor = $indexInFocus ^ $focus
-                ${ifInLevel(q"$xor", Seq(0), i => q"()", q"$gotoPos($indexInFocus, $xor)")}
+                ${ifInLevel(q"$xor", Seq(0), i => q"()", q"${stabilizeIfNeeded()}; $gotoPos($indexInFocus, $xor)")}
                 $focus = $indexInFocus
             } else {
+                ${stabilizeIfNeeded()}
                 $gotoPosRelaxed($index, 0, $endIndex, this.$depth)
             }
         """
     }
+
+    protected def stabilizeIfNeeded(self: Tree = q"this") = q"if($self.$dirty) $self.$stabilize()"
 
     private[vectorpointer] def allDisplaySizesCode() = {
         val currentDepth = TermName("currentDepth")
@@ -254,7 +258,13 @@ trait VectorPointerCodeGen {
             }
             q"..${depths flatMap copyDisplay}"
         }
-        matchOnInt(depthParam, 1 to 6, d => copyDisplaysDepth(1 until d))
+        depthParam match {
+            case q"${n: Int}" =>
+                if (0 <= n && n <= 6) copyDisplaysDepth(Seq(n))
+                else throw new IllegalArgumentException
+            case _ => matchOnInt(depthParam, 1 to 6, d => copyDisplaysDepth(1 until d))
+        }
+
     }
 
 
@@ -287,7 +297,41 @@ trait VectorPointerCodeGen {
         """
     }
 
-    def stabilizeCode(depthParam: Tree, focusParam: Tree) = {
+    def stabilizeCode() = {
+        def copyAStabilizeRelaxedDisplay(currentLevel: Int): Tree = {
+            q"""
+                val oldSizes = ${getBlockSizes(displayAt(currentLevel))}
+                val newSizes = new Array[Int](${if (CLOSED_BLOCKS) q"oldSizes.length" else q"$blockWidth"})
+                val lastSizesIndex = oldSizes.length - 1
+                Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex)
+                newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
+                val idx = (stabilizationIndex >> ${blockIndexBits * currentLevel}) & $blockMask
+                ${displayNameAt(currentLevel)} = copyOf(${displayNameAt(currentLevel)}, idx, idx + 2)
+                ${displayNameAt(currentLevel)}(idx) = ${displayNameAt(currentLevel-1)}
+                ${setBlockSizes(displayAt(currentLevel), q"newSizes")}
+             """
+        }
+        q"""
+            if ( $depth > 1 ) {
+                val _depth = $depth
+                if (_depth > 1) {
+                    val _focusDepth = $focusDepth
+                    val stabilizationIndex = $focus | $focusRelax
+                    val deltaSize = ${displayAt(0)}.length - ${displayAt(1)}((stabilizationIndex >> $blockIndexBits) & $blockMask).asInstanceOf[Array[AnyRef]].length
+                    $copyDisplays(_focusDepth, stabilizationIndex)
+                    $stabilizeDisplayPath(_focusDepth, stabilizationIndex)
+                    var currentDepth = _focusDepth + 1
+                    while (currentDepth <= _depth) {
+                        ${matchOnInt(q"currentDepth", 2 to 6, d => copyAStabilizeRelaxedDisplay(d - 1), Some(q""))}
+                        currentDepth += 1
+                    }
+                }
+            }
+            $dirty = false
+         """
+    }
+
+    def stabilizeDisplayPathCode(depthParam: Tree, focusParam: Tree) = {
         def stabilizeFromLevel(level: Int) = {
             def stabilizeDisplay(i: Int) =
                 q"${displayAt(i)}(($focusParam >> ${blockIndexBits * i}) & $blockMask) = ${displayAt(i - 1)}"
@@ -327,10 +371,13 @@ trait VectorPointerCodeGen {
     }
 
     protected def getBlockSizes(display: Tree) = {
-        if (CLOSED_BLOCKS)
-            q"$display($display.length - 1).asInstanceOf[Array[Int]]"
-        else
-            q"$display(${blockWidth + blockInvariants - 1}).asInstanceOf[Array[Int]]"
+        if (CLOSED_BLOCKS) q"$display($display.length - 1).asInstanceOf[Array[Int]]"
+        else q"$display(${blockWidth + blockInvariants - 1}).asInstanceOf[Array[Int]]"
+    }
+
+    protected def setBlockSizes(display: Tree, sizes: Tree) = {
+        if (CLOSED_BLOCKS) q"$display($display.length - 1) = $sizes"
+        else q"$display(${blockWidth + blockInvariants - 1}) = $sizes"
     }
 
 

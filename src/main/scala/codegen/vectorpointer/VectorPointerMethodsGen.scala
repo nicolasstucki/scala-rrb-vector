@@ -19,7 +19,7 @@ trait VectorPointerMethodsGen {
         val methods = Seq(rootDef(), initFromRootDef(), initFromDef(), initFocusDef(), gotoIndexDef(), allDisplaySizesDef(),
             putDisplaySizesDef(), gotoPosRelaxedDef(), getElementDef(), gotoPosDef(), gotoNextBlockStartDef(),
             gotoPrevBlockStartDef(), setUpNextBlockNewBranchWritableDef(), gotoNextBlockStartWritableDef(), copyDisplaysDef(),
-            copyDisplaysTopDef(), stabilizeDef(), cleanTopDef(), copyOfDef())
+            copyDisplaysTopDef(), stabilizeDef(), stabilizeDisplayPathDef(), cleanTopDef(), copyOfDef())
 
         displays ++ fields ++ methods
     }
@@ -47,12 +47,7 @@ trait VectorPointerMethodsGen {
     private[vectorpointer] def initFromDef() = {
         val that = TermName("that")
         val code = initFromCode(q"$that")
-        q"""
-            private[immutable] def $initFrom[U]($that: $vectorPointerClassName[U]): Unit = {
-                ..${assertions(q"!that.$dirty")}
-                $code
-            }
-         """
+        q"private[immutable] def $initFrom[U]($that: $vectorPointerClassName[U]): Unit = $code"
     }
 
     private[vectorpointer] def initFocusDef() = {
@@ -176,12 +171,17 @@ trait VectorPointerMethodsGen {
 
 
     private[vectorpointer] def stabilizeDef() = {
+        val code = stabilizeCode()
+        q"private[immutable] final def $stabilize(): Unit = $code"
+    }
+
+    private[vectorpointer] def stabilizeDisplayPathDef() = {
         val depthParam = TermName("_depth")
         val focusParam = TermName("_focus")
-        val code = stabilizeCode(q"$depthParam", q"$focusParam")
+        val code = stabilizeDisplayPathCode(q"$depthParam", q"$focusParam")
         //asserts(q"assert(0 < _depth && _depth <= 6)")
         // asserts(q"assert((_focus >> (5 * _depth)) == 0, (_depth, _focus))")
-        q"private[immutable] final def $stabilize($depthParam: Int, $focusParam: Int): Unit = $code"
+        q"private[immutable] final def $stabilizeDisplayPath($depthParam: Int, $focusParam: Int): Unit = $code"
     }
 
 
