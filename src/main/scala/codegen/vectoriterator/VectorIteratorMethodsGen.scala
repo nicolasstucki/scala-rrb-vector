@@ -8,14 +8,14 @@ import scala.reflect.runtime.universe._
 
 
 trait VectorIteratorMethodsGen {
-    self: VectorIteratorCodeGen with VectorProperties =>
+    self: VectorIteratorCodeGen with VectorPointerCodeGen with VectorProperties =>
 
     def generateVectorIteratorMethods() = {
         val fields = Seq(
             q"private var $it_blockIndex: Int = _",
             q"private var $it_lo: Int = _",
             q"private var $it_endLo: Int = _",
-            q"private var $it_hasNextVar: Boolean = $it_iteratorStartIndex < $it_endIndex"
+            q"private var $it_hasNextVar: Boolean = $it_iteratorStartIndex < $endIndex"
         )
         val methods = Seq(resetIteratorDef, hasNextDef, nextDef)
 

@@ -9,4 +9,4 @@ abstract class RRBVectorAbstractMemoryAllocation[A] extends MemoryAllocation[A] 
 
 class RRBVectorIntMemoryAllocation extends RRBVectorAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
 
-class RRBVectorAnyRefMemoryAllocation extends RRBVectorAbstractMemoryAllocation[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class RRBVectorStringMemoryAllocation extends RRBVectorAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator

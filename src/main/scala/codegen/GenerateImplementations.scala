@@ -60,46 +60,18 @@ object GenerateImplementations extends App {
         }
     }
 
-    val USE_ASSERTIONS = true
+    val USE_ASSERTIONS = false
 
-    val packageGenerator1 = new VectorImplementation {
-
-        def subpackage = TermName("rrbvector.closedblocks.fullrebalance")
-
-        def vectorName = "GenRRBVectorClosedBlocksFullRebalance"
-
-        val CLOSED_BLOCKS: Boolean = true
-        val FULL_REBALANCE: Boolean = true
-
-        override protected val useAssertions: Boolean = USE_ASSERTIONS
+    for {
+        useCompleteRebalance <- Seq(true, false)
+        indexBits <- 5 to 6
+    } {
+        val packageGenerator = new VectorImplementation {
+            val COMPLETE_REBALANCE: Boolean = useCompleteRebalance
+            override protected val blockIndexBits: Int = indexBits
+            override protected val useAssertions: Boolean = USE_ASSERTIONS
+        }
+        packageGenerator.exportCodeToFiles()
     }
 
-    val packageGenerator2 = new VectorImplementation {
-
-        def subpackage = TermName("rrbvector.closedblocks.quickrebalance")
-
-        def vectorName = "GenRRBVectorClosedBlocksQuickRebalance"
-
-        val CLOSED_BLOCKS: Boolean = true
-        val FULL_REBALANCE: Boolean = false
-
-        override protected val useAssertions: Boolean = USE_ASSERTIONS
-    }
-
-    val packageGenerator3 = new VectorImplementation {
-
-        def subpackage = TermName("rrbvector.fullblocks")
-
-        def vectorName = "GenRRBVectorFullBlocks"
-
-        val CLOSED_BLOCKS: Boolean = false
-        val FULL_REBALANCE: Boolean = false
-
-        override protected val useAssertions: Boolean = USE_ASSERTIONS
-
-    }
-
-    packageGenerator1.exportCodeToFiles()
-    packageGenerator2.exportCodeToFiles()
-    packageGenerator3.exportCodeToFiles()
 }

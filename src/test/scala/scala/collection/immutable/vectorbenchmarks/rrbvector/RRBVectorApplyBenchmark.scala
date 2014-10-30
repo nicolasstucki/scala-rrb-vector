@@ -10,4 +10,4 @@ abstract class RRBVectorAbstractApplyBenchmark[A] extends ApplyBenchmarks[A] wit
 
 class RRBVectorApplyIntBenchmark extends RRBVectorAbstractApplyBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class RRBVectorApplyAnyRefBenchmark extends RRBVectorAbstractApplyBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class RRBVectorApplyStringBenchmark extends RRBVectorAbstractApplyBenchmark[String] with VectorGeneratorType.StringGenerator

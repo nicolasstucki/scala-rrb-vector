@@ -28,4 +28,4 @@ abstract class VectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] wi
 
 class VectorBuilderIntBenchmark extends VectorAbstractBuilderBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class VectorBuilderAnyRefBenchmark extends VectorAbstractBuilderBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class VectorBuilderStringBenchmark extends VectorAbstractBuilderBenchmark[String] with VectorGeneratorType.StringGenerator

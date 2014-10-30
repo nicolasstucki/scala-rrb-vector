@@ -8,4 +8,4 @@ abstract class RRBVectorAbstractIterationBenchmark[A] extends IterationBenchmark
 
 class RRBVectorIterationIntBenchmark extends RRBVectorAbstractIterationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class RRBVectorIterationAnyRefBenchmark extends RRBVectorAbstractIterationBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class RRBVectorIterationStringBenchmark extends RRBVectorAbstractIterationBenchmark[String] with VectorGeneratorType.StringGenerator

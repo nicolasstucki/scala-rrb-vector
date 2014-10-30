@@ -8,4 +8,4 @@ abstract class RRBVectorAbstractConcatenationBenchmark[A] extends ConcatenationB
 
 class RRBVectorConcatenationIntBenchmark extends RRBVectorAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class RRBVectorConcatenationAnyRefBenchmark extends RRBVectorAbstractConcatenationBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class RRBVectorConcatenationStringBenchmark extends RRBVectorAbstractConcatenationBenchmark[String] with VectorGeneratorType.StringGenerator

@@ -16,11 +16,11 @@ object VectorGeneratorType {
         def vectorTypeName: String = "Int"
     }
 
-    trait AnyRefGenerator extends VectorGeneratorType[AnyRef]{
+    trait StringGenerator extends VectorGeneratorType[String]{
 
-        @inline final def element(n: Int): AnyRef = n.toString.asInstanceOf[AnyRef]
+        @inline final def element(n: Int): String = n.toString
 
-        def vectorTypeName: String = "AnyRef"
+        def vectorTypeName: String = "String"
     }
 
 }

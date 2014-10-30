@@ -13,7 +13,6 @@ trait VectorIteratorCodeGen {
     // Field names
 
     val it_iteratorStartIndex = TermName("startIndex")
-    val it_endIndex = TermName("endIndex")
 
     val it_blockIndex = TermName("blockIndex")
     val it_lo = TermName("lo")
@@ -32,50 +31,58 @@ trait VectorIteratorCodeGen {
 
     protected def resetIteratorCode() = {
         q"""
-            if ($focusStart <= $it_iteratorStartIndex && $it_iteratorStartIndex < $focusEnd)
-                $gotoPos($it_iteratorStartIndex, $it_iteratorStartIndex ^ $focus)
-            else
-                $gotoPosRelaxed($it_iteratorStartIndex, 0, $it_endIndex, $depth)
-            $it_blockIndex = $focusStart
-            $it_lo = $it_iteratorStartIndex - $focusStart
-            $it_endLo = math.min($focusEnd - $it_blockIndex, $blockWidth)
+            if ($it_hasNextVar) {
+                $focusOn($it_iteratorStartIndex)
+                $it_blockIndex = $focusStart + ($focus & ${~blockMask})
+                $it_lo = $focus & $blockMask
+                $it_endLo = math.min($focusEnd - $it_blockIndex, $blockWidth)
+            } else {
+                // init with fake first element that will be ignored
+                $it_blockIndex = 0
+                $it_lo = 0
+                $it_endLo = 1
+                ${displayAt(0)} = new Array[AnyRef](1)
+            }
          """
     }
 
     protected def nextCode() = {
         val oldBlockIndex = TermName("oldBlockIndex")
         val newBlockIndex = TermName("newBlockIndex")
+        val newBlockIndexInFocus = TermName("newBlockIndexInFocus")
         val localLo = TermName("_lo")
         val localEndLo = TermName("_endLo")
+        val localFocusStart = TermName("_focusStart")
         val res = TermName("res")
         q"""
             val $localLo = lo
-            val $res = display0($localLo).asInstanceOf[A]
-            lo = $localLo + 1
+            val $res: $A = ${displayAt(0)}($localLo).asInstanceOf[$A]
+            $it_lo = $localLo + 1
             val $localEndLo = $it_endLo
             if ( $localLo + 1 != $localEndLo ) {
                 $res
             } else {
                 val $oldBlockIndex = $it_blockIndex
                 val $newBlockIndex = $oldBlockIndex + $localEndLo
-                $it_blockIndex = $newBlockIndex;
-                lo = 0;
+                $it_blockIndex = $newBlockIndex
+                $it_lo = 0
                 if ( $newBlockIndex < $focusEnd ) {
-                    val _focusStart = focusStart
-                    val newBlockIndexInFocus = newBlockIndex - _focusStart
-                    $gotoNextBlockStart(newBlockIndexInFocus, newBlockIndexInFocus.^($oldBlockIndex - _focusStart))
-                } else if ( $newBlockIndex < $it_endIndex ) {
-                    $gotoPosRelaxed($newBlockIndex, 0, $it_endIndex, $depth)
+                    val $localFocusStart = $focusStart
+                    val $newBlockIndexInFocus = $newBlockIndex - $localFocusStart
+                    $gotoNextBlockStart($newBlockIndexInFocus, $newBlockIndexInFocus ^ ($oldBlockIndex - $localFocusStart))
+                } else if ( $newBlockIndex < $endIndex ) {
+                    $focusOn($newBlockIndex)
                 } else {
-                    $it_lo = $focusEnd - $newBlockIndex - 1
-                    $it_blockIndex = $it_endIndex
+                    // reset te lo and blockIndex where no exceptions will be thrown
+                    $it_lo = ($focusEnd - 1) & $blockMask
+                    $it_blockIndex = $endIndex
                     if ( $it_hasNextVar ) {
                         $it_hasNextVar = false
                     } else {
                         throw new NoSuchElementException("reached iterator end")
                     }
                 }
-                $it_endLo = math.min($focusEnd.-($newBlockIndex), $blockWidth)
+                $it_endLo = math.min($focusEnd - $newBlockIndex, $blockWidth)
                 $res
             }
          """

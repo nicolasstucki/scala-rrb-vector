@@ -21,6 +21,7 @@ trait VectorCodeGen {
     //
 
     val v_endIndex = TermName("endIndex")
+    val v_dirty = TermName("dirty")
 
     //
     // Method names
@@ -50,11 +51,10 @@ trait VectorCodeGen {
     final val v_init = TermName("init")
 
     // Private
-    val v_appendedBack = TermName("appendedBack")
     val v_appendBackSetupNewBlock = TermName("appendBackSetupNewBlock")
     val v_takeFront0 = TermName("takeFront0")
 
-    val v_concatenated = TermName("concatenated")
+    val v_concatenate = TermName("concatenate")
     val v_rebalanced = TermName("rebalanced")
     val v_rebalancedLeafs = TermName("rebalancedLeafs")
     val v_computeNewSizes = TermName("computeNewSizes")
@@ -77,20 +77,23 @@ trait VectorCodeGen {
 
     def initIteratorCode(it: Tree) =
         q"""
-            ${stabilizeIfNeeded()}
-            $it.$initFrom(this)
-            if ($depth > 0)
-                $it.$it_resetIterator()
+            if (this.$v_dirty) {
+                this.$stabilize()
+                this.$v_dirty = false
+            }
+            $it.$initWithFocusFrom(this)
+            $it.$it_resetIterator()
          """
 
     def initReverseIteratorCode(rit: Tree) =
         q"""
-            ${stabilizeIfNeeded()}
-            $rit.$initFrom(this)
-            if ($depth > 0)
-                $rit.$rit_resetIterator()
+            if (this.$v_dirty) {
+                this.$stabilize()
+                this.$v_dirty = false
+            }
+            $rit.$initWithFocusFrom(this)
+            $rit.$rit_resetIterator()
          """
-
 
     def iteratorCode() = {
         val it = TermName("it")
@@ -121,17 +124,16 @@ trait VectorCodeGen {
                 val $indexInFocus = $index - $focusStartLocal
                 $getElement($indexInFocus, $indexInFocus ^ $focus).asInstanceOf[$A]
             } else if (0 <= $index && $index < $v_endIndex) {
-                $gotoPosRelaxed($index, 0, $v_endIndex, $depth)
-                $display0(($index - $focusStart) & $blockMask).asInstanceOf[$A]
+                $getElementFromRoot($index).asInstanceOf[$A]
             } else {
                 throw new IndexOutOfBoundsException($index.toString)
             }
          """
     }
 
-    def collPlusCode(elem: Tree) = {
+    def collPlusCode(elem: TermName) = {
         q"""
-            if (bf eq IndexedSeq.ReusableCBF) $v_appendedBack($elem).asInstanceOf[That] // just ignore bf
+            if (bf eq IndexedSeq.ReusableCBF) ${appendedBackCode(elem)}.asInstanceOf[That] // just ignore bf
             else super.:+($elem)(bf)
          """
     }
@@ -182,15 +184,22 @@ trait VectorCodeGen {
     protected def plusPlusCode(that: Tree, bf: Tree) = {
         q"""
             if ($bf eq IndexedSeq.ReusableCBF) {
-                if ($that.$v_isEmpty) this.asInstanceOf[That]
-                else {
-                    if($that.isInstanceOf[$vectorClassName[$B]]) {
-                        val vec = $that.asInstanceOf[$vectorClassName[$B]]
-                        if (this.isEmpty) vec.asInstanceOf[That]
-                        else this.$v_concatenated[$B](vec).asInstanceOf[That]
-                    } else super.++($that)
+                if (that.$v_isEmpty)
+                    this.asInstanceOf[That]
+                else if (that.isInstanceOf[$vectorClassName[$B]]) {
+                    val thatVec = $that.asInstanceOf[$vectorClassName[$B]]
+                    if (this.$v_isEmpty)
+                        thatVec.asInstanceOf[That]
+                    else {
+                        val newVec = new $vectorClassName(this.$v_endIndex + thatVec.$v_endIndex)
+                        newVec.$initWithFocusFrom(this)
+                        newVec.$v_concatenate(this.$endIndex, thatVec)
+                        newVec.asInstanceOf[That]
+                    }
                 }
-            } else super.++(that.seq)
+                else
+                    super.++($that.seq)
+            } else super.++($that.seq)
         """
     }
 
@@ -217,191 +226,168 @@ trait VectorCodeGen {
 
     // Private methods
 
-    protected def appendedBackCode(value: Tree) = {
+    protected def appendedBackCode(value: TermName) = {
+        val resultVector = TermName("resultVector")
+        val localEndIndex = TermName("_endIndex")
+        val elemIndexInBlock = TermName("elemIndexInBlock")
         q"""
-            if (${isEmptyCode()}) return $vectorObjectName.singleton[$B]($value)
-
-            val _endIndex = this.$v_endIndex
-            val vec = new $vectorClassName[$B](_endIndex + 1)
-            vec.$initFrom(this)
-            vec.$gotoIndex(_endIndex - 1, _endIndex - 1)
-
-            val elemIndexInBlock = (_endIndex - vec.$focusStart) & $blockMask
-            if( elemIndexInBlock == 0 ) {
-                vec.$v_appendBackSetupNewBlock()
-                vec.$display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
-                vec
+            if (this.$v_endIndex == 0) {
+                val $resultVector = new $vectorClassName[$B](1)
+                $resultVector.$initSingleton($value)
+                $resultVector
             } else {
-                vec.$focusEnd += 1
-                if (!vec.$dirty)
-                    vec.$dirty = true
-                val d0 = new Array[AnyRef](${if (CLOSED_BLOCKS) q"elemIndexInBlock + 1" else q"$blockWidth"})
-                Platform.arraycopy(vec.$display0, 0, d0, 0, ${if (CLOSED_BLOCKS) q"elemIndexInBlock" else q"$blockWidth"})
-                d0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
-                vec.$display0 = d0
-                vec
+                val $localEndIndex = this.$endIndex
+                val $resultVector = new $vectorClassName[$B]($localEndIndex + 1)
+                $resultVector.$initWithFocusFrom(this)
+                $resultVector.$v_dirty = this.$v_dirty
+                if ((($localEndIndex - 1 - this.$focusStart) ^ this.$focus) >= $blockWidth) {
+                    if ($resultVector.$v_dirty) {
+                        $resultVector.$stabilize()
+                        $resultVector.$v_dirty = false
+                    }
+                    $resultVector.$focusOn($localEndIndex - 1)
+                }
+                val $elemIndexInBlock = ($localEndIndex - $resultVector.$focusStart) & $blockMask
+                if ($elemIndexInBlock == 0) {
+                    if ($resultVector.$v_dirty) {
+                        $resultVector.$stabilize()
+                        $resultVector.$v_dirty = false
+                    }
+                    $resultVector.$v_appendBackSetupNewBlock()
+                    $resultVector.${displayNameAt(0)}($elemIndexInBlock) = $value.asInstanceOf[AnyRef]
+                    ..${assertions(q"$resultVector.$v_assertVectorInvariant()")}
+                    $resultVector
+                } else {
+                    $resultVector.$v_dirty = true
+                    $resultVector.$focusEnd = $resultVector.$endIndex
+                    val d0 = new Array[AnyRef]($elemIndexInBlock + 1)
+                    Platform.arraycopy($resultVector.${displayNameAt(0)}, 0, d0, 0, $elemIndexInBlock)
+                    d0($elemIndexInBlock) = $value.asInstanceOf[AnyRef]
+                    $resultVector.${displayNameAt(0)} = d0
+                    ..${assertions(q"$resultVector.$v_assertVectorInvariant()")}
+                    $resultVector
+                }
             }
          """
-//        vec.$display0 = vec.$copyOf(vec.$display0, ${if (CLOSED_BLOCKS) q"elemIndexInBlock" else q"$blockWidth"}, ${if (CLOSED_BLOCKS) q"elemIndexInBlock + 1" else q"$blockWidth"})
-//        vec.$display0(elemIndexInBlock) = $value.asInstanceOf[AnyRef]
-//        vec
     }
 
     protected def appendBackSetupNewBlockCode() = {
+        val oldDepth = TermName("oldDepth")
+        val newRelaxedIndex = TermName("newRelaxedIndex")
+        val xor = TermName("xor")
         q"""
-            ${stabilizeIfNeeded()}
+            ..${assertions(q"!$v_dirty")}
 
-            ..${assertions(q"$v_endIndex - 2 == $focus + $focusStart", q"!$dirty")}
-            val _depth = $depth
+            val $oldDepth = $depth
+            val $newRelaxedIndex = (($endIndex - 1) - $focusStart) + $focusRelax
+            val $xor = $newRelaxedIndex ^ ($focus | $focusRelax)
 
-            // TODO: should only copy the top displays, not the ones affected by setUpNextBlockStartTailWritable
-            val displaySizes = $allDisplaySizes()
-            $copyDisplays(_depth, $focus | $focusRelax)
+            $setupNewBlockInNextBranch($newRelaxedIndex, $xor)
 
-            val newRelaxedIndex = ($v_endIndex - $focusStart - 1) + $focusRelax
-            val xor = newRelaxedIndex ^ ($focus | $focusRelax)
-            $setupNextBlockStartWritable(newRelaxedIndex, xor)
-            $stabilizeDisplayPath($depth, newRelaxedIndex)
+            if ($oldDepth == $depth) {
+                var i = ${ifInLevel(q"$xor", 1 to 4, lvl => q"${lvl + 1}", q"6")}
+                val _focusDepth = $focusDepth
 
-            if (_depth != $depth) {
-                if ($v_endIndex - 1 == (1 << ($blockIndexBits * ($depth - 1)))) {
-                    displaySizes(depth - 1) = null
-                } else {
-                    val newSizes = new Array[Int](2)
-                    newSizes(0) = endIndex - 1
-                    newSizes(1) = endIndex
-                    displaySizes(depth - 1) = newSizes
-                }
-            } else {
-                val j = math.max(
-                    if (xor.<(1024)) 1
-                    else if (xor.<(32768)) 2
-                    else if (xor.<(1048576)) 3
-                    else if (xor.<(33554432)) 4
-                    else 5,
-                    $focusDepth)
-                var i = $focusDepth
-                while (i < j) {
-                    displaySizes(i - 1) = null
+                while (i < oldDepth) {
+                    var display: Array[AnyRef] = null
+                    var newDisplay: Array[AnyRef] = null
+                    var newSizes: Array[Int] = null
+                    ${matchOnInt(q"i", 2 to 5, lvl => q"display = ${displayAt(lvl)}")}
+                    val displayLen = display.length - 1
+                    if (i >= _focusDepth) {
+                        val oldSizes = display(displayLen).asInstanceOf[Array[Int]]
+                        newSizes = new Array[Int](displayLen)
+                        Platform.arraycopy(oldSizes, 0, newSizes, 0, displayLen - 1)
+                        newSizes(displayLen - 1) = oldSizes(displayLen - 1) + 1
+                    }
+                    newDisplay = new Array[AnyRef](display.length)
+                    Platform.arraycopy(display, 0, newDisplay, 0, displayLen)
+                    if (i >= _focusDepth)
+                        newDisplay(displayLen) = newSizes
+                    ${matchOnInt(q"i", 2 to 5, lvl => q"newDisplay((newRelaxedIndex >> ${blockIndexBits * lvl}) & $blockMask) = ${displayAt(lvl - 1)}; ${displayAt(lvl)} = newDisplay")}
                     i += 1
                 }
-
-                while (i < $depth) {
-                    // TODO: load sizes and put them directly back from/to display
-                    val oldSizes = displaySizes(i - 1)
-                    val display = i match {
-                        case 1 => display1
-                        case 2 => display2
-                        case 3 => display3
-                        case 4 => display4
-                        case 5 => display5
-                    }
-                    val newSizes = new Array[Int](display.length - $blockInvariants)
-                    Platform.arraycopy(oldSizes, 0, newSizes, 0, oldSizes.length)
-                    if (newSizes.length != oldSizes.length) {
-                        newSizes(newSizes.length - 1) = newSizes(newSizes.length - 2) + 1
-                    } else {
-                        newSizes(newSizes.length - 1) += 1
-                    }
-                    displaySizes(i - 1) = newSizes
-                    i += 1
-                }
-                putDisplaySizes(displaySizes)
-            }
-            if (_depth == focusDepth)
-                initFocus(endIndex - 1, 0, endIndex, depth, 0)
-            else {
-                // TODO: find a wider/taller focus
-                initFocus(0, endIndex - 1, endIndex, 1, newRelaxedIndex & ${~31})
             }
 
+            if ($oldDepth == $focusDepth) $initFocus($endIndex - 1, 0, $endIndex, $depth, 0)
+            else $initFocus($endIndex - 1, $endIndex - 1, $endIndex, 1, $newRelaxedIndex & ${~blockMask})
          """
     }
 
-    def concatenatedCode(that: Tree) = {
-        @inline def concatName(i: Int) = TermName("concat" + i)
-        def concatenatedLevel(lvl: Int) = {
-            var parameters: List[Tree] =
-                q"this.${displayNameAt(lvl - 1)}" ::
-                  q"${concatName(lvl - 1)}" ::
-                  q"that.${displayNameAt(lvl - 1)}" :: Nil
-            if (!CLOSED_BLOCKS) {
-                parameters = parameters :::
-                  q"(((this.$focus|this.$focusRelax) >> ${blockIndexBits * lvl}) & $blockMask)" ::
-                  q"if(${concatName(lvl - 1)}(1) == null) 1 else 2" ::
-                  q"if(that.focusDepth <= $lvl) (((that.$focusEnd >> ${blockIndexBits * (lvl - 1)}) & $blockMask) + 1) else ???" :: Nil
-            }
-            parameters = parameters ::: q"$lvl" :: Nil
-            q"val ${concatName(lvl)} = $v_rebalanced(..$parameters)"
-        }
-        def concatenateVectors(maxLevel: Int) = {
-            def initVector = {
-                if (maxLevel == 1)
-                    q"vec.initFromRoot(concat1, if(newSize <= $blockWidth) 1 else 2, newSize)"
-                else {
-                    def initVectorFromRoot(newRoot: Tree, rootDepth: Int) =
-                        if (rootDepth == maxLevel || maxLevel == 6)
-                            q"vec.initFromRoot($newRoot, $rootDepth, newSize)"
-                        else if (CLOSED_BLOCKS)
-                            q"vec.initFromRoot(withComputedSizes($newRoot, $rootDepth), $rootDepth, newSize)"
-                        else
-                            q"vec.initFromRoot(withComputedSizes($newRoot, $rootDepth, newSize), $rootDepth, newSize)"
-                    if (maxLevel == 6)
-                        initVectorFromRoot(q"${concatName(maxLevel)}", 6)
+    def concatenateCode(currentSize: TermName, that: TermName) = {
+        def concatenateOn(maxDepth: Int): Tree = {
+            if (maxDepth == 1) {
+                q"""
+                    val concat = $v_rebalancedLeafs(${displayAt(0)}, $that.${displayNameAt(0)}, isTop = true)
+                    $initFromRoot(concat, if ($endIndex <= $blockWidth) 1 else 2)
+                    ..${assertions(q"this.$v_assertVectorInvariant()")}
+                 """
+            } else {
+                def localDisplay(i: Int) = TermName("d" + i)
+                q"""
+                    ..${(0 until maxDepth) map (i => q"var ${localDisplay(i)}: Array[AnyRef] = null")}
+                    if (($that.$focus & ${~blockMask}) == 0) {
+                        ..${(maxDepth - 1 to 0 by -1) map (i => q"${localDisplay(i)} = that.${displayNameAt(i)}")}
+                    } else {
+                        if ($that.${displayNameAt(maxDepth - 1)} != null)
+                            ${localDisplay(maxDepth - 1)} = $that.${displayNameAt(maxDepth - 1)}
+                        ..${(maxDepth - 2 to 0 by -1) map (i => q"if (${localDisplay(i + 1)} == null) ${localDisplay(i)} = $that.${displayNameAt(i)} else ${localDisplay(i)} = ${localDisplay(i + 1)}(0).asInstanceOf[Array[AnyRef]]")}
+                    }
+                    var concat: Array[AnyRef] = rebalancedLeafs(this.${displayNameAt(0)}, ${localDisplay(0)}, isTop = false)
+                    ..${(2 until maxDepth) map (i => q"concat = $v_rebalanced(this.${displayNameAt(i - 1)}, concat, ${localDisplay(i - 1)}, $i)")}
+                    concat = rebalanced(this.${displayNameAt(maxDepth - 1)}, concat, $that.${displayNameAt(maxDepth - 1)}, $maxDepth)
+                    if (concat.length == ${1 + blockInvariants})
+                        $initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], $maxDepth)
                     else
-                        q"""
-                            if(${concatName(maxLevel)}.length == 2) {
-                                ${initVectorFromRoot(q"${concatName(maxLevel)}(0).asInstanceOf[Array[AnyRef]]", maxLevel)}
-                            } else {
-                                ${initVectorFromRoot(q"${concatName(maxLevel)}", maxLevel + 1)}
-                            }
-                        """
-                }
+                        $initFromRoot($v_withComputedSizes(concat, ${maxDepth + 1}), ${maxDepth + 1})
+                    ..${assertions(q"this.$v_assertVectorInvariant()")}
+                 """
             }
-
-            q"""
-                val ${concatName(1)} = $v_rebalancedLeafs(this.${displayNameAt(0)}, that.${displayNameAt(0)}, ..${if (CLOSED_BLOCKS) Nil else q"(this.$focus & $blockMask) + 1" :: q"math.min($blockWidth, that.$focusEnd)" :: Nil}, ${maxLevel == 1})
-                ..${(2 to maxLevel) map concatenatedLevel}
-                ${initVector}
-                ..${assertions(q"vec.$v_assertVectorInvariant()")}
-             """
         }
-
-        val concatOnVec = matchOnInt(q"math.max(this.$depth, that.$depth)", 1 to 6, concatenateVectors, Some(q"throw new IllegalStateException"))
         q"""
-            ..${assertions(q"this.$v_assertVectorInvariant()", q"that.$v_assertVectorInvariant()", q"this.$v_length > 0", q"$that.$v_length > 0")}
-            ${stabilizeIfNeeded(q"this")}
-            ${stabilizeIfNeeded(q"that")}
-            ..${assertions(q"!this.$dirty", q"!that.$dirty", q"this.$v_assertVectorInvariant()", q"that.$v_assertVectorInvariant()")}
-
-            this.$gotoIndex(this.$v_endIndex - 1, this.$v_endIndex)
-            that.$gotoIndex(0, that.$v_endIndex)
-            val newSize = this.$v_endIndex + that.$v_endIndex
-            val vec = new $vectorClassName[B](newSize)
-            $concatOnVec
-            vec
-        """
+            ..${assertions(q"$that.$v_assertVectorInvariant()", q"0 < $that.length")}
+            if (this.$v_dirty) {
+                this.$stabilize()
+                this.$v_dirty = false
+            }
+            if ($that.$v_dirty) {
+                $that.$stabilize()
+                $that.$v_dirty = false
+            }
+            ..${assertions(q"$that.assertVectorInvariant()")}
+            this.$focusOn($currentSize - 1)
+            ${matchOnInt(q"math.max(this.$depth, $that.$depth)", 1 to 6, concatenateOn, Some(q"throw new IllegalStateException"))}
+         """
     }
 
-    protected def rebalancedCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
+    protected def rebalancedCode(displayLeft: Tree, concat: Tree, displayRight: Tree, currentDepth: Tree) = {
+        val leftLength = TermName("leftLength")
+        val concatLength = TermName("concatLength")
+        val rightLength = TermName("rightLength")
+
         val lengthSizes = TermName("nalen")
         val sizes = TermName("sizes")
         val branching = TermName("branching")
+
         def computeSizes: Seq[Tree] = {
-            if (FULL_REBALANCE)
-                Seq(q"val $branching = $v_computeBranching($displayLeft, $concat, $displayRight, ..${if (CLOSED_BLOCKS) Nil else q"$leftLength" :: q"$concatLength" :: q"$rightLength" :: Nil}, $currentDepth)")
+            if (COMPLETE_REBALANCE)
+                Seq(q"val $branching = $v_computeBranching($displayLeft, $concat, $displayRight, $currentDepth)")
             else {
-                Seq(q"val tup = $v_computeNewSizes($displayLeft, $concat, $displayRight, ..${if (CLOSED_BLOCKS) Nil else q"$leftLength" :: q"$concatLength" :: q"$rightLength" :: Nil}, $currentDepth)",
+                Seq(q"val tup = $v_computeNewSizes($displayLeft, $concat, $displayRight, $currentDepth)",
                     q"val $sizes: Array[Int] = tup._1",
                     q"val $lengthSizes: Int = tup._2")
             }
         }
         q"""
-            ..${computeSizes}
+            val $leftLength = if($displayLeft==null) 0 else ($displayLeft.length - $blockInvariants)
+            val $concatLength = if($concat==null) 0 else ($concat.length - $blockInvariants)
+            val $rightLength = if($displayRight==null) 0 else ($displayRight.length - $blockInvariants)
 
-            val top = new Array[AnyRef](${if (FULL_REBALANCE) q"($branching >> ${2 * blockIndexBits}) + (if(($branching & ${blockMask | (blockMask << blockIndexBits)}) == 0) $blockInvariants else ${blockInvariants + 1})" else q"($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2)"})
+            ..$computeSizes
 
-            var mid = new Array[AnyRef](${if (FULL_REBALANCE) q"(if (($branching >> ${2 * blockIndexBits}) == 0) (($branching + ${blockWidth - 1}) >> $blockIndexBits) + $blockInvariants else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
+            val top = new Array[AnyRef](${if (COMPLETE_REBALANCE) q"($branching >> ${2 * blockIndexBits}) + (if(($branching & ${blockMask | (blockMask << blockIndexBits)}) == 0) $blockInvariants else ${blockInvariants + 1})" else q"($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2)"})
+
+            var mid = new Array[AnyRef](${if (COMPLETE_REBALANCE) q"(if (($branching >> ${2 * blockIndexBits}) == 0) (($branching + ${blockWidth - 1}) >> $blockIndexBits) + $blockInvariants else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
             var bot: Array[AnyRef] = null
 
             var iSizes = 0
@@ -443,9 +429,9 @@ trait VectorCodeGen {
                 while (i < displayEnd) {
                     val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]]
                     val displayValueEnd = displayValue.length - (if (currentDepth==2) 0 else 1)
-                    if (iBot == 0 && j == 0 && displayValueEnd == ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
+                    if ( /* iBot==0 && j==0 */ (iBot | j) == 0 && displayValueEnd == ${if (COMPLETE_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
                         if ($currentDepth!=2 && bot!=null) {
-                            withComputedSizes(bot, currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
+                            $v_withComputedSizes(bot, currentDepth - 1)
                             bot = null
                         }
                         mid(iMid) = displayValue
@@ -453,11 +439,11 @@ trait VectorCodeGen {
                         iMid += 1
                         iSizes += 1
                     } else {
-                        val numElementsToCopy = math.min(displayValueEnd - j, ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
+                        val numElementsToCopy = math.min(displayValueEnd - j, ${if (COMPLETE_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
                         if (iBot == 0) {
                             if ($currentDepth!=2 && bot!=null)
-                                withComputedSizes(bot, currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
-                            bot = new Array[AnyRef](${if (FULL_REBALANCE) q"math.min($branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits), $blockWidth)" else q"$sizes(iSizes)"} + (if ($currentDepth == 2) 0 else $blockInvariants))
+                                $v_withComputedSizes(bot, currentDepth - 1)
+                            bot = new Array[AnyRef](${if (COMPLETE_REBALANCE) q"math.min($branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits), $blockWidth)" else q"$sizes(iSizes)"} + (if ($currentDepth == 2) 0 else $blockInvariants))
                             mid(iMid) = bot
                         }
                         Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
@@ -467,18 +453,18 @@ trait VectorCodeGen {
                             i += 1
                             j = 0
                         }
-                        if (iBot == ${if (FULL_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
+                        if (iBot == ${if (COMPLETE_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
                             iMid += 1
                             iBot = 0
                             iSizes += 1
                         }
                     }
                     if (iMid == $blockWidth) {
-                        top(iTop) = withComputedSizes(mid, $currentDepth, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
+                        top(iTop) = withComputedSizes(mid, $currentDepth)
                         iTop += 1
                         iMid = 0
                         ..${
-            if (FULL_REBALANCE) Seq(
+            if (COMPLETE_REBALANCE) Seq(
                 q"val remainingBranches = $branching - ((((iTop << $blockIndexBits) | iMid) << $blockIndexBits) | iBot)",
                 q"""
                     if (remainingBranches > 0) {
@@ -503,36 +489,40 @@ trait VectorCodeGen {
                 d += 1
             } while (d < 3)
             if ($currentDepth!=2 && bot!=null)
-                withComputedSizes(bot, currentDepth - 1, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
+                $v_withComputedSizes(bot, currentDepth - 1)
 
             if(mid != null)
-                top(iTop) = withComputedSizes(mid, $currentDepth, ..${if (CLOSED_BLOCKS) Nil else q"???" :: Nil})
+                top(iTop) = $v_withComputedSizes(mid, $currentDepth)
             top
          """
     }
 
-    protected def rebalancedLeafsCode(displayLeft: Tree, displayRight: Tree, leftLength: TermName, rightLength: TermName, isTop: TermName) = {
+    protected def rebalancedLeafsCode(displayLeft: Tree, displayRight: Tree, isTop: TermName) = {
+        val leftLength = TermName("leftLength")
+        val rightLength = TermName("rightLength")
         q"""
+            val $leftLength = $displayLeft.length
+            val $rightLength = $displayRight.length
             if ($leftLength == $blockWidth) {
-               val top = new Array[AnyRef](${if (CLOSED_BLOCKS) q"3" else q"${blockWidth + blockInvariants}"})
+               val top = new Array[AnyRef](${2 + blockInvariants})
                top(0) = $displayLeft
                top(1) = $displayRight
                top
             } else if ($leftLength + $rightLength <= $blockWidth) {
-                val mergedDisplay = new Array[AnyRef](${if (CLOSED_BLOCKS) q"$leftLength + $rightLength" else q"$blockWidth"})
+                val mergedDisplay = new Array[AnyRef]($leftLength + $rightLength)
                 Platform.arraycopy($displayLeft, 0, mergedDisplay, 0, $leftLength)
                 Platform.arraycopy($displayRight, 0, mergedDisplay, $leftLength, $rightLength)
                 if ($isTop) {
                     mergedDisplay
                 } else {
-                    val top = new Array[AnyRef](${if (CLOSED_BLOCKS) q"2" else q"${blockWidth + blockInvariants}"})
+                    val top = new Array[AnyRef](${1 + blockInvariants})
                     top(0) = mergedDisplay
                     top
                 }
             } else {
-                val top = new Array[AnyRef](${if (CLOSED_BLOCKS) q"3" else q"${blockWidth + blockInvariants}"})
+                val top = new Array[AnyRef](${2 + blockInvariants})
                 val arr0 = new Array[AnyRef]($blockWidth)
-                val arr1 = new Array[AnyRef](${if (CLOSED_BLOCKS) q"$leftLength + $rightLength - $blockWidth" else q"$blockWidth"})
+                val arr1 = new Array[AnyRef]($leftLength + $rightLength - $blockWidth)
                 top(0) = arr0
                 top(1) = arr1
                 Platform.arraycopy($displayLeft, 0, arr0, 0, $leftLength)
@@ -543,8 +533,14 @@ trait VectorCodeGen {
          """
     }
 
-    protected def computeNewSizesCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
+    protected def computeNewSizesCode(displayLeft: Tree, concat: Tree, displayRight: Tree, currentDepth: Tree) = {
+        val leftLength = TermName("leftLength")
+        val concatLength = TermName("concatLength")
+        val rightLength = TermName("rightLength")
         q"""
+            val $leftLength = if ($displayLeft == null) 0 else ($displayLeft.length - $blockInvariants)
+            val $concatLength = if ($concat == null) 0 else $concat.length - $blockInvariants
+            val $rightLength = if ($displayRight == null) 0 else ($displayRight.length - $blockInvariants)
             var szsLength = $leftLength + $concatLength + $rightLength
             if ($leftLength != 0) szsLength -= 1
             if ($rightLength != 0) szsLength -= 1
@@ -624,9 +620,15 @@ trait VectorCodeGen {
         """
     }
 
-    protected def computeBranchingCode(displayLeft: Tree, concat: Tree, displayRight: Tree, leftLength: TermName, concatLength: TermName, rightLength: TermName, currentDepth: Tree) = {
+    protected def computeBranchingCode(displayLeft: Tree, concat: Tree, displayRight: Tree, currentDepth: Tree) = {
+        val leftLength = TermName("leftLength")
+        val concatLength = TermName("concatLength")
+        val rightLength = TermName("rightLength")
         val branching = TermName("branching")
         q"""
+            val $leftLength = if ($displayLeft == null) 0 else ($displayLeft.length - $blockInvariants)
+            val $concatLength = if ($concat == null) 0 else $concat.length - $blockInvariants
+            val $rightLength = if ($displayRight == null) 0 else ($displayRight.length - $blockInvariants)
             var $branching = 0
             if ($currentDepth == 1) {
                 $branching = $leftLength + $concatLength + $rightLength
@@ -662,12 +664,13 @@ trait VectorCodeGen {
 
     protected def withComputedSizesCode(node: Tree, currentDepth: Tree, endIndex: Tree) = {
         q"""
+            ..${assertions(q"$node != null", q"0 <= $currentDepth", q"$currentDepth <= 6")}
             var i = 0
             var acc = 0
-            val end = ${if (CLOSED_BLOCKS) q"$node.length - 1" else q"$blockWidth"}
+            val end = $node.length - 1
             val sizes = new Array[Int](end)
             if ($currentDepth > 1) {
-                while (${if (CLOSED_BLOCKS) q"i < end" else q"acc < _endIndex"}) {
+                while (i < end) {
                     acc += treeSize($node(i).asInstanceOf[Array[AnyRef]], $currentDepth - 1)
                     sizes(i) = acc
                     i += 1
@@ -676,7 +679,7 @@ trait VectorCodeGen {
                 if( ( end > 1 && sizes(end-2) != ((end-1) << ($blockIndexBits * ($currentDepth-1))) ) || ( $currentDepth>2 && last(last.length - 1) != null) )
                     $node(end) = sizes
             } else {
-                while (${if (CLOSED_BLOCKS) q"i < end" else q"acc < _endIndex"}) {
+                while (i < end) {
                     acc += $node(i).asInstanceOf[Array[AnyRef]].length
                     sizes(i) = acc
                     i += 1
@@ -692,7 +695,8 @@ trait VectorCodeGen {
 
     protected def treeSizeCode(tree: Tree, currentDepth: Tree) = {
         q"""
-            if(currentDepth == 1) {
+            ..${assertions(q"tree != null", q"0 <= $currentDepth", q"$currentDepth <= 6")}
+            if($currentDepth == 1) {
                 tree.length
             } else {
                 val treeSizes = tree(tree.length - 1).asInstanceOf[Array[Int]]
@@ -717,58 +721,60 @@ trait VectorCodeGen {
     protected def takeFront0Code(n: Tree): Tree = {
         val d0len = TermName("d0len")
         q"""
-            ${stabilizeIfNeeded()}
-            ..${assertions(q"!$dirty")}
+            if ($v_dirty) {
+                $stabilize()
+                $v_dirty = false
+            }
 
             val vec = new $vectorClassName[$A]($n)
-            vec.$initFrom(this)
+            vec.$initWithFocusFrom(this)
 
             if ($depth > 1) {
-                vec.$gotoIndex($n - 1, $n)
-
+                vec.$focusOn($n - 1)
                 val $d0len = (vec.$focus & $blockMask) + 1
                 if ($d0len != $blockWidth) {
-                    val d0 = new Array[AnyRef](${if (CLOSED_BLOCKS) q"$d0len" else q"$blockWidth"})
-                    Platform.arraycopy(vec.$display0, 0, d0, 0, $d0len)
-                    vec.$display0 = d0
+                    val d0 = new Array[AnyRef]($d0len)
+                    Platform.arraycopy(vec.${displayNameAt(0)}, 0, d0, 0, $d0len)
+                    vec.${displayNameAt(0)} = d0
                 }
-
                 val cutIndex = vec.$focus | vec.$focusRelax
                 vec.$cleanTop(cutIndex)
                 vec.$focusDepth = math.min(vec.$depth, vec.$focusDepth)
-
-                // Note that cleanTop may change the depth
                 if (vec.$depth > 1) {
-                    val displaySizes = $allDisplaySizes()
-                    vec.$copyDisplays(vec.$depth, cutIndex)
-                    if (vec.$depth > 2 || $d0len != $blockWidth)
-                        vec.$stabilizeDisplayPath(vec.$depth, cutIndex)
-                    if (vec.$focusDepth < vec.$depth) {
-                        var offset = 0
-                        var i = vec.$depth
-                        while (i > vec.$focusDepth) {
-                            i -= 1
-                            val oldSizes = displaySizes(i - 1)
-                            if (oldSizes != null) {
-                                val newLen = (vec.$focusRelax >> ($blockIndexBits * i)) + 1
-                                val newSizes = new Array[Int](newLen)
-                                Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen - 1)
-                                newSizes(newLen - 1) = n - offset
-                                offset += newSizes(newLen - 2)
-                                displaySizes(i - 1) = newSizes
-                            }
-                        }
-                        vec.$putDisplaySizes(displaySizes)
+                    vec.$copyDisplays(vec.$focusDepth, cutIndex)
+                    var i = vec.$depth
+                    var offset = 0
+                    while (i > vec.$focusDepth) {
+                        val display = ${matchOnInt(q"i", 2 to 6, d => q"vec.${displayNameAt(d - 1)}")}
+                        val oldSizes = ${getBlockSizes(q"display")}
+                        val newLen = ((vec.$focusRelax >> ($blockIndexBits * (i - 1))) & $blockMask) + 1
+                        val newSizes = new Array[Int](newLen)
+                        Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen - 1)
+                        newSizes(newLen - 1) = $n - offset
+                        if (newLen > 1)
+                            offset += newSizes(newLen - 2)
+
+                        val newDisplay = new Array[AnyRef](newLen + 1)
+                        Platform.arraycopy(display, 0, newDisplay, 0, newLen)
+                        newDisplay(newLen - 1) = null
+                        newDisplay(newLen) = newSizes
+
+                        ${matchOnInt(q"i", 2 to 6, d => q"vec.${displayNameAt(d - 1)} = newDisplay")}
+                        i -= 1
                     }
-
-
+                    vec.$stabilizeDisplayPath(vec.$depth, cutIndex)
+                    vec.$focusEnd = $n
+                } else {
+                    vec.$focusEnd = $n
                 }
             } else if ($n != $blockWidth) {
-                val d0 = new Array[AnyRef](${if (CLOSED_BLOCKS) q"$n" else q"$blockWidth"})
-                Platform.arraycopy(vec.$display0, 0, d0, 0, $n)
-                vec.$display0 = d0
+                val d0 = new Array[AnyRef]($n)
+                Platform.arraycopy(vec.${displayNameAt(0)}, 0, d0, 0, $n)
+                vec.${displayNameAt(0)} = d0
+                vec.initFocus(0, 0, $n, 1, 0)
             }
-            vec.$focusEnd = $n
+
+            ..${assertions(q"vec.$v_assertVectorInvariant()")}
             vec
          """
     }
@@ -778,7 +784,7 @@ trait VectorCodeGen {
             val p1 = q"($depth <= $lvl && ${displayAt(lvl)} == null)"
             val p2 = q"($depth > 0 && ${displayAt(lvl)} != null)"
             val str = s"<=$lvl <==> display$lvl==null "
-            q"""assert($p1 || $p2, $depth.toString +: ${str} :+ ($depth, ${displayAt(lvl)}))"""
+            q"""assert($p1 || $p2, $depth.toString +: $str :+ ($depth, ${displayAt(lvl)}))"""
         }
         def checkDisplayIsCoherentWithTree(lvl: Int) = {
             val checkCoherence =
@@ -791,7 +797,7 @@ trait VectorCodeGen {
             q"""
                 if (${displayAt(lvl)} != null) {
                     assert(${displayAt(lvl - 1)}  != null)
-                    ${if (lvl == 1) q"if(!dirty) $checkCoherence" else checkCoherence}
+                    ${if (lvl == 1) q"if(!$v_dirty) $checkCoherence" else checkCoherence}
                 }
              """
         }
@@ -800,8 +806,8 @@ trait VectorCodeGen {
             assert(0 <= $depth && $depth <= 6, $depth)
 
             assert($v_isEmpty == ($depth == 0), ($v_isEmpty, $depth))
-            assert(isEmpty == (length == 0), ($v_isEmpty, $v_length))
-            assert(length == endIndex, (length, endIndex))
+            assert($v_isEmpty == ($v_length == 0), ($v_isEmpty, $v_length))
+            assert($v_length == $endIndex, ($v_length, $endIndex))
 
             ..${(0 to 5) map checkThatDisplayDefinedIffBelowDepth}
 
@@ -812,7 +818,7 @@ trait VectorCodeGen {
 
             assert(0 <= $focusDepth && $focusDepth <= $depth, ($focusDepth, $depth))
 
-            ${if (CLOSED_BLOCKS) checkSizesClosedDef() else checkSizesFullDef()}
+            ${checkSizesDef()}
 
             ${matchOnInt(q"$depth", 1 to 6, i => q"checkSizes(${displayAt(i - 1)}, $i, $v_endIndex)", Some(q"()"))}
 
@@ -822,14 +828,14 @@ trait VectorCodeGen {
 
     }
 
-    private def checkSizesClosedDef() = {
+    private def checkSizesDef() = {
         q"""
             def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = {
                 if (currentDepth > 1) {
                     val sizes = node.last.asInstanceOf[Array[Int]]
                     if (sizes != null) {
                         assert(node.length == sizes.length + 1)
-                        if(!$dirty)
+                        if(!$v_dirty)
                             assert(sizes.last == _endIndex, (sizes.last, _endIndex))
                         for (i <- 0 until sizes.length - 1)
                             checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
@@ -837,51 +843,16 @@ trait VectorCodeGen {
                     } else {
                         for (i <- 0 until node.length - 2)
                             checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, 1 << ($blockIndexBits * (currentDepth - 1)))
-                        val expectedLast = _endIndex - (1 << (5 * currentDepth - 5)) * (node.length - 2)
-                        assert(1 <= expectedLast && expectedLast <= (1 << (5 * currentDepth)))
+                        val expectedLast = _endIndex - (1 << ($blockIndexBits * (currentDepth - 1))) * (node.length - 2)
+                        assert(1 <= expectedLast && expectedLast <= (1 << ($blockIndexBits * currentDepth)))
                         checkSizes(node(node.length-2).asInstanceOf[Array[AnyRef]], currentDepth - 1, expectedLast)
                     }
-                } else if (!$dirty) {
+                } else if (!$v_dirty) {
                     assert(node.length == _endIndex)
                 }
             }
         """
     }
 
-    private def checkSizesFullDef() = {
-        q"""
-            def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = {
-                if (currentDepth > 1) {
-                    assert(node.length == ${blockWidth + blockInvariants})
-                    val sizes = node.last.asInstanceOf[Array[Int]]
-                    if (sizes != null) {
-                        val _sizes = sizes.filter(_!=0)
-                        assert(node.length == sizes.length + 1)
-                        assert(_endIndex == _sizes.last)
-                        var i = 0
-                        while ( i < _sizes.length - 1 ) {
-                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
-                            i += 1
-                        }
-                        checkSizes(node(_sizes.length - 1).asInstanceOf[Array[AnyRef]], currentDepth - 1, _sizes.last - _sizes(_sizes.length - 2))
-                    } else {
-                        val fullTreeSize = 1 << ($blockIndexBits * (currentDepth - 1))
-                        var i = 0
-                        while (i < _endIndex / fullTreeSize) {
-                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, fullTreeSize)
-                            i += 1
-                        }
-                        val lastEndIndex = _endIndex - fullTreeSize * (_endIndex / fullTreeSize)
-                        if((_endIndex % fullTreeSize) != 0) {
-                            assert(1 <= lastEndIndex && lastEndIndex <= fullTreeSize)
-                            checkSizes(node(_endIndex / fullTreeSize).asInstanceOf[Array[AnyRef]], currentDepth - 1, lastEndIndex)
-                        }
-                    }
-                } else {
-                    assert(node.length == $blockWidth)
-                }
-            }
-        """
-    }
 
 }

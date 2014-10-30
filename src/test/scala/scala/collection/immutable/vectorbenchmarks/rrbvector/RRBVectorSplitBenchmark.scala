@@ -9,5 +9,5 @@ abstract class RRBVectorAbstractSplitBenchmark[A] extends SplitBenchmarks[A] wit
 
 class RRBVectorSplitIntBenchmark extends RRBVectorAbstractSplitBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class RRBVectorSplitAnyRefBenchmark extends RRBVectorAbstractSplitBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class RRBVectorSplitStringBenchmark extends RRBVectorAbstractSplitBenchmark[String] with VectorGeneratorType.StringGenerator
 

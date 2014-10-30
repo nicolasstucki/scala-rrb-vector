@@ -8,4 +8,4 @@ abstract class RRBVectorTest[A] extends VectorSpec[A] with BaseVectorGenerator.R
 
 class IntRRBVectorTest extends RRBVectorTest[Int] with VectorGeneratorType.IntGenerator
 
-class AnyRefRRBVectorTest extends RRBVectorTest[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class StringRRBVectorTest extends RRBVectorTest[String] with VectorGeneratorType.StringGenerator

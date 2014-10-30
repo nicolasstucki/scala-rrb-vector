@@ -11,4 +11,4 @@ abstract class VectorAbstractConcatenationBenchmark[A] extends ConcatenationBenc
 
 class VectorConcatenationIntBenchmark extends VectorAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class VectorConcatenationAnyRefBenchmark extends VectorAbstractConcatenationBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class VectorConcatenationStringBenchmark extends VectorAbstractConcatenationBenchmark[String] with VectorGeneratorType.StringGenerator

@@ -48,38 +48,38 @@ class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] 
 
 }
 
-class RRBVectorAppendAnyRefBenchmark extends RRBVectorAbstractAppendBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator {
-    val obj = new Object
+class RRBVectorAppendStringBenchmark extends RRBVectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
+    val ref = ""
     def sum1(vec: Vec, times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ obj
+            v = vec :+ ref
             sum += v.length
             i += 1
         }
         sum
     }
 
-    def sum8(vec: RRBVector[AnyRef], times: Int): Int = {
+    def sum8(vec: RRBVector[String], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj
+            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
             sum += v.length
             i += 1
         }
         sum
     }
 
-    def sum32(vec: RRBVector[AnyRef], times: Int): Int = {
+    def sum32(vec: RRBVector[String], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj
+            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
             sum += v.length
             i += 1
         }

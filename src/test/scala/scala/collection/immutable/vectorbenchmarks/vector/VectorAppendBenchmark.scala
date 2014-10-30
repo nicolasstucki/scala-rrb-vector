@@ -51,38 +51,38 @@ class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with V
 
 }
 
-class VectorAppendAnyRefBenchmark extends VectorAbstractAppendBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator {
-    val obj = new Object
+class VectorAppendStringBenchmark extends VectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
+    val ref = ""
 
-    def sum1(vec: Vector[AnyRef], times: Int): Int = {
+    def sum1(vec: Vector[String], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ obj
+            v = vec :+ ref
             sum += v.length
             i += 1
         }
         sum
     }
-    def sum8(vec: Vector[AnyRef], times: Int): Int = {
+    def sum8(vec: Vector[String], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj
+            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
             sum += v.length
             i += 1
         }
         sum
     }
 
-    def sum32(vec: Vector[AnyRef], times: Int): Int = {
+    def sum32(vec: Vector[String], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj :+ obj
+            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
             sum += v.length
             i += 1
         }

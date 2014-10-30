@@ -3,10 +3,10 @@ package codegen
 import scala.reflect.runtime.universe._
 
 trait VectorProperties {
-    protected val CLOSED_BLOCKS: Boolean
-    protected val FULL_REBALANCE: Boolean
 
-    protected val blockIndexBits = 5
+    protected val COMPLETE_REBALANCE: Boolean
+
+    protected val blockIndexBits: Int
 
     protected final def blockWidth = 1 << blockIndexBits
 
@@ -36,14 +36,20 @@ trait VectorProperties {
 
     protected def vectorBaseBenchmarkClassName = vectorBenchmarkClassName("")
 
-    protected def vectorBenchmarkClassName(method: String) = TypeName(vectorName + method + "Benchmark")
+    protected def vectorBenchmarkClassName(method: String) = TypeName(vectorName + "_" + (if (method != "") method + "_" else "") + "Benchmark")
 
 
     protected val useAssertions: Boolean
 
-    def subpackage: TermName
+    def subpackage: TermName = {
+        val balanceType = if (COMPLETE_REBALANCE) "complete" else "quick"
+        TermName(s"rrbvector.$balanceType")
+    }
 
-    def vectorName: String
+    def vectorName: String = {
+        val balanceType = if (COMPLETE_REBALANCE) "complete" else "quick"
+        s"RRBVector_${balanceType}_$blockWidth"
+    }
 
     protected def inPackages(packages: Seq[String], code: Tree): Tree = {
         if (packages.nonEmpty) {
@@ -53,7 +59,7 @@ trait VectorProperties {
     }
 
     protected def assertions(asserts: Tree*): Seq[Tree] = {
-        if (useAssertions) asserts map (a =>q"assert($a)")
+        if (useAssertions) asserts map (a => q"assert($a)")
         else Nil
     }
 }

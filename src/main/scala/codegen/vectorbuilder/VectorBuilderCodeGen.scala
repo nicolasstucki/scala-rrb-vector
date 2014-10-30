@@ -1,13 +1,13 @@
 package codegen.vectorbuilder
 
+import codegen.vectorclass.VectorCodeGen
 import codegen.vectorpointer.VectorPointerCodeGen
 import codegen.VectorProperties
 
-import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 
 trait VectorBuilderCodeGen {
-    self: VectorPointerCodeGen with VectorProperties =>
+    self: VectorPointerCodeGen with VectorCodeGen with VectorProperties =>
 
     // Field names
 
@@ -34,7 +34,7 @@ trait VectorBuilderCodeGen {
                 $b_blockIndex = $newBlockIndex
                 $b_lo = 0
             }
-            $display0($b_lo) = $elem.asInstanceOf[AnyRef]
+            ${displayAt(0)}($b_lo) = $elem.asInstanceOf[AnyRef]
             $b_lo += 1
             this
         """
@@ -48,36 +48,37 @@ trait VectorBuilderCodeGen {
         val size = TermName("size")
         val resultVector = TermName("resultVector")
         val depthResult = TermName("_depth")
-        // ${if (useAssertions) q"vec.assertVectorInvariant()" else q""}
         q"""
-            val $size = $b_blockIndex + $b_lo
-            if ($size == 0)
-                return $vectorObjectName.empty
-            val $resultVector = new $vectorClassName[A]($size)
+            val $size = $endIndex
+            if ($size == 0) {
+                $vectorObjectName.empty
+            } else {
+                val $resultVector = new $vectorClassName[A]($size)
 
-            $resultVector.$initFrom(this)
-            $resultVector.$display0 = $copyOf($resultVector.$display0, $b_lo, ${if (CLOSED_BLOCKS) q"$b_lo" else q"$blockWidth"})
+                $resultVector.$initFrom(this)
+                $resultVector.${displayNameAt(0)} = $copyOf($resultVector.${displayNameAt(0)}, $b_lo, $b_lo)
 
-            // TODO: Optimization: check if stabilization is really necessary on all displays based on the last index.
-            val $depthResult = $depth
-            if ($depthResult > 1) {
-                $resultVector.$copyDisplays($depthResult, $size - 1)
-                $resultVector.$stabilizeDisplayPath($depthResult, $size - 1)
+                // TODO: Optimization: check if stabilization is really necessary on all displays based on the last index.
+                val $depthResult = $depth
+                if ($depthResult > 1) {
+                    $resultVector.$copyDisplays($depthResult, $size - 1)
+                    $resultVector.$stabilizeDisplayPath($depthResult, $size - 1)
+                }
+
+                $resultVector.$gotoPos(0, $size - 1)
+                $resultVector.$initFocus(0, 0, $size, $depthResult, 0)
+
+                ..${assertions(q"$resultVector.$v_assertVectorInvariant()")}
+
+                $resultVector
             }
-
-            $resultVector.$gotoPos(0, $size - 1)
-            $resultVector.$focus = 0
-            $resultVector.$focusEnd = $size
-            $resultVector.$focusDepth = $depthResult
-
-            $resultVector
         """
     }
 
     protected def clearCode() = {
         def nullDisplays = (1 to 5) map (i => q"${displayNameAt(i)} = null")
         q"""
-            $display0 = new Array[AnyRef]($blockWidth)
+            ${displayAt(0)} = new Array[AnyRef]($blockWidth)
             ..$nullDisplays
             $depth = 1
             $b_blockIndex = 0

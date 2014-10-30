@@ -8,4 +8,4 @@ abstract class VectorTest[A] extends VectorSpec[A] with BaseVectorGenerator.Vect
 
 class IntVectorTest extends VectorTest[Int] with VectorGeneratorType.IntGenerator
 
-class AnyRefVectorTest extends VectorTest[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class StringVectorTest extends VectorTest[String] with VectorGeneratorType.StringGenerator

@@ -9,15 +9,16 @@ import scala.reflect.runtime.universe._
 
 
 trait VectorBuilderMethodsGen {
-    self: VectorBuilderCodeGen with VectorPointerCodeGen with VectorCodeGen with VectorProperties =>
+    self: VectorBuilderCodeGen with VectorPointerCodeGen with VectorProperties =>
 
     def generateVectorBuilderMethods() = {
         val statements = Seq(
-            q"$display0 = new Array[AnyRef]($blockWidth)",
+            q"${displayAt(0)} = new Array[AnyRef]($blockWidth)",
             q"$depth = 1")
         val fields = Seq(
             q"private var $b_blockIndex = 0",
-            q"private var $b_lo = 0")
+            q"private var $b_lo = 0",
+            q"override private[immutable] def endIndex = blockIndex + lo")
         val methods = Seq(plusEqDef, plusPlusEqDef, resultDef, clearDef)
 
         statements ++ fields ++ methods
@@ -37,8 +38,7 @@ trait VectorBuilderMethodsGen {
 
     protected def resultDef = {
         val code = resultCode()
-        def assertedCode = q"val res = $code; res.$v_assertVectorInvariant(); res"
-        q"def $b_result(): $vectorClassName[$A] = ${if (useAssertions) assertedCode else code}"
+        q"def $b_result(): $vectorClassName[$A] = $code"
     }
 
     protected def clearDef = q"def $b_clear(): Unit = ${clearCode()}"

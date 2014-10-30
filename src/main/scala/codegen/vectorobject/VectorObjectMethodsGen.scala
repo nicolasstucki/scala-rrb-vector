@@ -12,11 +12,9 @@ trait VectorObjectMethodsGen {
         Seq(
             newBuilderDef(),
             canBuildFromDef(),
-            q"private val NIL = new $vectorClassName[Nothing](0)",
-            q"override def $o_empty[A]: $vectorClassName[A] = NIL",
-            singletonDef()
+            q"private lazy val EMPTY_VECTOR = new $vectorClassName[Nothing](0)",
+            q"override def $o_empty[$A]: $vectorClassName[$A] = EMPTY_VECTOR"
         )
-
     }
 
     private def newBuilderDef() =
@@ -24,12 +22,5 @@ trait VectorObjectMethodsGen {
 
     private def canBuildFromDef() =
         q"implicit def canBuildFrom[$A]: scala.collection.generic.CanBuildFrom[Coll, $A, $vectorClassName[$A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[$A]]"
-
-    private def singletonDef() = {
-        val value = TermName("value")
-        val code = singletonCode(value, A)
-        q"private[immutable] final def $o_singleton[$A]($value: $A): $vectorClassName[$A] = $code"
-    }
-
 }
 

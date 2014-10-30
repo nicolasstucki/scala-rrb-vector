@@ -8,15 +8,15 @@ import scala.reflect.runtime.universe._
 
 
 trait VectorReverseIteratorMethodsGen {
-    self: VectorReverseIteratorCodeGen with VectorProperties =>
+    self: VectorReverseIteratorCodeGen with VectorPointerCodeGen with VectorProperties =>
 
     def generateVectorReverseIteratorMethods() = {
         val fields = Seq(
             q"private var $rit_lastIndexOfBlock: Int = _",
             q"private var $rit_lo: Int = _",
             q"private var $rit_endLo: Int = _",
-            q"private var $rit_hasNextVar: Boolean = $rit_startIndex < $rit_endIndex"
-        )
+            q"private var $rit_hasNextVar: Boolean = $rit_startIndex < $endIndex")
+
         val methods = Seq(rit_resetIteratorDef, rit_hasNextDef, rit_nextDef)
 
         fields ++ methods
@@ -32,7 +32,7 @@ trait VectorReverseIteratorMethodsGen {
 
     protected def rit_nextDef() = {
         val code = rit_nextCode()
-        q"def next(): A = $code"
+        q"def next(): $A = $code"
     }
 
 

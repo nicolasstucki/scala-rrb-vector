@@ -9,5 +9,5 @@ abstract class VectorAbstractSplitBenchmark[A] extends SplitBenchmarks[A] with V
 
 class VectorSplitIntBenchmark extends VectorAbstractSplitBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class VectorSplitAnyRefBenchmark extends VectorAbstractSplitBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class VectorSplitStringBenchmark extends VectorAbstractSplitBenchmark[String] with VectorGeneratorType.StringGenerator
 

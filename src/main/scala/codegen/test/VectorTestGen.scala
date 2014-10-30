@@ -22,7 +22,7 @@ trait VectorTestGen {
 
                     class ${TypeName(s"Int${name}Test")} extends $vectorTestClassName[Int] with VectorGeneratorType.IntGenerator
 
-                    class ${TypeName(s"AnyRef${name}Test")} extends $vectorTestClassName[AnyRef] with VectorGeneratorType.AnyRefGenerator
+                    class ${TypeName(s"String${name}Test")} extends $vectorTestClassName[String] with VectorGeneratorType.StringGenerator
                 }
              """)
 

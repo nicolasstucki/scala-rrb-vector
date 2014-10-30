@@ -11,4 +11,4 @@ abstract class VectorAbstractApplyBenchmark[A] extends ApplyBenchmarks[A] with V
 
 class VectorApplyIntBenchmark extends VectorAbstractApplyBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class VectorApplyAnyRefBenchmark extends VectorAbstractApplyBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class VectorApplyStringBenchmark extends VectorAbstractApplyBenchmark[String] with VectorGeneratorType.StringGenerator

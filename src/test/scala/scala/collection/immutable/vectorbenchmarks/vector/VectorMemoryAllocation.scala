@@ -9,4 +9,4 @@ abstract class VectorAbstractMemoryAllocation[A] extends MemoryAllocation[A] wit
 
 class VectorIntMemoryAllocation extends VectorAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
 
-class VectorAnyRefMemoryAllocation extends VectorAbstractMemoryAllocation[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class VectorStringMemoryAllocation extends VectorAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator

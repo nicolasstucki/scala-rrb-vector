@@ -28,4 +28,4 @@ abstract class RRBVectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A]
 
 class RRBVectorBuilderIntBenchmark extends RRBVectorAbstractBuilderBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class RRBVectorBuilderAnyRefBenchmark extends RRBVectorAbstractBuilderBenchmark[AnyRef] with VectorGeneratorType.AnyRefGenerator
+class RRBVectorBuilderStringBenchmark extends RRBVectorAbstractBuilderBenchmark[String] with VectorGeneratorType.StringGenerator
