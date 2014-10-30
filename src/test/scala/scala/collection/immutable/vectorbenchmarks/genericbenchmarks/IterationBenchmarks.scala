@@ -12,46 +12,47 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        performance of "iteration" config(
-          Key.exec.minWarmupRuns -> 300,
-          Key.exec.maxWarmupRuns -> 1000
-          ) in {
+        if (height > 1) {
+            performance of "iteration" config(
+              Key.exec.minWarmupRuns -> 300,
+              Key.exec.maxWarmupRuns -> 1000
+              ) in {
 
-            performance of "iterator: through 1M elements" in {
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        var i = 0
-                        var a = 0
-                        val until = 1000000
-                        var it = vec.iterator
-                        while (i < until) {
-                            if (!it.hasNext)
-                                it = vec.iterator
-                            it.next()
-                            i += 1
+                performance of "iterator: through 1M elements" in {
+                    performance of s"Height $height" in {
+                        using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                            var i = 0
+                            var a = 0
+                            val until = 1000000
+                            var it = vec.iterator
+                            while (i < until) {
+                                if (!it.hasNext)
+                                    it = vec.iterator
+                                it.next()
+                                i += 1
+                            }
+                            sideeffect = it.hashCode()
                         }
-                        sideeffect = it.hashCode()
+                    }
+                }
+
+                performance of "reverseIterator: through 1M elements" in {
+                    performance of s"Height $height" in {
+                        using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                            var i = 0
+                            val until = 1000000
+                            var it = vec.reverseIterator
+                            while (i < until) {
+                                if (!it.hasNext)
+                                    it = vec.reverseIterator
+                                it.next()
+                                i += 1
+                            }
+                            sideeffect = it.hashCode()
+                        }
                     }
                 }
             }
-
-            performance of "reverseIterator: through 1M elements" in {
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        var i = 0
-                        val until = 1000000
-                        var it = vec.reverseIterator
-                        while (i < until) {
-                            if (!it.hasNext)
-                                it = vec.reverseIterator
-                            it.next()
-                            i += 1
-                        }
-                        sideeffect = it.hashCode()
-                    }
-                }
-            }
-
         }
     }
 }

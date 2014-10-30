@@ -13,17 +13,18 @@ abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
         val (from, to, by) = fromToBy(height)
 
         var sideeffect = 0
+        if(height > 1) {
+            measure method "builder" config(
+              Key.exec.minWarmupRuns -> 2000,
+              Key.exec.maxWarmupRuns -> 5000
+              ) in {
+                val elements = 1000000
+                performance of s"build vectors using $elements elements" in {
 
-        measure method "builder" config(
-          Key.exec.minWarmupRuns -> 2000,
-          Key.exec.maxWarmupRuns -> 5000
-          ) in {
-            val elements = 1000000
-            performance of s"build vectors using $elements elements" in {
-
-                performance of s"Height $height" in {
-                    using(sizes(from, to, by)) curve vectorName in { n =>
-                        sideeffect = buildVector(n, elements)
+                    performance of s"Height $height" in {
+                        using(sizes(from, to, by)) curve vectorName in { n =>
+                            sideeffect = buildVector(n, elements)
+                        }
                     }
                 }
             }
