@@ -64,7 +64,7 @@ trait VectorProperties {
 
     def vectorName: String = {
         val balanceType = if (COMPLETE_REBALANCE) "complete" else "quick"
-        val levelIndirectionType = if (DIRECT_LEVEL) "incrementalLevel" else "directLevel"
+        val levelIndirectionType = if (DIRECT_LEVEL) "directLevel" else "incrementalLevel"
 
         s"RRBVector_${balanceType}_${levelIndirectionType}_${blockWidth}_${PAR_SPLIT.shortName}"
     }
