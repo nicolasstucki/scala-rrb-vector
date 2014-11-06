@@ -4,7 +4,11 @@ import scala.reflect.runtime.universe._
 
 trait VectorProperties {
 
+    protected val PAR_SPLIT: PAR_SPLIT_METHOD
+
     protected val COMPLETE_REBALANCE: Boolean
+
+    protected val DIRECT_LEVEL: Boolean
 
     protected val blockIndexBits: Int
 
@@ -17,6 +21,7 @@ trait VectorProperties {
     protected val A = TypeName("A")
 
     protected val B = TypeName("B")
+
 
     protected def vectorObjectName = TermName(vectorName)
 
@@ -32,6 +37,18 @@ trait VectorProperties {
 
     protected def vectorGeneratorClassName = TypeName(vectorName + "Generator")
 
+
+    protected def parVectorClassName = TypeName("Par" + vectorName)
+
+    protected def parVectorObjectTypeName = TypeName("Par" + vectorName)
+
+    protected def parVectorObjectTermName = TermName("Par" + vectorName)
+
+    protected def parVectorIteratorClassName = TypeName(s"Par${vectorName}Iterator")
+
+    protected def parVectorCombinerClassName = TypeName(s"Par${vectorName}Combinator")
+
+
     protected def vectorTestClassName = TypeName(vectorName + "Test")
 
     protected def vectorBaseBenchmarkClassName = vectorBenchmarkClassName("")
@@ -42,13 +59,14 @@ trait VectorProperties {
     protected val useAssertions: Boolean
 
     def subpackage: TermName = {
-        val balanceType = if (COMPLETE_REBALANCE) "complete" else "quick"
-        TermName(s"rrbvector.$balanceType")
+        TermName(s"rrbvector")
     }
 
     def vectorName: String = {
         val balanceType = if (COMPLETE_REBALANCE) "complete" else "quick"
-        s"RRBVector_${balanceType}_$blockWidth"
+        val levelIndirectionType = if (DIRECT_LEVEL) "incrementalLevel" else "directLevel"
+
+        s"RRBVector_${balanceType}_${levelIndirectionType}_${blockWidth}_${PAR_SPLIT.shortName}"
     }
 
     protected def inPackages(packages: Seq[String], code: Tree): Tree = {
@@ -62,4 +80,24 @@ trait VectorProperties {
         if (useAssertions) asserts map (a => q"assert($a)")
         else Nil
     }
+}
+
+sealed trait PAR_SPLIT_METHOD {
+    def shortName: String
+}
+
+object PAR_SPLIT_METHOD {
+
+    object SPLIT_IN_HALF extends PAR_SPLIT_METHOD {
+        override def shortName = "splithalf"
+    }
+
+    object SPLIT_IN_COMPLETE_SUBTREES extends PAR_SPLIT_METHOD {
+        override def shortName = "splitbalanced"
+    }
+
+    object BLOCK_SPLIT extends PAR_SPLIT_METHOD {
+        override def shortName = "splitsubtrees"
+    }
+
 }

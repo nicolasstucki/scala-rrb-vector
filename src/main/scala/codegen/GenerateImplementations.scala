@@ -1,12 +1,18 @@
 package codegen
 
-import codegen.test.{VectorBenchmarksGen, VectorTestGen, VectorGeneratorGen}
-import codegen.vectorbuilder._
-import codegen.vectorclass._
-import codegen.vectoriterator._
-import codegen.vectorobject._
-import codegen.vectorpointer._
-import codegen.vectorreverseiterator._
+import vector.builder._
+import vector.vectorclass._
+import vector.iterator._
+import vector.vectorobject._
+import vector.vectorpointer._
+import vector.reverseiterator._
+
+import parvector.parvectorclass._
+import parvector.parvectorobject._
+import parvector.iterator._
+import parvector.combiner._
+
+import test._
 
 import scala.reflect.runtime.universe._
 
@@ -30,6 +36,11 @@ object GenerateImplementations extends App {
       with VectorIteratorClassGen with VectorIteratorMethodsGen with VectorIteratorCodeGen
       with VectorReverseIteratorClassGen with VectorReverseIteratorMethodsGen with VectorReverseIteratorCodeGen
       with VectorPointerClassGen with VectorPointerMethodsGen with VectorPointerCodeGen
+      with ParVectorClassGen with ParVectorMethodsGen with ParVectorCodeGen
+      with ParVectorObjectClassGen with ParVectorObjectMethodsGen
+      with ParVectorIteratorClassGen with ParVectorIteratorMethodsGen with ParVectorIteratorCodeGen
+      with ParVectorCombinerClassGen with ParVectorCombinerMethodsGen with ParVectorCombinerCodeGen
+
       with VectorGeneratorGen with VectorTestGen with VectorBenchmarksGen {
 
         def outputFile = {
@@ -53,21 +64,26 @@ object GenerateImplementations extends App {
         }
 
         def exportCodeToFiles() = {
-            saveToFile(outputFile, showCode(generateVectorPackage()))
+            saveToFile(outputFile, showCode(generateVectorPackage()) + "\n\n" + showCode(generateParVectorPackage()))
             saveToFile(outputGeneratorFile, showCode(generateVectorGeneratorClass()))
             saveToFile(outputTestFile, showCode(generateVectorTestClasses()))
             saveToFile(outputBenchmarkFile, showCode(generateVectorBenchmarkClasses()))
         }
     }
 
-    val USE_ASSERTIONS = false
+    val USE_ASSERTIONS = true
 
     for {
-        useCompleteRebalance <- Seq(true, false)
-        indexBits <- 5 to 6
+        useCompleteRebalance <- Iterator(true, false)
+        useDirectLevel <- Iterator(true, false)
+        indexBits <- 5 to 7
+        par_split_method <- Seq(PAR_SPLIT_METHOD.SPLIT_IN_COMPLETE_SUBTREES, PAR_SPLIT_METHOD.SPLIT_IN_HALF /*, PAR_SPLIT_METHOD.BLOCK_SPLIT */)
     } {
         val packageGenerator = new VectorImplementation {
-            val COMPLETE_REBALANCE: Boolean = useCompleteRebalance
+
+            override protected val PAR_SPLIT: PAR_SPLIT_METHOD = par_split_method
+            protected val COMPLETE_REBALANCE: Boolean = useCompleteRebalance
+            protected val DIRECT_LEVEL: Boolean = useDirectLevel
             override protected val blockIndexBits: Int = indexBits
             override protected val useAssertions: Boolean = USE_ASSERTIONS
         }

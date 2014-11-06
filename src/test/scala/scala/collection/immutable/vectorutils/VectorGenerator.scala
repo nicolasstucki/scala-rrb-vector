@@ -16,7 +16,7 @@ trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
     def rangedVector(start: Int, end: Int): Vec
 
-    final def defaultVectorConfig() = BaseVectorGenerator.defaultVectorConfig()
+    final def defaultVectorConfig(seed: Int) = BaseVectorGenerator.defaultVectorConfig(seed)
 
     final def randomVectorOfSize[A](n: Int)(implicit config: BaseVectorGenerator.Config): Vec = {
 
@@ -40,7 +40,7 @@ trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
 object BaseVectorGenerator {
 
-    final def defaultVectorConfig() = BaseVectorGenerator.Config(new scala.util.Random(111), 6)
+    final def defaultVectorConfig(seed: Int) = BaseVectorGenerator.Config(new scala.util.Random(seed), 6)
 
     case class Config(rnd: Random, maxSplitSize: Int)
 

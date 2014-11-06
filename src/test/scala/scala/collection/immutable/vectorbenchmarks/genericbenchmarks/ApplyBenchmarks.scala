@@ -13,8 +13,8 @@ abstract class ApplyBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         measure method "apply" config(
-          Key.exec.minWarmupRuns -> 200,
-          Key.exec.maxWarmupRuns -> 1000
+          Key.exec.minWarmupRuns -> 100,
+          Key.exec.maxWarmupRuns -> 500
           ) in {
 
             performance of "1M iteration" in {

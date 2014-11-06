@@ -9,18 +9,22 @@ trait VectorGeneratorType[A] {
 
 object VectorGeneratorType {
 
-    trait IntGenerator extends VectorGeneratorType[Int]{
+    trait IntGenerator extends VectorGeneratorType[Int] {
 
         @inline final def element(n: Int): Int = n
 
-        def vectorTypeName: String = "Int"
+        final def mapSelfFun(x: Int) = x
+
+        final def vectorTypeName: String = "Int"
     }
 
-    trait StringGenerator extends VectorGeneratorType[String]{
+    trait StringGenerator extends VectorGeneratorType[String] {
 
         @inline final def element(n: Int): String = n.toString
 
-        def vectorTypeName: String = "String"
+        final def mapSelfFun(x: String) = x
+
+        final def vectorTypeName: String = "String"
     }
 
 }

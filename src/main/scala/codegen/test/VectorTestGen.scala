@@ -1,6 +1,5 @@
-package codegen.test
-
-import codegen.VectorProperties
+package codegen
+package test
 
 import scala.reflect.runtime.universe._
 

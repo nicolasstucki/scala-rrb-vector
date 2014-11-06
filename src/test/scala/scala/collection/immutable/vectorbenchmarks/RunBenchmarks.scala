@@ -18,95 +18,115 @@ class RunAllBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorAppendIntBenchmark]
-//    include[rrbvector.RRBVectorAppendIntBenchmark]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_AppendInt_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_AppendInt_Benchmark]
+    include[rrbvector.RRBVectorAppendIntBenchmark]
 
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_32_AppendInt_Benchmark]
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_64_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_AppendInt_Benchmark]
 
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_32_AppendInt_Benchmark]
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_64_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_AppendInt_Benchmark]
+
 }
 
 class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorApplyIntBenchmark]
-//    include[rrbvector.RRBVectorApplyIntBenchmark]
+    include[rrbvector.RRBVectorApplyIntBenchmark]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_ApplyInt_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_ApplyInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_ApplyInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_ApplyInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_ApplyInt_Benchmark]
 
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_32_ApplyInt_Benchmark]
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_64_ApplyInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_ApplyInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_ApplyInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_ApplyInt_Benchmark]
 
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_32_ApplyInt_Benchmark]
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_64_ApplyInt_Benchmark]
 }
 
 class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorBuilderIntBenchmark]
-//    include[rrbvector.RRBVectorBuilderIntBenchmark]
+    include[rrbvector.RRBVectorBuilderIntBenchmark]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_BuilderInt_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_BuilderInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_BuilderInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_BuilderInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_BuilderInt_Benchmark]
+
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_BuilderInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_BuilderInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_BuilderInt_Benchmark]
+
 }
 
 class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorConcatenationIntBenchmark]
-//    include[rrbvector.RRBVectorConcatenationIntBenchmark]
+    include[rrbvector.RRBVectorConcatenationIntBenchmark]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_ConcatenationInt_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_ConcatenationInt_Benchmark]
 
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_32_ConcatenationInt_Benchmark]
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_64_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_ConcatenationInt_Benchmark]
 
-    include[generated.rrbvector.quick.balanced.RRBVector_quick_32_ConcatenationInt_Benchmark]
-    include[generated.rrbvector.quick.balanced.RRBVector_quick_64_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_quick_directLevel_32_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_quick_directLevel_64_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_quick_directLevel_128_splitbalanced_ConcatenationInt_Benchmark]
 
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_32_ConcatenationInt_Benchmark]
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_64_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_quick_incrementalLevel_32_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_quick_incrementalLevel_64_splitbalanced_ConcatenationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_quick_incrementalLevel_128_splitbalanced_ConcatenationInt_Benchmark]
+
 }
 
 class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorIterationIntBenchmark]
-//    include[rrbvector.RRBVectorIterationIntBenchmark]
+    include[rrbvector.RRBVectorIterationIntBenchmark]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_IterationInt_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_IterationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_IterationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_IterationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_IterationInt_Benchmark]
 
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_32_IterationInt_Benchmark]
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_64_IterationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_IterationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_IterationInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_IterationInt_Benchmark]
 
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_32_IterationInt_Benchmark]
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_64_IterationInt_Benchmark]
 }
 
 class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorSplitIntBenchmark]
-//    include[rrbvector.RRBVectorSplitIntBenchmark]
+    include[rrbvector.RRBVectorSplitIntBenchmark]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_SplitInt_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_SplitInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_SplitInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_SplitInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_SplitInt_Benchmark]
 
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_32_SplitInt_Benchmark]
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_64_SplitInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_SplitInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_SplitInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_SplitInt_Benchmark]
 
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_32_SplitInt_Benchmark]
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_64_SplitInt_Benchmark]
 }
 
 class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorIntMemoryAllocation]
-//    include[rrbvector.RRBVectorIntMemoryAllocation]
+    include[rrbvector.RRBVectorIntMemoryAllocation]
 
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_32_IntMemoryAllocation_Benchmark]
-    include[generated.rrbvector.complete.balanced.RRBVector_complete_64_IntMemoryAllocation_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_32_splitbalanced_IntMemoryAllocation_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_64_splitbalanced_IntMemoryAllocation_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_directLevel_128_splitbalanced_IntMemoryAllocation_Benchmark]
 
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_32_IntMemoryAllocation_Benchmark]
-//    include[generated.rrbvector.complete.xunbalanced.RRBVector_complete_64_IntMemoryAllocation_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_32_splitbalanced_IntMemoryAllocation_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_64_splitbalanced_IntMemoryAllocation_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_incrementalLevel_128_splitbalanced_IntMemoryAllocation_Benchmark]
 
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_32_IntMemoryAllocation_Benchmark]
-//    include[generated.rrbvector.quick.xunbalanced.RRBVector_quick_64_IntMemoryAllocation_Benchmark]
+}
+
+
+class RunParMapBenchmarks extends PerformanceTest.OfflineRegressionReport {
+    include[vector.VectorParMapIntBenchmark]
+    include[rrbvector.RRBVectorParMapIntBenchmark]
+
+    // TODO Add generated parvectors
 }

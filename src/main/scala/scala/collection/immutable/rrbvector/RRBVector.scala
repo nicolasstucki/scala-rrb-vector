@@ -3,6 +3,7 @@ package collection
 package immutable
 package rrbvector
 
+import scala.collection.parallel.immutable.rrbvector.ParRRBVector
 import scala.compat.Platform
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -19,9 +20,13 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 }
 
-final class RRBVector[+A](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
+final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
     private[immutable] var dirty: Boolean = false
+
+    override def par = new ParRRBVector[A](this)
+
+    //    override def toVector = this
 
     override def companion: scala.collection.generic.GenericCompanion[RRBVector] = RRBVector
 
@@ -174,19 +179,12 @@ final class RRBVector[+A](override private[immutable] val endIndex: Int) extends
         val xor = newRelaxedIndex.^(focus.|(focusRelax))
         setupNewBlockInNextBranch(newRelaxedIndex, xor)
         if (oldDepth.==(depth)) {
-            var i = if (xor.<(1024))
-                2
-            else
-            if (xor.<(32768))
-                3
-            else
-            if (xor.<(1048576))
-                4
-            else
-            if (xor.<(33554432))
-                5
-            else
-                6
+            var i =
+                if (xor.<(1024)) 2
+                else if (xor.<(32768)) 3
+                else if (xor.<(1048576)) 4
+                else if (xor.<(33554432)) 5
+                else 6
             val _focusDepth = focusDepth
             while (i.<(oldDepth)) {
                 var display: Array[AnyRef] = null
@@ -208,24 +206,24 @@ final class RRBVector[+A](override private[immutable] val endIndex: Int) extends
 
                 newDisplay = new Array[AnyRef](display.length)
                 Platform.arraycopy(display, 0, newDisplay, 0, displayLen)
-                if (i.>=(_focusDepth))
-                    newDisplay.update(displayLen, newSizes)
+                if (i >= _focusDepth)
+                    newDisplay(displayLen) = newSizes
 
                 i match {
                     case 2 =>
-                        newDisplay.update(newRelaxedIndex.>>(10).&(31), display1)
+                        newDisplay((newRelaxedIndex >> 10) & 31) = display1
                         display2 = newDisplay
                     case 3 =>
-                        newDisplay.update(newRelaxedIndex.>>(15).&(31), display2)
+                        newDisplay((newRelaxedIndex >> 15) & 31) = display2
                         display3 = newDisplay
                     case 4 =>
-                        newDisplay.update(newRelaxedIndex.>>(20).&(31), display3)
+                        newDisplay((newRelaxedIndex >> 20) & 31) = display3
                         display4 = newDisplay
                     case 5 =>
-                        newDisplay.update(newRelaxedIndex.>>(25).&(31), display4)
+                        newDisplay((newRelaxedIndex >> 25) & 31) = display4
                         display5 = newDisplay
                 }
-                i.+=(1)
+                i += 1
             }
 
         }
@@ -781,44 +779,72 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
     private var blockIndex = 0
     private var lo = 0
 
-    override private[immutable] def endIndex = blockIndex.+(lo)
+    private var acc: RRBVector[A] = null
+
+    private[collection] def endIndex = {
+        var sz = blockIndex + lo
+        if (acc != null)
+            sz += acc.endIndex
+        sz
+    }
 
     def +=(elem: A): this.type = {
-        if (lo.>=(32)) {
-            val newBlockIndex = blockIndex.+(32)
-            gotoNextBlockStartWritable(newBlockIndex, newBlockIndex.^(blockIndex))
+        if (lo >= 32) {
+            val newBlockIndex = blockIndex + 32
+            gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ blockIndex)
             blockIndex = newBlockIndex
             lo = 0
         }
-
         display0.update(lo, elem.asInstanceOf[AnyRef])
-        lo.+=(1)
+        lo += 1
         this
     }
 
-    override def ++=(xs: TraversableOnce[A]): this.type = super.++=(xs)
+    override def ++=(xs: TraversableOnce[A]): this.type = {
+        if (xs.nonEmpty) {
+            if (xs.isInstanceOf[RRBVector[A]]) {
+                val thatVec = xs.asInstanceOf[RRBVector[A]]
+                if (endIndex != 0) {
+                    acc = this.result() ++ xs
+                    this.clearCurrent()
+                } else if (acc != null) {
+                    acc = acc ++ thatVec
+                } else {
+                    acc = thatVec
+                }
+            } else {
+                super.++=(xs)
+            }
+        }
+        this
+    }
 
-    def result(): RRBVector[A] = {
-        val size = endIndex
-        if (size.==(0))
+    private def resultCurrent(): RRBVector[A] = {
+        val size = blockIndex + lo
+        if (size == 0)
             RRBVector.empty
         else {
             val resultVector = new RRBVector[A](size)
             resultVector.initFrom(this)
             resultVector.display0 = copyOf(resultVector.display0, lo, lo)
             val _depth = depth
-            if (_depth.>(1)) {
-                resultVector.copyDisplays(_depth, size.-(1))
-                resultVector.stabilizeDisplayPath(_depth, size.-(1))
+            if (_depth > 1) {
+                resultVector.copyDisplays(_depth, size - 1)
+                resultVector.stabilizeDisplayPath(_depth, size - 1)
             }
-
-            resultVector.gotoPos(0, size.-(1))
+            resultVector.gotoPos(0, size - 1)
             resultVector.initFocus(0, 0, size, _depth, 0)
             resultVector
         }
     }
 
-    def clear(): Unit = {
+    def result(): RRBVector[A] = {
+        val current = resultCurrent()
+        if (acc == null) current
+        else acc ++ current
+    }
+
+    private def clearCurrent(): Unit = {
         display0 = new Array[AnyRef](32)
         display1 = null
         display2 = null
@@ -828,6 +854,11 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
         depth = 1
         blockIndex = 0
         lo = 0
+    }
+
+    def clear(): Unit = {
+        clearCurrent()
+        acc = null
     }
 }
 
@@ -854,7 +885,7 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
         }
     }
 
-    def hasNext = _hasNext
+    final def hasNext = _hasNext
 
     def next(): A = {
         val _lo = lo
@@ -889,13 +920,8 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
         }
     }
 
-    private[collection] def remainingElementCount: Int = (endIndex - (blockIndex + lo)) max 0
+    private[collection] def remaining: Int = math.max(endIndex - (blockIndex + lo), 0)
 
-    //    private[collection] def remainingVector: Vector[A] = {
-    //        val v = new RRBVector(blockIndex + lo, endIndex, blockIndex + lo)
-    //        v.initFrom(this)
-    //        v
-    //    }
 }
 
 class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with RRBVectorPointer[A@uncheckedVariance] {
@@ -923,7 +949,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
         }
     }
 
-    def hasNext = _hasNext
+    final def hasNext = _hasNext
 
     def next(): A = if (_hasNext) {
         val res = display0(lo).asInstanceOf[A]

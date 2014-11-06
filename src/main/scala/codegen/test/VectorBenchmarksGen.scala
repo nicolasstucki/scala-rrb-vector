@@ -1,6 +1,5 @@
-package codegen.test
-
-import codegen.VectorProperties
+package codegen
+package test
 
 import scala.reflect.runtime.universe._
 
@@ -152,7 +151,7 @@ trait VectorBenchmarksGen {
             q"""
                 package $subpackage {
                     ${testSet(q"tabulatedVector(size)", TermName("balanced"), "Balanced")}
-                    ${testSet(q"randomVectorOfSize(size)(defaultVectorConfig())", TermName("xunbalanced"), "XUnbalanced")}
+                    ${testSet(q"randomVectorOfSize(size)(defaultVectorConfig(111))", TermName("xunbalanced"), "XUnbalanced")}
                 }
              """)
 
