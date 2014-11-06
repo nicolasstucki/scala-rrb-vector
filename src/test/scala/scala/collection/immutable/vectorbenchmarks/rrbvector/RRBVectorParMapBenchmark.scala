@@ -1,0 +1,13 @@
+package scala.collection.immutable.vectorbenchmarks.rrbvector
+
+import scala.collection.immutable.vectorbenchmarks.RRBVectorBenchmark
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ParMapBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class RRBVectorAbstractParMapBenchmark[A] extends ParMapBenchmarks[A] with RRBVectorBenchmark[A]
+
+class RRBVectorParMapIntBenchmark extends RRBVectorAbstractParMapBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class RRBVectorParMapStringBenchmark extends RRBVectorAbstractParMapBenchmark[String] with VectorGeneratorType.StringGenerator
+
