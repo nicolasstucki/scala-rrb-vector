@@ -71,7 +71,7 @@ object GenerateImplementations extends App {
         }
     }
 
-    val USE_ASSERTIONS = true
+    val USE_ASSERTIONS = false
 
     for {
         useCompleteRebalance <- Iterator(true, false)

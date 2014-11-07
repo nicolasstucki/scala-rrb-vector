@@ -101,7 +101,6 @@ else
           ();
         resultVector.appendBackSetupNewBlock();
         resultVector.display0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef]);
-        assert(resultVector.assertVectorInvariant());
         resultVector
       }
     else
@@ -112,7 +111,6 @@ else
         Platform.arraycopy(resultVector.display0, 0, d0, 0, elemIndexInBlock);
         d0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef]);
         resultVector.display0 = d0;
-        assert(resultVector.assertVectorInvariant());
         resultVector
       }
   }).asInstanceOf[That]
@@ -173,7 +171,6 @@ else
             else
               throw new UnsupportedOperationException("empty.init");
             private[immutable] def appendBackSetupNewBlock() = {
-              assert(dirty.`unary_!`);
               val oldDepth = depth;
               val newRelaxedIndex = endIndex.-(1).-(focusStart).+(focusRelax);
               val xor = newRelaxedIndex.^(focus.|(focusRelax));
@@ -239,8 +236,6 @@ else
                 initFocus(endIndex.-(1), endIndex.-(1), endIndex, 1, newRelaxedIndex.&(-128))
             };
             private[immutable] def concatenate[B >: A](currentSize: Int, that: RRBVector_complete_incrementalLevel_128_splitbalanced[B]): scala.Unit = {
-              assert(that.assertVectorInvariant());
-              assert((0).<(that.length));
               if (this.dirty)
                 {
                   this.stabilize();
@@ -255,7 +250,6 @@ else
                 }
               else
                 ();
-              assert(that.assertVectorInvariant());
               this.focusOn(currentSize.-(1));
               math.max(this.depth, that.depth) match {
                 case 1 => {
@@ -263,8 +257,7 @@ else
                   initFromRoot(concat, if (endIndex.<=(128))
                     1
                   else
-                    2);
-                  assert(this.assertVectorInvariant())
+                    2)
                 }
                 case 2 => {
                   var d0: Array[AnyRef] = null;
@@ -290,8 +283,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 2)
                   else
-                    initFromRoot(withComputedSizes(concat, 3), 3);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 3), 3)
                 }
                 case 3 => {
                   var d0: Array[AnyRef] = null;
@@ -324,8 +316,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 3)
                   else
-                    initFromRoot(withComputedSizes(concat, 4), 4);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 4), 4)
                 }
                 case 4 => {
                   var d0: Array[AnyRef] = null;
@@ -365,8 +356,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 4)
                   else
-                    initFromRoot(withComputedSizes(concat, 5), 5);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 5), 5)
                 }
                 case 5 => {
                   var d0: Array[AnyRef] = null;
@@ -413,8 +403,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 5)
                   else
-                    initFromRoot(withComputedSizes(concat, 6), 6);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 6), 6)
                 }
                 case 6 => {
                   var d0: Array[AnyRef] = null;
@@ -468,8 +457,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 6)
                   else
-                    initFromRoot(withComputedSizes(concat, 7), 7);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 7), 7)
                 }
                 case _ => throw new IllegalStateException()
               }
@@ -736,9 +724,6 @@ else
               branching
             };
             private def withComputedSizes(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
-              assert(node.!=(null));
-              assert((0).<=(currentDepth));
-              assert(currentDepth.<=(6));
               var i = 0;
               var acc = 0;
               val end = node.length.-(1);
@@ -774,33 +759,28 @@ else
                 };
               node
             };
-            private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = {
-              assert(tree.!=(null));
-              assert((0).<=(currentDepth));
-              assert(currentDepth.<=(6));
-              if (currentDepth.==(1))
-                tree.length
-              else
-                {
-                  val treeSizes = tree(tree.length.-(1)).asInstanceOf[Array[Int]];
-                  if (treeSizes.!=(null))
-                    treeSizes(treeSizes.length.-(1))
-                  else
-                    {
-                      var _tree = tree;
-                      var _currentDepth = currentDepth;
-                      var acc = 0;
-                      while (_currentDepth.>(1)) 
-                        {
-                          acc.+=(_tree.length.-(2).*((1).<<((7).*(_currentDepth.-(1)))));
-                          _currentDepth.-=(1);
-                          _tree = _tree(_tree.length.-(2)).asInstanceOf[Array[AnyRef]]
-                        }
-                      ;
-                      acc.+(_tree.length)
-                    }
-                }
-            };
+            private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = if (currentDepth.==(1))
+              tree.length
+            else
+              {
+                val treeSizes = tree(tree.length.-(1)).asInstanceOf[Array[Int]];
+                if (treeSizes.!=(null))
+                  treeSizes(treeSizes.length.-(1))
+                else
+                  {
+                    var _tree = tree;
+                    var _currentDepth = currentDepth;
+                    var acc = 0;
+                    while (_currentDepth.>(1)) 
+                      {
+                        acc.+=(_tree.length.-(2).*((1).<<((7).*(_currentDepth.-(1)))));
+                        _currentDepth.-=(1);
+                        _tree = _tree(_tree.length.-(2)).asInstanceOf[Array[AnyRef]]
+                      }
+                    ;
+                    acc.+(_tree.length)
+                  }
+              };
             private def takeFront0(n: Int): RRBVector_complete_incrementalLevel_128_splitbalanced[A] = {
               if (dirty)
                 {
@@ -879,136 +859,7 @@ else
                   }
                 else
                   ();
-              assert(vec.assertVectorInvariant());
               vec
-            };
-            private[immutable] def assertVectorInvariant(): Boolean = {
-              assert((0).<=(depth).&&(depth.<=(6)), depth);
-              assert(isEmpty.==(depth.==(0)), scala.Tuple2(isEmpty, depth));
-              assert(isEmpty.==(length.==(0)), scala.Tuple2(isEmpty, length));
-              assert(length.==(endIndex), scala.Tuple2(length, endIndex));
-              assert(depth.<=(0).&&(display0.==(null)).||(depth.>(0).&&(display0.!=(null))), ({
-  val x$61 = depth.toString;
-  "<=0 <==> display0==null ".+:(x$61)
-}).:+(depth, display0));
-              assert(depth.<=(1).&&(display1.==(null)).||(depth.>(0).&&(display1.!=(null))), ({
-  val x$62 = depth.toString;
-  "<=1 <==> display1==null ".+:(x$62)
-}).:+(depth, display1));
-              assert(depth.<=(2).&&(display2.==(null)).||(depth.>(0).&&(display2.!=(null))), ({
-  val x$63 = depth.toString;
-  "<=2 <==> display2==null ".+:(x$63)
-}).:+(depth, display2));
-              assert(depth.<=(3).&&(display3.==(null)).||(depth.>(0).&&(display3.!=(null))), ({
-  val x$64 = depth.toString;
-  "<=3 <==> display3==null ".+:(x$64)
-}).:+(depth, display3));
-              assert(depth.<=(4).&&(display4.==(null)).||(depth.>(0).&&(display4.!=(null))), ({
-  val x$65 = depth.toString;
-  "<=4 <==> display4==null ".+:(x$65)
-}).:+(depth, display4));
-              assert(depth.<=(5).&&(display5.==(null)).||(depth.>(0).&&(display5.!=(null))), ({
-  val x$66 = depth.toString;
-  "<=5 <==> display5==null ".+:(x$66)
-}).:+(depth, display5));
-              if (display5.!=(null))
-                {
-                  assert(display4.!=(null));
-                  if (focusDepth.<=(5))
-                    assert(display5(focusRelax.>>(35).&(127)).==(display4))
-                  else
-                    assert(display5(focus.>>(35).&(127)).==(display4))
-                }
-              else
-                ();
-              if (display4.!=(null))
-                {
-                  assert(display3.!=(null));
-                  if (focusDepth.<=(4))
-                    assert(display4(focusRelax.>>(28).&(127)).==(display3))
-                  else
-                    assert(display4(focus.>>(28).&(127)).==(display3))
-                }
-              else
-                ();
-              if (display3.!=(null))
-                {
-                  assert(display2.!=(null));
-                  if (focusDepth.<=(3))
-                    assert(display3(focusRelax.>>(21).&(127)).==(display2))
-                  else
-                    assert(display3(focus.>>(21).&(127)).==(display2))
-                }
-              else
-                ();
-              if (display2.!=(null))
-                {
-                  assert(display1.!=(null));
-                  if (focusDepth.<=(2))
-                    assert(display2(focusRelax.>>(14).&(127)).==(display1))
-                  else
-                    assert(display2(focus.>>(14).&(127)).==(display1))
-                }
-              else
-                ();
-              if (display1.!=(null))
-                {
-                  assert(display0.!=(null));
-                  if (dirty.`unary_!`)
-                    if (focusDepth.<=(1))
-                      assert(display1(focusRelax.>>(7).&(127)).==(display0))
-                    else
-                      assert(display1(focus.>>(7).&(127)).==(display0))
-                  else
-                    ()
-                }
-              else
-                ();
-              assert((0).<=(focusStart).&&(focusStart.<=(focusEnd)).&&(focusEnd.<=(endIndex)), scala.Tuple3(focusStart, focusEnd, endIndex));
-              assert(focusStart.==(focusEnd).||(focusEnd.!=(0)), "focusStart==focusEnd ==> focusEnd==0".+(focusStart, focusEnd));
-              assert((0).<=(focusDepth).&&(focusDepth.<=(depth)), scala.Tuple2(focusDepth, depth));
-              def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = if (currentDepth.>(1))
-                {
-                  val sizes = node.last.asInstanceOf[Array[Int]];
-                  if (sizes.!=(null))
-                    {
-                      assert(node.length.==(sizes.length.+(1)));
-                      if (dirty.`unary_!`)
-                        assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex))
-                      else
-                        ();
-                      0.until(sizes.length.-(1)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0))
-                        0
-                      else
-                        sizes(i.-(1))))));
-                      checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), if (sizes.length.>(1))
-                        sizes.last.-(sizes(sizes.length.-(2)))
-                      else
-                        sizes.last)
-                    }
-                  else
-                    {
-                      0.until(node.length.-(2)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), (1).<<((7).*(currentDepth.-(1))))));
-                      val expectedLast = _endIndex.-((1).<<((7).*(currentDepth.-(1))).*(node.length.-(2)));
-                      assert((1).<=(expectedLast).&&(expectedLast.<=((1).<<((7).*(currentDepth)))));
-                      checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), expectedLast)
-                    }
-                }
-              else
-                if (dirty.`unary_!`)
-                  assert(node.length.==(_endIndex))
-                else
-                  ();
-              depth match {
-                case 1 => checkSizes(display0, 1, endIndex)
-                case 2 => checkSizes(display1, 2, endIndex)
-                case 3 => checkSizes(display2, 3, endIndex)
-                case 4 => checkSizes(display3, 4, endIndex)
-                case 5 => checkSizes(display4, 5, endIndex)
-                case 6 => checkSizes(display5, 6, endIndex)
-                case _ => ()
-              };
-              true
             }
           }
 
@@ -1092,7 +943,6 @@ else
                     ();
                   resultVector.gotoPos(0, size.-(1));
                   resultVector.initFocus(0, 0, size, _depth, 0);
-                  assert(resultVector.assertVectorInvariant());
                   resultVector
                 }
             };
@@ -1191,9 +1041,6 @@ else
             private var endLo: Int = _;
             private var _hasNext: Boolean = startIndex.<(endIndex);
             final private[collection] def initIteratorFrom[B >: A](that: RRBVector_complete_incrementalLevel_128_splitbalancedPointer[B]): Unit = {
-              assert((0).<=(startIndex));
-              assert(startIndex.<=(endIndex));
-              assert(endIndex.<=(that.endIndex));
               initWithFocusFrom(that);
               _hasNext = startIndex.<(endIndex);
               if (_hasNext)
@@ -1279,9 +1126,6 @@ else
               this.focusRelax = focusRelax
             };
             final private[immutable] def initFromRoot(root: Array[AnyRef], depth: Int): Unit = {
-              assert(root.!=(null));
-              assert((0).<(depth));
-              assert(depth.<=(6));
               depth match {
                 case 1 => display0 = root
                 case 2 => display1 = root
@@ -1295,7 +1139,6 @@ else
               focusOn(0)
             };
             final private[immutable] def initFrom[U](that: RRBVector_complete_incrementalLevel_128_splitbalancedPointer[U]): Unit = {
-              assert(that.!=(null));
               depth = that.depth;
               that.depth match {
                 case 0 => ()
@@ -1363,8 +1206,6 @@ else
             else
               gotoPosFromRoot(index);
             final private[immutable] def getElementFromRoot(index: Int): A = {
-              assert((2).<=(depth));
-              assert(depth.<=(6));
               var indexInSubTree = index;
               var currentDepth = depth;
               var display: Array[AnyRef] = currentDepth match {
@@ -1399,8 +1240,6 @@ else
               display(indexInSubTree).asInstanceOf[A]
             };
             final private def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
-              assert((0).<=(indexInSubTree));
-              assert(indexInSubTree.<(sizes(sizes.length.-(1))));
               var is = 0;
               while (sizes(is).<=(indexInSubTree)) 
                 is.+=(1)
@@ -1414,48 +1253,43 @@ else
               var _focusRelax: Int = 0;
               var continue: Boolean = currentDepth.>(1);
               while (continue) 
-                {
-                  assert((0).<=(_startIndex));
-                  assert(_startIndex.<=(_endIndex));
-                  assert((0).<(currentDepth));
-                  if (currentDepth.<=(1))
-                    continue = false
-                  else
-                    {
-                      val display = currentDepth match {
-                        case 2 => display1
-                        case 3 => display2
-                        case 4 => display3
-                        case 5 => display4
-                        case 6 => display5
-                        case _ => throw new IllegalStateException()
-                      };
-                      val sizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
-                      if (sizes.==(null))
-                        continue = false
-                      else
-                        {
-                          val is = getIndexInSizes(sizes, index.-(_startIndex));
-                          currentDepth match {
-                            case 2 => display0 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 3 => display1 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 4 => display2 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 5 => display3 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 6 => display4 = display(is).asInstanceOf[Array[AnyRef]]
-                          };
-                          if (is.<(sizes.length.-(1)))
-                            _endIndex = _startIndex.+(sizes(is))
-                          else
-                            ();
-                          if (is.!=(0))
-                            _startIndex.+=(sizes(is.-(1)))
-                          else
-                            ();
-                          currentDepth.-=(1);
-                          _focusRelax.|=(is.<<((7).*(currentDepth)))
-                        }
-                    }
-                }
+                if (currentDepth.<=(1))
+                  continue = false
+                else
+                  {
+                    val display = currentDepth match {
+                      case 2 => display1
+                      case 3 => display2
+                      case 4 => display3
+                      case 5 => display4
+                      case 6 => display5
+                      case _ => throw new IllegalStateException()
+                    };
+                    val sizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
+                    if (sizes.==(null))
+                      continue = false
+                    else
+                      {
+                        val is = getIndexInSizes(sizes, index.-(_startIndex));
+                        currentDepth match {
+                          case 2 => display0 = display(is).asInstanceOf[Array[AnyRef]]
+                          case 3 => display1 = display(is).asInstanceOf[Array[AnyRef]]
+                          case 4 => display2 = display(is).asInstanceOf[Array[AnyRef]]
+                          case 5 => display3 = display(is).asInstanceOf[Array[AnyRef]]
+                          case 6 => display4 = display(is).asInstanceOf[Array[AnyRef]]
+                        };
+                        if (is.<(sizes.length.-(1)))
+                          _endIndex = _startIndex.+(sizes(is))
+                        else
+                          ();
+                        if (is.!=(0))
+                          _startIndex.+=(sizes(is.-(1)))
+                        else
+                          ();
+                        currentDepth.-=(1);
+                        _focusRelax.|=(is.<<((7).*(currentDepth)))
+                      }
+                  }
               ;
               val indexInFocus = index.-(_startIndex);
               gotoPos(indexInFocus, (1).<<((7).*(currentDepth.-(1))));
@@ -2026,34 +1860,30 @@ else
                 }
               
             };
-            final private[immutable] def stabilizeDisplayPath(_depth: Int, _focus: Int): Unit = {
-              assert((0).<(_depth));
-              assert(_depth.<=(this.depth));
-              _depth match {
-                case 1 => ()
-                case 2 => display1.update(_focus.>>(7).&(127), display0)
-                case 3 => {
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
-                case 4 => {
-                  display3.update(_focus.>>(21).&(127), display2);
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
-                case 5 => {
-                  display4.update(_focus.>>(28).&(127), display3);
-                  display3.update(_focus.>>(21).&(127), display2);
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
-                case 6 => {
-                  display5.update(_focus.>>(35).&(127), display4);
-                  display4.update(_focus.>>(28).&(127), display3);
-                  display3.update(_focus.>>(21).&(127), display2);
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
+            final private[immutable] def stabilizeDisplayPath(_depth: Int, _focus: Int): Unit = _depth match {
+              case 1 => ()
+              case 2 => display1.update(_focus.>>(7).&(127), display0)
+              case 3 => {
+                display2.update(_focus.>>(14).&(127), display1);
+                display1.update(_focus.>>(7).&(127), display0)
+              }
+              case 4 => {
+                display3.update(_focus.>>(21).&(127), display2);
+                display2.update(_focus.>>(14).&(127), display1);
+                display1.update(_focus.>>(7).&(127), display0)
+              }
+              case 5 => {
+                display4.update(_focus.>>(28).&(127), display3);
+                display3.update(_focus.>>(21).&(127), display2);
+                display2.update(_focus.>>(14).&(127), display1);
+                display1.update(_focus.>>(7).&(127), display0)
+              }
+              case 6 => {
+                display5.update(_focus.>>(35).&(127), display4);
+                display4.update(_focus.>>(28).&(127), display3);
+                display3.update(_focus.>>(21).&(127), display2);
+                display2.update(_focus.>>(14).&(127), display1);
+                display1.update(_focus.>>(7).&(127), display0)
               }
             };
             private[immutable] def cleanTop(cutIndex: Int): Unit = this.depth match {
@@ -2154,9 +1984,6 @@ else
                 this.depth = 6
             };
             final private[immutable] def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
-              assert(array.!=(null));
-              assert(numElements.<=(newSize));
-              assert(numElements.<=(array.length));
               val newArray = new Array[AnyRef](newSize);
               Platform.arraycopy(array, 0, newArray, 0, numElements);
               newArray
