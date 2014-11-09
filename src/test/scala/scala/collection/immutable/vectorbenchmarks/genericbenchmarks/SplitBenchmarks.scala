@@ -15,8 +15,8 @@ abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
         val times = 10000
 
         measure method "take" config(
-          Key.exec.minWarmupRuns -> 3000,
-          Key.exec.maxWarmupRuns -> 6000
+          Key.exec.minWarmupRuns -> 500,
+          Key.exec.maxWarmupRuns -> 1000
           ) in {
 
             performance of s"take half x$times" in {

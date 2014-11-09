@@ -74,14 +74,18 @@ object GenerateImplementations extends App {
     val USE_ASSERTIONS = false
 
     for {
-        useCompleteRebalance <- Iterator(true, false)
         useDirectLevel <- Iterator(true, false)
+        depthMatch <- Seq(DEPTH_MATCH_METHOD.WITH_MATCH, DEPTH_MATCH_METHOD.WITH_IF_ELSE_IF)
+        useCompleteRebalance <- Iterator(true, false)
         indexBits <- 5 to 7
         par_split_method <- Seq(PAR_SPLIT_METHOD.SPLIT_IN_COMPLETE_SUBTREES, PAR_SPLIT_METHOD.SPLIT_IN_HALF /*, PAR_SPLIT_METHOD.BLOCK_SPLIT */)
     } {
+
+
         val packageGenerator = new VectorImplementation {
 
-            override protected val PAR_SPLIT: PAR_SPLIT_METHOD = par_split_method
+            override protected val PAR_SPLIT = par_split_method
+            override protected val DEPTH_MATCH = depthMatch
             protected val COMPLETE_REBALANCE: Boolean = useCompleteRebalance
             protected val DIRECT_LEVEL: Boolean = useDirectLevel
             override protected val blockIndexBits: Int = indexBits

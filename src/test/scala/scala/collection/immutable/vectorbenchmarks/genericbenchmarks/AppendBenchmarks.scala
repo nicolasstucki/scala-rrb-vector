@@ -10,7 +10,7 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
     def sum1(vec: Vec, times: Int): Int
     def sum8(vec: Vec, times: Int): Int
-    def sum32(vec: Vec, times: Int): Int
+    def sum(vec: Vec, n: Int, times: Int): Int
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
@@ -18,8 +18,8 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         measure method "append" config(
-          Key.exec.minWarmupRuns -> 2000,
-          Key.exec.maxWarmupRuns -> 5000
+          Key.exec.minWarmupRuns -> 500,
+          Key.exec.maxWarmupRuns -> 2000
           ) in {
             val times = 10000
 
@@ -45,7 +45,16 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = sum32(vec, times)
+                        sideeffect = sum(vec, 32, times)
+                    }
+                }
+            }
+
+            performance of s"append 100 elements, $times times" in {
+
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                        sideeffect = sum(vec, 100, times)
                     }
                 }
             }

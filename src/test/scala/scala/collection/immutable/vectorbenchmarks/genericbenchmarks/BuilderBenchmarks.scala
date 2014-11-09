@@ -15,8 +15,8 @@ abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
         if(height > 1) {
             measure method "builder" config(
-              Key.exec.minWarmupRuns -> 2000,
-              Key.exec.maxWarmupRuns -> 5000
+              Key.exec.minWarmupRuns -> 500,
+              Key.exec.maxWarmupRuns -> 1000
               ) in {
                 val elements = 1000000
                 performance of s"build vectors using $elements elements" in {

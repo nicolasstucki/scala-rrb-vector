@@ -442,6 +442,8 @@ trait VectorCodeGen {
                             iMid += 1
                             iBot = 0
                             iSizes += 1
+                            if ($currentDepth!=2 && bot!=null)
+                                $v_withComputedSizes(bot, currentDepth - 1)
                         }
                     }
                     if (iMid == $blockWidth) {
@@ -729,8 +731,9 @@ trait VectorCodeGen {
                     vec.$copyDisplays(vec.$focusDepth, cutIndex)
                     var i = vec.$depth
                     var offset = 0
+                    var display: Array[AnyRef] = null
                     while (i > vec.$focusDepth) {
-                        val display = ${matchOnInt(q"i", 2 to 6, d => q"vec.${displayNameAt(d - 1)}")}
+                        ${matchOnInt(q"i", 2 to 6, d => q"display = vec.${displayNameAt(d - 1)}")}
                         val oldSizes = ${getBlockSizes(q"display")}
                         val newLen = ((vec.$focusRelax >> ($blockIndexBits * (i - 1))) & $blockMask) + 1
                         val newSizes = new Array[Int](newLen)

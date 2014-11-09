@@ -15,8 +15,8 @@ abstract class MemoryAllocation[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
         performance of "MemoryFootprint (KB not ms)" config(
-          Key.exec.minWarmupRuns -> 100,
-          Key.exec.maxWarmupRuns -> 500
+          Key.exec.minWarmupRuns -> 200,
+          Key.exec.maxWarmupRuns -> 600
           ) in {
             performance of s"Height $height" in {
                 using(generateVectors(from, to, by)) curve vectorName in { vec => vec}

@@ -6,6 +6,8 @@ trait VectorProperties {
 
     protected val PAR_SPLIT: PAR_SPLIT_METHOD
 
+    protected val DEPTH_MATCH: DEPTH_MATCH_METHOD
+
     protected val COMPLETE_REBALANCE: Boolean
 
     protected val DIRECT_LEVEL: Boolean
@@ -66,7 +68,7 @@ trait VectorProperties {
         val balanceType = if (COMPLETE_REBALANCE) "complete" else "quick"
         val levelIndirectionType = if (DIRECT_LEVEL) "directLevel" else "incrementalLevel"
 
-        s"RRBVector_${balanceType}_${levelIndirectionType}_${blockWidth}_${PAR_SPLIT.shortName}"
+        s"RRBVector_${balanceType}_${DEPTH_MATCH.shortName}_${levelIndirectionType}_${blockWidth}_${PAR_SPLIT.shortName}"
     }
 
     protected def inPackages(packages: Seq[String], code: Tree): Tree = {
@@ -98,6 +100,22 @@ object PAR_SPLIT_METHOD {
 
     object BLOCK_SPLIT extends PAR_SPLIT_METHOD {
         override def shortName = "splitsubtrees"
+    }
+
+}
+
+sealed trait DEPTH_MATCH_METHOD {
+    def shortName: String
+}
+
+object DEPTH_MATCH_METHOD {
+
+    object WITH_MATCH extends DEPTH_MATCH_METHOD {
+        override def shortName = "matchDepth"
+    }
+
+    object WITH_IF_ELSE_IF extends DEPTH_MATCH_METHOD {
+        override def shortName = "ifElseDepth"
     }
 
 }

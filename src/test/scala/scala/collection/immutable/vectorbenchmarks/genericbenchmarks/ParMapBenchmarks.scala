@@ -16,8 +16,8 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         measure method "map" config(
-          Key.exec.minWarmupRuns -> 1000,
-          Key.exec.maxWarmupRuns -> 3000
+          Key.exec.minWarmupRuns -> 100,
+          Key.exec.maxWarmupRuns -> 500
           ) in {
             performance of s"map into self (x=>x)" in {
                 performance of s"Height $height" in {

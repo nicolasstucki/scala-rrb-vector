@@ -15,8 +15,8 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         performance of "concatenation" config(
-          Key.exec.minWarmupRuns -> 3000,
-          Key.exec.maxWarmupRuns -> 6000
+          Key.exec.minWarmupRuns -> 500,
+          Key.exec.maxWarmupRuns -> 2000
           ) in {
             val times = 1000
             performance of s"concat vector of 1024 elements $times times" in {

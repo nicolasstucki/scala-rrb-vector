@@ -130,7 +130,8 @@ trait VectorPointerCodeGen {
             ..${assertions(q"2 <= $depth", q"$depth <= 6")}
             var indexInSubTree = $indexParam
             var currentDepth = $depth
-            var display: Array[AnyRef] = ${matchOnInt(q"currentDepth", 2 to 6, d => displayAt(d - 1))}
+            var display: Array[AnyRef] = null
+            ${matchOnInt(q"currentDepth", 2 to 6, d => q"display = ${displayAt(d - 1)}")}
             while (currentDepth > 1) {
                 val sizes = ${getBlockSizes(q"display")}
                 if (sizes == null) {
@@ -301,8 +302,9 @@ trait VectorPointerCodeGen {
                 $copyDisplays(_focusDepth, stabilizationIndex)
                 $stabilizeDisplayPath(_focusDepth, stabilizationIndex)
                 var currentDepth = _focusDepth + 1
+                var display: Array[AnyRef] = null
                 while (currentDepth <= _depth) {
-                    val display = ${matchOnInt(q"currentDepth", 2 to 6, d => displayAt(d - 1))}
+                    ${matchOnInt(q"currentDepth", 2 to 6, d => q"display = ${displayAt(d - 1)}")}
                     val oldSizes = display(display.length - 1 ).asInstanceOf[Array[Int]]
                     val newSizes = new Array[Int](oldSizes.length)
                     val lastSizesIndex = oldSizes.length - 1
@@ -332,7 +334,6 @@ trait VectorPointerCodeGen {
 
 
     private[vectorpointer] def cleanTopCode(cutIndex: TermName) = {
-        val depthParam = TermName("_depth")
         def cleanLevelAndGoDown(lvl: Int): Tree =
             q"""
                 if (($cutIndex >> ${lvl * blockIndexBits}) == 0) {
@@ -375,6 +376,7 @@ trait VectorPointerCodeGen {
             var _currentDepth = currentDepth
             while (_currentDepth < this.$depth) {
                 ${matchOnInt(q"_currentDepth", 2 to 6, d => copyDisplayAndCut(d - 1), Some(q"throw new IllegalStateException"))}
+                _currentDepth += 1
             }
          """
     }
@@ -421,7 +423,8 @@ trait VectorPointerCodeGen {
         q"$display($display.length - 1) = $sizes"
     }
 
-    protected def matchOnInt(num: Tree, numCases: Seq[Int], code: Int => Tree, defaultOption: Option[Tree] = None) = {
+    protected def matchOnInt(num: Tree, numCases: Seq[Int], code: Int => Tree, defaultOption: Option[Tree] = None): Tree = {
+
         num match {
             case q"${d: Int}" =>
                 if (numCases.contains(d))
@@ -432,12 +435,36 @@ trait VectorPointerCodeGen {
                 else
                     code(d)
             case _ =>
-                val cases = numCases map (i => cq"$i => ${code(i)}")
-                defaultOption match {
-                    case Some(default) => q"$num match { case ..$cases; case _ => $default }"
-                    case None => q"$num match { case ..$cases }"
+                DEPTH_MATCH match {
+                    case DEPTH_MATCH_METHOD.WITH_MATCH =>
+                        val cases = numCases map (i => cq"$i => ${code(i)}")
+                        defaultOption match {
+                            case Some(default) => q"$num match { case ..$cases; case _ => $default }"
+                            case None => q"$num match { case ..$cases }"
+                        }
+                    case DEPTH_MATCH_METHOD.WITH_IF_ELSE_IF =>
+                        def matchOnIntRec(numRef: TermName, numCases: Seq[Int]): Tree = {
+                            numCases.headOption match {
+                                case Some(caseNumber) =>
+                                    q"if($numRef == $caseNumber) ${code(caseNumber)} else ${matchOnIntRec(numRef, numCases.tail)}"
+                                case None =>
+                                    defaultOption match {
+                                        case Some(default) => default
+                                        case None => q"()"
+                                    }
+                            }
+                        }
+                        num match {
+                            case q"${numRef: TermName}" =>
+                                matchOnIntRec(numRef, numCases)
+                            case _ =>
+                                val numRef = TermName("valueToMatch")
+                                q"""
+                                    val $numRef = $num
+                                    ${matchOnIntRec(numRef, numCases)}
+                                 """
+                        }
                 }
-
         }
     }
 

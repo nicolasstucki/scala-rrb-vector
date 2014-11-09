@@ -34,12 +34,16 @@ class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] 
         sum
     }
 
-    def sum32(vec: RRBVector[Int], times: Int): Int = {
+    def sum(vec: RRBVector[Int], n: Int, times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7 :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7
+            var j = 0
+            while (j<n) {
+                v = vec :+ 0
+                j += 1
+            }
             sum += v.length
             i += 1
         }
@@ -74,16 +78,19 @@ class RRBVectorAppendStringBenchmark extends RRBVectorAbstractAppendBenchmark[St
         sum
     }
 
-    def sum32(vec: RRBVector[String], times: Int): Int = {
+    def sum(vec: RRBVector[String], n: Int, times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
+            var j = 0
+            while (j<n) {
+                v = vec :+ ref
+                j += 1
+            }
             sum += v.length
             i += 1
         }
         sum
     }
-
 }
