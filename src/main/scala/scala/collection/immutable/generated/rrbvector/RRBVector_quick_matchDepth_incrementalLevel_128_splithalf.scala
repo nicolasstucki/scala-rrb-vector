@@ -1793,7 +1793,7 @@ else
                       val newSizes = new Array[Int](oldSizes.length);
                       val lastSizesIndex = oldSizes.length.-(1);
                       Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
-                      newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex.+(deltaSize)));
+                      newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
                       val idx = stabilizationIndex.>>((7).*(currentDepth)).&(127);
                       val newDisplay = copyOf(display, idx, idx.+(2));
                       newDisplay.update(display1.length.-(1), newSizes);
