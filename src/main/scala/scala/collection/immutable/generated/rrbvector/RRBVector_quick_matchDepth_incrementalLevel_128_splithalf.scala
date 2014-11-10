@@ -1787,15 +1787,15 @@ else
                   stabilizeDisplayPath(_focusDepth, stabilizationIndex);
                   var currentDepth = _focusDepth.+(1);
                   var display: Array[AnyRef] = null;
+                  currentDepth match {
+                    case 2 => display = display1
+                    case 3 => display = display2
+                    case 4 => display = display3
+                    case 5 => display = display4
+                    case 6 => display = display5
+                  };
                   while (currentDepth.<=(_depth)) 
                     {
-                      currentDepth match {
-                        case 2 => display = display1
-                        case 3 => display = display2
-                        case 4 => display = display3
-                        case 5 => display = display4
-                        case 6 => display = display5
-                      };
                       val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
                       val newSizes = new Array[Int](oldSizes.length);
                       val lastSizesIndex = oldSizes.length.-(1);
@@ -1803,23 +1803,27 @@ else
                       newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
                       val idx = stabilizationIndex.>>((7).*(currentDepth)).&(127);
                       val newDisplay = copyOf(display, idx, idx.+(2));
-                      newDisplay.update(display1.length.-(1), newSizes);
+                      newDisplay.update(display.length.-(1), newSizes);
                       currentDepth match {
                         case 2 => {
                           newDisplay.update(idx, display0);
-                          display1.update(idx, newDisplay)
+                          display1.update(idx, newDisplay);
+                          display = display2
                         }
                         case 3 => {
                           newDisplay.update(idx, display1);
-                          display2.update(idx, newDisplay)
+                          display2.update(idx, newDisplay);
+                          display = display3
                         }
                         case 4 => {
                           newDisplay.update(idx, display2);
-                          display3.update(idx, newDisplay)
+                          display3.update(idx, newDisplay);
+                          display = display4
                         }
                         case 5 => {
                           newDisplay.update(idx, display3);
-                          display4.update(idx, newDisplay)
+                          display4.update(idx, newDisplay);
+                          display = display5
                         }
                         case 6 => {
                           newDisplay.update(idx, display4);

@@ -279,9 +279,9 @@ trait VectorPointerCodeGen {
             }
             val d1 = TermName("d1")
             q"""
-                if($xor >= ${1 << (blockIndexBits)}) {
+                if($xor >= ${1 << blockIndexBits}) {
                     val $d1 = ${rec(2)}
-                    ${displayAt(0)} = $d1((index >> ${blockIndexBits}) & $blockMask).asInstanceOf[Array[AnyRef]]
+                    ${displayAt(0)} = $d1((index >> $blockIndexBits) & $blockMask).asInstanceOf[Array[AnyRef]]
                 }
              """
         }
@@ -363,8 +363,8 @@ trait VectorPointerCodeGen {
                 $stabilizeDisplayPath(_focusDepth, stabilizationIndex)
                 var currentDepth = _focusDepth + 1
                 var display: Array[AnyRef] = null
+                ${matchOnInt(q"currentDepth", 2 to 6, d => q"display = ${displayAt(d - 1)}")}
                 while (currentDepth <= _depth) {
-                    ${matchOnInt(q"currentDepth", 2 to 6, d => q"display = ${displayAt(d - 1)}")}
                     val oldSizes = display(display.length - 1 ).asInstanceOf[Array[Int]]
                     val newSizes = new Array[Int](oldSizes.length)
                     val lastSizesIndex = oldSizes.length - 1
@@ -372,8 +372,8 @@ trait VectorPointerCodeGen {
                     newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
                     val idx = (stabilizationIndex >> ($blockIndexBits * currentDepth)) & $blockMask
                     val newDisplay = copyOf(display, idx, idx + 2)
-                    newDisplay(display1.length - 1) = newSizes
-                    ${matchOnInt(q"currentDepth", 2 to 6, d => q"newDisplay(idx) = ${displayAt(d - 2)}; ${displayAt(d - 1)}(idx) = newDisplay")}
+                    newDisplay(display.length - 1) = newSizes
+                    ${matchOnInt(q"currentDepth", 2 to 6, d => q"newDisplay(idx) = ${displayAt(d - 2)}; ${displayAt(d - 1)}(idx) = newDisplay; ..${if (d < 6) q"display = ${displayAt(d)}" :: Nil else Nil}")}
                     currentDepth += 1
                 }
             }

@@ -1776,14 +1776,14 @@ private[immutable] trait RRBVectorPointer[A] {
             copyDisplays(_focusDepth, stabilizationIndex)
             stabilizeDisplayPath(_focusDepth, stabilizationIndex)
             var currentDepth = _focusDepth.+(1)
+            var display = currentDepth match {
+                case 2 => display1
+                case 3 => display2
+                case 4 => display3
+                case 5 => display4
+                case 6 => display5
+            }
             while (currentDepth.<=(_depth)) {
-                val display = currentDepth match {
-                    case 2 => display1
-                    case 3 => display2
-                    case 4 => display3
-                    case 5 => display4
-                    case 6 => display5
-                }
                 val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
                 val newSizes = new Array[Int](oldSizes.length)
                 val lastSizesIndex = oldSizes.length.-(1)
@@ -1791,20 +1791,24 @@ private[immutable] trait RRBVectorPointer[A] {
                 newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
                 val idx = stabilizationIndex.>>(5.*(currentDepth)).&(31)
                 val newDisplay = copyOf(display, idx, idx.+(2))
-                newDisplay.update(display1.length.-(1), newSizes)
+                newDisplay.update(display.length.-(1), newSizes)
                 currentDepth match {
                     case 2 =>
                         newDisplay.update(idx, display0)
                         display1.update(idx, newDisplay)
+                        display = display2
                     case 3 =>
                         newDisplay.update(idx, display1)
                         display2.update(idx, newDisplay)
+                        display = display3
                     case 4 =>
                         newDisplay.update(idx, display2)
                         display3.update(idx, newDisplay)
+                        display = display4
                     case 5 =>
                         newDisplay.update(idx, display3)
                         display4.update(idx, newDisplay)
+                        display = display5
                     case 6 =>
                         newDisplay.update(idx, display4)
                         display5.update(idx, newDisplay)

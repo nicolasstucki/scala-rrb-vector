@@ -1894,24 +1894,24 @@ else
                   stabilizeDisplayPath(_focusDepth, stabilizationIndex);
                   var currentDepth = _focusDepth.+(1);
                   var display: Array[AnyRef] = null;
+                  if (currentDepth.==(2))
+                    display = display1
+                  else
+                    if (currentDepth.==(3))
+                      display = display2
+                    else
+                      if (currentDepth.==(4))
+                        display = display3
+                      else
+                        if (currentDepth.==(5))
+                          display = display4
+                        else
+                          if (currentDepth.==(6))
+                            display = display5
+                          else
+                            ();
                   while (currentDepth.<=(_depth)) 
                     {
-                      if (currentDepth.==(2))
-                        display = display1
-                      else
-                        if (currentDepth.==(3))
-                          display = display2
-                        else
-                          if (currentDepth.==(4))
-                            display = display3
-                          else
-                            if (currentDepth.==(5))
-                              display = display4
-                            else
-                              if (currentDepth.==(6))
-                                display = display5
-                              else
-                                ();
                       val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
                       val newSizes = new Array[Int](oldSizes.length);
                       val lastSizesIndex = oldSizes.length.-(1);
@@ -1919,29 +1919,33 @@ else
                       newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
                       val idx = stabilizationIndex.>>((5).*(currentDepth)).&(31);
                       val newDisplay = copyOf(display, idx, idx.+(2));
-                      newDisplay.update(display1.length.-(1), newSizes);
+                      newDisplay.update(display.length.-(1), newSizes);
                       if (currentDepth.==(2))
                         {
                           newDisplay.update(idx, display0);
-                          display1.update(idx, newDisplay)
+                          display1.update(idx, newDisplay);
+                          display = display2
                         }
                       else
                         if (currentDepth.==(3))
                           {
                             newDisplay.update(idx, display1);
-                            display2.update(idx, newDisplay)
+                            display2.update(idx, newDisplay);
+                            display = display3
                           }
                         else
                           if (currentDepth.==(4))
                             {
                               newDisplay.update(idx, display2);
-                              display3.update(idx, newDisplay)
+                              display3.update(idx, newDisplay);
+                              display = display4
                             }
                           else
                             if (currentDepth.==(5))
                               {
                                 newDisplay.update(idx, display3);
-                                display4.update(idx, newDisplay)
+                                display4.update(idx, newDisplay);
+                                display = display5
                               }
                             else
                               if (currentDepth.==(6))
