@@ -1,11 +1,10 @@
-package scala.collection.immutable.vectorbenchmarks.rrbvector
+package scala.collection.immutable.vectorbenchmarks.rrbvector.xunbalanced
 
-import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.BuilderBenchmarks
-import scala.collection.immutable.vectorbenchmarks.RRBVectorBenchmark
 import scala.collection.immutable.rrbvector.RRBVector
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.BuilderBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
-abstract class RRBVectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with RRBVectorBenchmark[A] {
+abstract class RRBVectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with RRBVectorAbstractBenchmark[A] {
     def buildVector(n: Int, elems: Int): Int = {
         var i = 0
         var sum = 0

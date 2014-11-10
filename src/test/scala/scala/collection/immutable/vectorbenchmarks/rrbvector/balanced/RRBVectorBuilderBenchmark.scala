@@ -1,14 +1,14 @@
-package scala.collection.immutable.vectorbenchmarks.vector
+package scala.collection.immutable.vectorbenchmarks.rrbvector.balanced
 
+import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.BuilderBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
-
-abstract class VectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with VectorBenchmark[A] {
+abstract class RRBVectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with RRBVectorAbstractBenchmark[A] {
     def buildVector(n: Int, elems: Int): Int = {
         var i = 0
         var sum = 0
-        var b = Vector.newBuilder[A]
+        var b = RRBVector.newBuilder[A]
         val e = element(0)
         while (i < elems) {
             val m = math.min(n, elems - i)
@@ -25,6 +25,6 @@ abstract class VectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] wi
     }
 }
 
-class VectorBuilderIntBenchmark extends VectorAbstractBuilderBenchmark[Int] with VectorGeneratorType.IntGenerator
+class RRBVectorBuilderIntBenchmark extends RRBVectorAbstractBuilderBenchmark[Int] with VectorGeneratorType.IntGenerator
 
-class VectorBuilderStringBenchmark extends VectorAbstractBuilderBenchmark[String] with VectorGeneratorType.StringGenerator
+class RRBVectorBuilderStringBenchmark extends RRBVectorAbstractBuilderBenchmark[String] with VectorGeneratorType.StringGenerator

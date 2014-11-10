@@ -1,10 +1,10 @@
-package scala.collection.immutable.vectorbenchmarks.rrbvector
+package scala.collection.immutable.vectorbenchmarks.rrbvector.balanced
 
 import scala.collection.immutable.vectorbenchmarks._
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.IterationBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
-abstract class RRBVectorAbstractIterationBenchmark[A] extends IterationBenchmarks[A] with RRBVectorBenchmark[A]
+abstract class RRBVectorAbstractIterationBenchmark[A] extends IterationBenchmarks[A] with RRBVectorAbstractBenchmark[A]
 
 class RRBVectorIterationIntBenchmark extends RRBVectorAbstractIterationBenchmark[Int] with VectorGeneratorType.IntGenerator
 

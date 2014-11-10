@@ -1,17 +1,14 @@
-package scala.collection.immutable.vectorbenchmarks.vector
+package scala.collection.immutable.vectorbenchmarks.rrbvector.xunbalanced
 
-import org.scalameter.{Gen, PerformanceTest}
-import org.scalameter.PerformanceTest.OfflineRegressionReport
-
+import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.AppendBenchmarks
-import scala.collection.immutable.vectorutils.VectorGeneratorType
+import scala.collection.immutable.vectorutils._
 
 
-abstract class VectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with VectorBenchmark[A]
+abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with RRBVectorAbstractBenchmark[A]
 
-class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
-
-    def sum1(vec: Vector[Int], times: Int): Int = {
+class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
+    def sum1(vec: RRBVector[Int], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
@@ -23,7 +20,7 @@ class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with V
         sum
     }
 
-    def sum8(vec: Vector[Int], times: Int): Int = {
+    def sum8(vec: RRBVector[Int], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
@@ -35,7 +32,7 @@ class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with V
         sum
     }
 
-    def sum(vec: Vector[Int], n: Int, times: Int): Int = {
+    def sum(vec: RRBVector[Int], n: Int, times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
@@ -53,10 +50,9 @@ class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with V
 
 }
 
-class VectorAppendStringBenchmark extends VectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
+class RRBVectorAppendStringBenchmark extends RRBVectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
-
-    def sum1(vec: Vector[String], times: Int): Int = {
+    def sum1(vec: Vec, times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
@@ -67,7 +63,8 @@ class VectorAppendStringBenchmark extends VectorAbstractAppendBenchmark[String] 
         }
         sum
     }
-    def sum8(vec: Vector[String], times: Int): Int = {
+
+    def sum8(vec: RRBVector[String], times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0
@@ -79,7 +76,7 @@ class VectorAppendStringBenchmark extends VectorAbstractAppendBenchmark[String] 
         sum
     }
 
-    def sum(vec: Vector[String], n: Int, times: Int): Int = {
+    def sum(vec: RRBVector[String], n: Int, times: Int): Int = {
         var i = 0
         var v = vec
         var sum = 0

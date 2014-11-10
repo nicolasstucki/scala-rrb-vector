@@ -1,8 +1,7 @@
 package scala.collection.immutable.vectorbenchmarks.vector
 
-import scala.collection.immutable.vectorbenchmarks.VectorBenchmark
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAllocation
-import scala.collection.immutable.vectorutils.{BaseVectorGenerator, VectorGeneratorType}
+import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
 abstract class VectorAbstractMemoryAllocation[A] extends MemoryAllocation[A] with VectorBenchmark[A]

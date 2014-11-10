@@ -1,13 +1,11 @@
-package scala.collection.immutable.vectorbenchmarks.rrbvector
-import org.scalameter.Gen
+package scala.collection.immutable.vectorbenchmarks.rrbvector.balanced
 
 import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.AppendBenchmarks
-import scala.collection.immutable.vectorbenchmarks.RRBVectorBenchmark
 import scala.collection.immutable.vectorutils._
 
 
-abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with RRBVectorBenchmark[A]
+abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with RRBVectorAbstractBenchmark[A]
 
 class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
     def sum1(vec: RRBVector[Int], times: Int): Int = {

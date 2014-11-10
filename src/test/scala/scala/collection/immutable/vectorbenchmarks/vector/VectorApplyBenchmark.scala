@@ -3,7 +3,6 @@ package scala.collection.immutable.vectorbenchmarks.vector
 import org.scalameter.Gen
 
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ApplyBenchmarks
-import scala.collection.immutable.vectorbenchmarks.VectorBenchmark
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 

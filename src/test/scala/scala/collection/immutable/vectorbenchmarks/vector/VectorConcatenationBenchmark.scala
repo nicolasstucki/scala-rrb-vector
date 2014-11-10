@@ -1,6 +1,5 @@
 package scala.collection.immutable.vectorbenchmarks.vector
 
-import scala.collection.immutable.vectorbenchmarks.VectorBenchmark
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
