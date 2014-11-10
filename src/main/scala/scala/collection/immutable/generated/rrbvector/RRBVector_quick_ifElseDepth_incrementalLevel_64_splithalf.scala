@@ -1680,111 +1680,118 @@ else
                         display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]](index.>>(24).&(63)).asInstanceOf[Array[AnyRef]](index.>>(18).&(63)).asInstanceOf[Array[AnyRef]](index.>>(12).&(63)).asInstanceOf[Array[AnyRef]](index.>>(6).&(63)).asInstanceOf[Array[AnyRef]](index.&(63)).asInstanceOf[A]
                       else
                         throw new IllegalArgumentException();
-            final private[immutable] def gotoPos(index: Int, xor: Int): Unit = if (xor.<(64))
-              ()
-            else
-              if (xor.<(4096))
-                display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
-              else
-                if (xor.<(262144))
+            final private[immutable] def gotoPos(index: Int, xor: Int): Unit = if (xor.>=(64))
+              {
+                val d1 = if (xor.>=(4096))
                   {
-                    display1 = display2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
-                    display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
-                  }
-                else
-                  if (xor.<(16777216))
-                    {
-                      display2 = display3(index.>>(18).&(63)).asInstanceOf[Array[AnyRef]];
-                      display1 = display2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
-                      display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
-                    }
-                  else
-                    if (xor.<(1073741824))
+                    val d2 = if (xor.>=(262144))
                       {
-                        display3 = display4(index.>>(24).&(63)).asInstanceOf[Array[AnyRef]];
-                        display2 = display3(index.>>(18).&(63)).asInstanceOf[Array[AnyRef]];
-                        display1 = display2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
-                        display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
+                        val d3 = if (xor.>=(16777216))
+                          {
+                            val d4 = if (xor.>=(1073741824))
+                              {
+                                if (xor.>=(1073741824))
+                                  throw new IllegalArgumentException()
+                                else
+                                  ();
+                                val _d4 = display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]];
+                                display4 = _d4;
+                                _d4
+                              }
+                            else
+                              display4;
+                            val _d3 = d4(index.>>(24).&(63)).asInstanceOf[Array[AnyRef]];
+                            display3 = _d3;
+                            _d3
+                          }
+                        else
+                          display3;
+                        val _d2 = d3(index.>>(18).&(63)).asInstanceOf[Array[AnyRef]];
+                        display2 = _d2;
+                        _d2
                       }
                     else
-                      if (xor.<(16))
+                      display2;
+                    val _d1 = d2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
+                    display1 = _d1;
+                    _d1
+                  }
+                else
+                  display1;
+                display0 = d1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
+              }
+            else
+              ();
+            final private[immutable] def gotoNextBlockStart(index: Int, xor: Int): Unit = {
+              var idx = 0;
+              if (xor.>=(4096))
+                {
+                  if (xor.>=(262144))
+                    {
+                      if (xor.>=(16777216))
                         {
-                          display4 = display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]];
-                          display3 = display4(index.>>(24).&(63)).asInstanceOf[Array[AnyRef]];
-                          display2 = display3(index.>>(18).&(63)).asInstanceOf[Array[AnyRef]];
-                          display1 = display2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
-                          display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
+                          if (xor.>=(1073741824))
+                            {
+                              if (xor.>=(16))
+                                throw new IllegalArgumentException()
+                              else
+                                display4 = display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]];
+                              idx = 0
+                            }
+                          else
+                            idx = index.>>(24).&(63);
+                          display3 = display4(idx).asInstanceOf[Array[AnyRef]];
+                          idx = 0
                         }
                       else
-                        throw new IllegalArgumentException();
-            final private[immutable] def gotoNextBlockStart(index: Int, xor: Int): Unit = if (xor.<(4096))
-              display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
-            else
-              if (xor.<(262144))
-                {
-                  display1 = display2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
-                  display0 = display1(0).asInstanceOf[Array[AnyRef]]
-                }
-              else
-                if (xor.<(16777216))
-                  {
-                    display2 = display3(index.>>(18).&(63)).asInstanceOf[Array[AnyRef]];
-                    display1 = display2(0).asInstanceOf[Array[AnyRef]];
-                    display0 = display1(0).asInstanceOf[Array[AnyRef]]
-                  }
-                else
-                  if (xor.<(1073741824))
-                    {
-                      display3 = display4(index.>>(24).&(63)).asInstanceOf[Array[AnyRef]];
-                      display2 = display3(0).asInstanceOf[Array[AnyRef]];
-                      display1 = display2(0).asInstanceOf[Array[AnyRef]];
-                      display0 = display1(0).asInstanceOf[Array[AnyRef]]
+                        idx = index.>>(18).&(63);
+                      display2 = display3(idx).asInstanceOf[Array[AnyRef]];
+                      idx = 0
                     }
                   else
-                    if (xor.<(16))
-                      {
-                        display4 = display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]];
-                        display3 = display4(0).asInstanceOf[Array[AnyRef]];
-                        display2 = display3(0).asInstanceOf[Array[AnyRef]];
-                        display1 = display2(0).asInstanceOf[Array[AnyRef]];
-                        display0 = display1(0).asInstanceOf[Array[AnyRef]]
-                      }
-                    else
-                      throw new IllegalArgumentException();
-            final private[immutable] def gotoPrevBlockStart(index: Int, xor: Int): Unit = if (xor.<(4096))
-              display0 = display1(index.>>(6).&(63)).asInstanceOf[Array[AnyRef]]
-            else
-              if (xor.<(262144))
-                {
-                  display1 = display2(index.>>(12).&(63)).asInstanceOf[Array[AnyRef]];
-                  display0 = display1(63).asInstanceOf[Array[AnyRef]]
+                    idx = index.>>(12).&(63);
+                  display1 = display2(idx).asInstanceOf[Array[AnyRef]];
+                  idx = 0
                 }
               else
-                if (xor.<(16777216))
-                  {
-                    display2 = display3(index.>>(18).&(63)).asInstanceOf[Array[AnyRef]];
-                    display1 = display2(63).asInstanceOf[Array[AnyRef]];
-                    display0 = display1(63).asInstanceOf[Array[AnyRef]]
-                  }
-                else
-                  if (xor.<(1073741824))
+                idx = index.>>(6).&(63);
+              display0 = display1(idx).asInstanceOf[Array[AnyRef]]
+            };
+            final private[immutable] def gotoPrevBlockStart(index: Int, xor: Int): Unit = {
+              var idx = 63;
+              if (xor.>=(4096))
+                {
+                  if (xor.>=(262144))
                     {
-                      display3 = display4(index.>>(24).&(63)).asInstanceOf[Array[AnyRef]];
-                      display2 = display3(63).asInstanceOf[Array[AnyRef]];
-                      display1 = display2(63).asInstanceOf[Array[AnyRef]];
-                      display0 = display1(63).asInstanceOf[Array[AnyRef]]
+                      if (xor.>=(16777216))
+                        {
+                          if (xor.>=(1073741824))
+                            {
+                              if (xor.>=(16))
+                                throw new IllegalArgumentException()
+                              else
+                                display4 = display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]];
+                              idx = 63
+                            }
+                          else
+                            idx = index.>>(24).&(63);
+                          display3 = display4(idx).asInstanceOf[Array[AnyRef]];
+                          idx = 63
+                        }
+                      else
+                        idx = index.>>(18).&(63);
+                      display2 = display3(idx).asInstanceOf[Array[AnyRef]];
+                      idx = 63
                     }
                   else
-                    if (xor.<(16))
-                      {
-                        display4 = display5(index.>>(30).&(63)).asInstanceOf[Array[AnyRef]];
-                        display3 = display4(63).asInstanceOf[Array[AnyRef]];
-                        display2 = display3(63).asInstanceOf[Array[AnyRef]];
-                        display1 = display2(63).asInstanceOf[Array[AnyRef]];
-                        display0 = display1(63).asInstanceOf[Array[AnyRef]]
-                      }
-                    else
-                      throw new IllegalArgumentException();
+                    idx = index.>>(12).&(63);
+                  display1 = display2(idx).asInstanceOf[Array[AnyRef]];
+                  idx = 63
+                }
+              else
+                idx = index.>>(6).&(63);
+              display0 = display1(idx).asInstanceOf[Array[AnyRef]]
+            };
             final private[immutable] def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = if (xor.<(4096))
               {
                 if (depth.==(1))
