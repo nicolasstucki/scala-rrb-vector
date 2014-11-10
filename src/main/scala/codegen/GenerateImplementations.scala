@@ -76,6 +76,7 @@ object GenerateImplementations extends App {
     for {
         useDirectLevel <- Iterator(true, false)
         depthMatch <- Seq(DEPTH_MATCH_METHOD.WITH_MATCH, DEPTH_MATCH_METHOD.WITH_IF_ELSE_IF)
+        if !useDirectLevel || depthMatch == DEPTH_MATCH_METHOD.WITH_MATCH
         useCompleteRebalance <- Iterator(true, false)
         indexBits <- 5 to 7
         par_split_method <- Seq(PAR_SPLIT_METHOD.SPLIT_IN_COMPLETE_SUBTREES, PAR_SPLIT_METHOD.SPLIT_IN_HALF /*, PAR_SPLIT_METHOD.BLOCK_SPLIT */)
