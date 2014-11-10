@@ -309,7 +309,7 @@ trait VectorPointerCodeGen {
                     val newSizes = new Array[Int](oldSizes.length)
                     val lastSizesIndex = oldSizes.length - 1
                     Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex)
-                    newSizes(lastSizesIndex) = oldSizes(lastSizesIndex + deltaSize)
+                    newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
                     val idx = (stabilizationIndex >> ($blockIndexBits * currentDepth)) & $blockMask
                     val newDisplay = copyOf(display, idx, idx + 2)
                     newDisplay(display1.length - 1) = newSizes
