@@ -534,6 +534,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         iMid.+=(1)
                         iBot = 0
                         iSizes.+=(1)
+                        if (currentDepth != 2 && bot != null)
+                            withComputedSizes(bot, currentDepth - 1)
                     }
 
                 }
@@ -986,6 +988,8 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
         throw new NoSuchElementException("reached iterator end")
 }
 
+private[immutable] final class RRBVectorBranch[A](private[immutable] val endIndex: Int) extends RRBVectorPointer[A@uncheckedVariance]
+
 private[immutable] trait RRBVectorPointer[A] {
     final private[immutable] var display0: Array[AnyRef] = _
     final private[immutable] var display1: Array[AnyRef] = _
@@ -1390,29 +1394,29 @@ private[immutable] trait RRBVectorPointer[A] {
         //        } else d0 = display0
         //        d0(index.&(31)).asInstanceOf[A]
 
-//        val d0: Array[AnyRef] =
-//            if (xor >= 32) {
-//                val d1: Array[AnyRef] =
-//                    if (xor >= 1024) {
-//                        val d2: Array[AnyRef] =
-//                            if (xor >= 32768) {
-//                                val d3: Array[AnyRef] =
-//                                    if (xor >= 1048576) {
-//                                        val d4: Array[AnyRef] =
-//                                            if (xor >= 33554432) {
-//                                                if (xor >= 1073741824)
-//                                                    throw new IllegalArgumentException()
-//                                                display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
-//                                            } else display4
-//                                        d4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
-//                                    } else display3
-//                                d3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
-//                            } else display2
-//                        d2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
-//                    } else display1
-//                d1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
-//            } else display0
-//        d0(index.&(31)).asInstanceOf[A]
+        //        val d0: Array[AnyRef] =
+        //            if (xor >= 32) {
+        //                val d1: Array[AnyRef] =
+        //                    if (xor >= 1024) {
+        //                        val d2: Array[AnyRef] =
+        //                            if (xor >= 32768) {
+        //                                val d3: Array[AnyRef] =
+        //                                    if (xor >= 1048576) {
+        //                                        val d4: Array[AnyRef] =
+        //                                            if (xor >= 33554432) {
+        //                                                if (xor >= 1073741824)
+        //                                                    throw new IllegalArgumentException()
+        //                                                display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
+        //                                            } else display4
+        //                                        d4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
+        //                                    } else display3
+        //                                d3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
+        //                            } else display2
+        //                        d2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
+        //                    } else display1
+        //                d1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+        //            } else display0
+        //        d0(index.&(31)).asInstanceOf[A]
 
         if (xor.<(32))
             display0(index.&(31)).asInstanceOf[A]
@@ -1653,114 +1657,114 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     final private[immutable] def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = {
-        val d1 = new Array[AnyRef](33)
-        if (xor >= 1024) {
-            val d2 = new Array[AnyRef](33)
-            if (xor >= 32768) {
-                val d3 = new Array[AnyRef](33)
-                if (xor >= 1048576) {
-                    var d4: Array[AnyRef] = new Array[AnyRef](33)
-                    if (xor >= 33554432) {
-                        if (xor >= 1073741824) {
-                            throw new IllegalArgumentException()
-                        } else if (depth.==(5)) {
-                            val d5 = new Array[AnyRef](33)
-                            d5.update(0, display4)
-                            display5 = d5
-                            depth += 1
-                        }
-                        display5.update(index.>>(25).&(31), d4)
-                    } else if (depth.==(4)) {
-                        d4.update(0, display3)
-                        depth.+=(1)
-                    } else {
-                        d4 = display4
-                    }
-                    d4.update(index.>>(20).&(31), d3)
-                    display4 = d4
-                } else if (depth.==(3)) {
-                    d3.update(0, display2)
-                    depth.+=(1)
-                }
-                d3.update(index.>>(15).&(31), d2)
-                display3 = d3
-            } else if (depth.==(2)) {
-                d2.update(0, display1)
-                depth += 1
-            }
-            d2.update(index.>>(10).&(31), d1)
-            display2 = d2
-        } else if (depth.==(1)) {
-            d1.update(0, display0)
-            depth += 1
-        }
-        val d0 = new Array[AnyRef](32)
-        d1.update(index.>>(5).&(31), d0)
-        display1 = d1
-        display0 = d0
+        //        val d1 = new Array[AnyRef](33)
+        //        if (xor >= 1024) {
+        //            val d2 = new Array[AnyRef](33)
+        //            if (xor >= 32768) {
+        //                val d3 = new Array[AnyRef](33)
+        //                if (xor >= 1048576) {
+        //                    var d4: Array[AnyRef] = new Array[AnyRef](33)
+        //                    if (xor >= 33554432) {
+        //                        if (xor >= 1073741824) {
+        //                            throw new IllegalArgumentException()
+        //                        } else if (depth.==(5)) {
+        //                            val d5 = new Array[AnyRef](33)
+        //                            d5.update(0, display4)
+        //                            display5 = d5
+        //                            depth += 1
+        //                        }
+        //                        display5.update(index.>>(25).&(31), d4)
+        //                    } else if (depth.==(4)) {
+        //                        d4.update(0, display3)
+        //                        depth.+=(1)
+        //                    } else {
+        //                        d4 = display4
+        //                    }
+        //                    d4.update(index.>>(20).&(31), d3)
+        //                    display4 = d4
+        //                } else if (depth.==(3)) {
+        //                    d3.update(0, display2)
+        //                    depth.+=(1)
+        //                }
+        //                d3.update(index.>>(15).&(31), d2)
+        //                display3 = d3
+        //            } else if (depth.==(2)) {
+        //                d2.update(0, display1)
+        //                depth += 1
+        //            }
+        //            d2.update(index.>>(10).&(31), d1)
+        //            display2 = d2
+        //        } else if (depth.==(1)) {
+        //            d1.update(0, display0)
+        //            depth += 1
+        //        }
+        //        val d0 = new Array[AnyRef](32)
+        //        d1.update(index.>>(5).&(31), d0)
+        //        display1 = d1
+        //        display0 = d0
 
-        //        if (xor.<(1024)) {
-        //            if (depth.==(1)) {
-        //                display1 = new Array(33)
-        //                display1.update(0, display0)
-        //                depth.+=(1)
-        //            }
-        //            display0 = new Array(32)
-        //            display1.update(index.>>(5).&(31), display0)
-        //        } else if (xor.<(32768)) {
-        //            if (depth.==(2)) {
-        //                display2 = new Array(33)
-        //                display2.update(0, display1)
-        //                depth.+=(1)
-        //            }
-        //            display0 = new Array(32)
-        //            display1 = new Array(33)
-        //            display1.update(index.>>(5).&(31), display0)
-        //            display2.update(index.>>(10).&(31), display1)
-        //        } else if (xor.<(1048576)) {
-        //            if (depth.==(3)) {
-        //                display3 = new Array(33)
-        //                display3.update(0, display2)
-        //                depth.+=(1)
-        //            }
-        //            display0 = new Array(32)
-        //            display1 = new Array(33)
-        //            display2 = new Array(33)
-        //            display1.update(index.>>(5).&(31), display0)
-        //            display2.update(index.>>(10).&(31), display1)
-        //            display3.update(index.>>(15).&(31), display2)
-        //        } else if (xor.<(33554432)) {
-        //            if (depth.==(4)) {
-        //                display4 = new Array(33)
-        //                display4.update(0, display3)
-        //                depth.+=(1)
-        //            }
-        //            display0 = new Array(32)
-        //            display1 = new Array(33)
-        //            display2 = new Array(33)
-        //            display3 = new Array(33)
-        //            display1.update(index.>>(5).&(31), display0)
-        //            display2.update(index.>>(10).&(31), display1)
-        //            display3.update(index.>>(15).&(31), display2)
-        //            display4.update(index.>>(20).&(31), display3)
-        //        } else if (xor.<(1073741824)) {
-        //            if (depth.==(5)) {
-        //                display5 = new Array(33)
-        //                display5.update(0, display4)
-        //                depth.+=(1)
-        //            }
-        //            display0 = new Array(32)
-        //            display1 = new Array(33)
-        //            display2 = new Array(33)
-        //            display3 = new Array(33)
-        //            display4 = new Array(33)
-        //            display1.update(index.>>(5).&(31), display0)
-        //            display2.update(index.>>(10).&(31), display1)
-        //            display3.update(index.>>(15).&(31), display2)
-        //            display4.update(index.>>(20).&(31), display3)
-        //            display5.update(index.>>(25).&(31), display4)
-        //        } else
-        //            throw new IllegalArgumentException()
+        if (xor.<(1024)) {
+            if (depth.==(1)) {
+                display1 = new Array(33)
+                display1.update(0, display0)
+                depth.+=(1)
+            }
+            display0 = new Array(32)
+            display1.update(index.>>(5).&(31), display0)
+        } else if (xor.<(32768)) {
+            if (depth.==(2)) {
+                display2 = new Array(33)
+                display2.update(0, display1)
+                depth.+=(1)
+            }
+            display0 = new Array(32)
+            display1 = new Array(33)
+            display1.update(index.>>(5).&(31), display0)
+            display2.update(index.>>(10).&(31), display1)
+        } else if (xor.<(1048576)) {
+            if (depth.==(3)) {
+                display3 = new Array(33)
+                display3.update(0, display2)
+                depth.+=(1)
+            }
+            display0 = new Array(32)
+            display1 = new Array(33)
+            display2 = new Array(33)
+            display1.update(index.>>(5).&(31), display0)
+            display2.update(index.>>(10).&(31), display1)
+            display3.update(index.>>(15).&(31), display2)
+        } else if (xor.<(33554432)) {
+            if (depth.==(4)) {
+                display4 = new Array(33)
+                display4.update(0, display3)
+                depth.+=(1)
+            }
+            display0 = new Array(32)
+            display1 = new Array(33)
+            display2 = new Array(33)
+            display3 = new Array(33)
+            display1.update(index.>>(5).&(31), display0)
+            display2.update(index.>>(10).&(31), display1)
+            display3.update(index.>>(15).&(31), display2)
+            display4.update(index.>>(20).&(31), display3)
+        } else if (xor.<(1073741824)) {
+            if (depth.==(5)) {
+                display5 = new Array(33)
+                display5.update(0, display4)
+                depth.+=(1)
+            }
+            display0 = new Array(32)
+            display1 = new Array(33)
+            display2 = new Array(33)
+            display3 = new Array(33)
+            display4 = new Array(33)
+            display1.update(index.>>(5).&(31), display0)
+            display2.update(index.>>(10).&(31), display1)
+            display3.update(index.>>(15).&(31), display2)
+            display4.update(index.>>(20).&(31), display3)
+            display5.update(index.>>(25).&(31), display4)
+        } else
+            throw new IllegalArgumentException()
     }
 
     final private[immutable] def stabilize(): Unit = {
