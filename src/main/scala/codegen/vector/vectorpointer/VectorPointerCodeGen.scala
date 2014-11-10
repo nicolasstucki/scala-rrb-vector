@@ -372,7 +372,7 @@ trait VectorPointerCodeGen {
                     newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
                     val idx = (stabilizationIndex >> ($blockIndexBits * currentDepth)) & $blockMask
                     val newDisplay = copyOf(display, idx, idx + 2)
-                    newDisplay(display.length - 1) = newSizes
+                    newDisplay(newDisplay.length - 1) = newSizes
                     ${matchOnInt(q"currentDepth", 2 to 6, d => q"newDisplay(idx) = ${displayAt(d - 2)}; ${displayAt(d - 1)}(idx) = newDisplay; ..${if (d < 6) q"display = ${displayAt(d)}" :: Nil else Nil}")}
                     currentDepth += 1
                 }

@@ -1714,7 +1714,7 @@ else
                       newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
                       val idx = stabilizationIndex.>>((6).*(currentDepth)).&(63);
                       val newDisplay = copyOf(display, idx, idx.+(2));
-                      newDisplay.update(display.length.-(1), newSizes);
+                      newDisplay.update(newDisplay.length.-(1), newSizes);
                       currentDepth match {
                         case 2 => {
                           newDisplay.update(idx, display0);
