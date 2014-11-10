@@ -14,15 +14,14 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         if (height > 1) {
             performance of "iteration" config(
-              Key.exec.minWarmupRuns -> 300,
-              Key.exec.maxWarmupRuns -> 1000
+              Key.exec.minWarmupRuns -> 500,
+              Key.exec.maxWarmupRuns -> 1200
               ) in {
 
                 performance of "iterator: through 1M elements" in {
                     performance of s"Height $height" in {
                         using(generateVectors(from, to, by)) curve vectorName in { vec =>
                             var i = 0
-                            var a = 0
                             val until = 1000000
                             var it = vec.iterator
                             while (i < until) {

@@ -1366,65 +1366,76 @@ private[immutable] trait RRBVectorPointer[A] {
         throw new IllegalArgumentException()
 
     final private[immutable] def getElement(index: Int, xor: Int): A = {
-        var d0: Array[AnyRef] = null
-        if (xor >= 32) {
-            var d1: Array[AnyRef] = null
-            if (xor >= 1024) {
-                var d2: Array[AnyRef] = null
-                if (xor >= 32768) {
-                    var d3: Array[AnyRef] = null
-                    if (xor >= 1048576) {
-                        var d4: Array[AnyRef] = null
-                        if (xor >= 33554432) {
-                            if (xor >= 1073741824)
-                                throw new IllegalArgumentException()
-                            d4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
-                        } else d4 = display4
-                        d3 = d4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
-                    } else d3 = display3
-                    d2 = d3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
-                } else d2 = display2
-                d1 = d2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
-            } else d1 = display1
-            d0 = d1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
-        } else d0 = display0
-        d0(index.&(31)).asInstanceOf[A]
+        //        var d0: Array[AnyRef] = null
+        //        if (xor >= 32) {
+        //            var d1: Array[AnyRef] = null
+        //            if (xor >= 1024) {
+        //                var d2: Array[AnyRef] = null
+        //                if (xor >= 32768) {
+        //                    var d3: Array[AnyRef] = null
+        //                    if (xor >= 1048576) {
+        //                        var d4: Array[AnyRef] = null
+        //                        if (xor >= 33554432) {
+        //                            if (xor >= 1073741824)
+        //                                throw new IllegalArgumentException()
+        //                            d4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
+        //                        } else d4 = display4
+        //                        d3 = d4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
+        //                    } else d3 = display3
+        //                    d2 = d3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
+        //                } else d2 = display2
+        //                d1 = d2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
+        //            } else d1 = display1
+        //            d0 = d1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+        //        } else d0 = display0
+        //        d0(index.&(31)).asInstanceOf[A]
 
+//        val d0: Array[AnyRef] =
+//            if (xor >= 32) {
+//                val d1: Array[AnyRef] =
+//                    if (xor >= 1024) {
+//                        val d2: Array[AnyRef] =
+//                            if (xor >= 32768) {
+//                                val d3: Array[AnyRef] =
+//                                    if (xor >= 1048576) {
+//                                        val d4: Array[AnyRef] =
+//                                            if (xor >= 33554432) {
+//                                                if (xor >= 1073741824)
+//                                                    throw new IllegalArgumentException()
+//                                                display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
+//                                            } else display4
+//                                        d4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
+//                                    } else display3
+//                                d3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
+//                            } else display2
+//                        d2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
+//                    } else display1
+//                d1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+//            } else display0
+//        d0(index.&(31)).asInstanceOf[A]
 
-        //        if (xor.<(32))
-        //            display0(index.&(31)).asInstanceOf[A]
-        //        else
-        //        if (xor.<(1024))
-        //            display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-        //        else
-        //        if (xor.<(32768))
-        //            display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-        //        else
-        //        if (xor.<(1048576))
-        //            display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-        //        else
-        //        if (xor.<(33554432))
-        //            display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-        //        else
-        //        if (xor.<(1073741824))
-        //            display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-        //        else
-        //            throw new IllegalArgumentException()
+        if (xor.<(32))
+            display0(index.&(31)).asInstanceOf[A]
+        else
+        if (xor.<(1024))
+            display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
+        else
+        if (xor.<(32768))
+            display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
+        else
+        if (xor.<(1048576))
+            display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
+        else
+        if (xor.<(33554432))
+            display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
+        else
+        if (xor.<(1073741824))
+            display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
+        else
+            throw new IllegalArgumentException()
     }
 
     final private[immutable] def gotoPos(index: Int, xor: Int): Unit = {
-        //        if (xor >= 1073741824)
-        //            throw new IllegalArgumentException()
-        //        if (xor >= 33554432)
-        //            display4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
-        //        if (xor >= 1048576)
-        //            display3 = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
-        //        if (xor >= 32768)
-        //            display2 = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
-        //        if (xor >= 1024)
-        //            display1 = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
-        //        if (xor >= 32)
-        //            display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
 
         if (xor >= 32) {
             val d1 = if (xor >= 1024) {
@@ -1481,21 +1492,65 @@ private[immutable] trait RRBVectorPointer[A] {
 
     final private[immutable] def gotoNextBlockStart(index: Int, xor: Int): Unit = {
 
+        //        if (xor >= 1024) {
+        //            if (xor >= 32768) {
+        //                if (xor >= 1048576) {
+        //                    if (xor >= 33554432) {
+        //                        if (xor >= 1073741824) throw new IllegalArgumentException()
+        //                        else display4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
+        //                        display3 = display4(0).asInstanceOf[Array[AnyRef]]
+        //                    } else display3 = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
+        //                    display2 = display3(0).asInstanceOf[Array[AnyRef]]
+        //                } else display2 = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
+        //                display1 = display2(0).asInstanceOf[Array[AnyRef]]
+        //            } else display1 = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
+        //            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        //        } else display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+
+        var idx = 0
         if (xor >= 1024) {
             if (xor >= 32768) {
                 if (xor >= 1048576) {
                     if (xor >= 33554432) {
                         if (xor >= 1073741824) throw new IllegalArgumentException()
                         else display4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
-                        display3 = display4(0).asInstanceOf[Array[AnyRef]]
-                    } else display3 = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
-                    display2 = display3(0).asInstanceOf[Array[AnyRef]]
-                } else display2 = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
-                display1 = display2(0).asInstanceOf[Array[AnyRef]]
-            } else display1 = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
-            display0 = display1(0).asInstanceOf[Array[AnyRef]]
-        } else display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+                    } else idx = (index >> 20) & 31
+                    display3 = display4(idx).asInstanceOf[Array[AnyRef]]
+                    idx = 0
+                } else idx = (index >> 15) & 31
+                display2 = display3(idx).asInstanceOf[Array[AnyRef]]
+                idx = 0
+            } else idx = (index >> 10) & 31
+            display1 = display2(idx).asInstanceOf[Array[AnyRef]]
+            idx = 0
+        } else idx = (index >> 5) & 31
+        display0 = display1(idx).asInstanceOf[Array[AnyRef]]
 
+        //        if (xor < 1024) {
+        //            display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+        //        } else {
+        //            if (xor < 32768) {
+        //                display1 = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
+        //            } else {
+        //                if (xor < 1048576) {
+        //                    display2 = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
+        //                } else {
+        //                    if (xor < 33554432) {
+        //                        display3 = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
+        //                    } else {
+        //                        if (xor < 1073741824) {
+        //                            display4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
+        //                        } else {
+        //                            throw new IllegalArgumentException()
+        //                        }
+        //                        display3 = display4(0).asInstanceOf[Array[AnyRef]]
+        //                    }
+        //                    display2 = display3(0).asInstanceOf[Array[AnyRef]]
+        //                }
+        //                display1 = display2(0).asInstanceOf[Array[AnyRef]]
+        //            }
+        //            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+        //        }
 
         //        if (xor.<(1024))
         //            display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
@@ -1530,20 +1585,40 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     final private[immutable] def gotoPrevBlockStart(index: Int, xor: Int): Unit = {
+        //        if (xor >= 1024) {
+        //            if (xor >= 32768) {
+        //                if (xor >= 1048576) {
+        //                    if (xor >= 33554432) {
+        //                        if (xor >= 1073741824) throw new IllegalArgumentException()
+        //                        else display4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
+        //                        display3 = display4(31).asInstanceOf[Array[AnyRef]]
+        //                    } else display3 = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
+        //                    display2 = display3(31).asInstanceOf[Array[AnyRef]]
+        //                } else display2 = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
+        //                display1 = display2(31).asInstanceOf[Array[AnyRef]]
+        //            } else display1 = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
+        //            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+        //        } else display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+
+        var idx = 31
         if (xor >= 1024) {
             if (xor >= 32768) {
                 if (xor >= 1048576) {
                     if (xor >= 33554432) {
                         if (xor >= 1073741824) throw new IllegalArgumentException()
                         else display4 = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]]
-                        display3 = display4(31).asInstanceOf[Array[AnyRef]]
-                    } else display3 = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]]
-                    display2 = display3(31).asInstanceOf[Array[AnyRef]]
-                } else display2 = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]]
-                display1 = display2(31).asInstanceOf[Array[AnyRef]]
-            } else display1 = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]]
-            display0 = display1(31).asInstanceOf[Array[AnyRef]]
-        } else display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]
+                    } else idx = (index >> 20) & 31
+                    display3 = display4(idx).asInstanceOf[Array[AnyRef]]
+                    idx = 31
+                } else idx = (index >> 15) & 31
+                display2 = display3(idx).asInstanceOf[Array[AnyRef]]
+                idx = 31
+            } else idx = (index >> 10) & 31
+            display1 = display2(idx).asInstanceOf[Array[AnyRef]]
+            idx = 31
+        } else idx = (index >> 5) & 31
+        display0 = display1(idx).asInstanceOf[Array[AnyRef]]
+
 
         //        if (xor.<(1024))
         //            display0 = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]]

@@ -254,25 +254,85 @@ trait VectorPointerCodeGen {
     }
 
     def gotoPosCode(index: TermName, xor: TermName) = {
-        def loadDisplay(lvl: Int) = q"${displayAt(lvl - 1)} = ${displayAt(lvl)}(($index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-        ifInLevel(q"$xor", 0 to 5, lvl => q"..${(lvl to 1 by -1) map loadDisplay}", q"throw new IllegalArgumentException")
+        if (DIRECT_LEVEL) {
+            def loadDisplay(lvl: Int) = q"${displayAt(lvl - 1)} = ${displayAt(lvl)}(($index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
+            ifInLevel(q"$xor", 0 to 5, lvl => q"..${(lvl to 1 by -1) map loadDisplay}", q"throw new IllegalArgumentException")
+        } else {
+            def rec(lvl: Int): Tree = {
+                val di = TermName("d" + lvl)
+                val disub = TermName("_d" + (lvl - 1))
+                val recCall =
+                    if (lvl < 5) q" val $di = ${rec(lvl + 1)}"
+                    else q"if (xor >= 1073741824) throw new IllegalArgumentException"
+                val disubVal =
+                    if (lvl < 5) q"$di((index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
+                    else q"${displayAt(lvl)}((index>>${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
+                q"""
+                    if($xor >= ${1 << (blockIndexBits * lvl)}) {
+                        $recCall
+                        val $disub = $disubVal
+                        ${displayAt(lvl - 1)} = $disub
+                        $disub
+                    } else ${displayAt(lvl - 1)}
+                 """
+
+            }
+            val d1 = TermName("d1")
+            q"""
+                if($xor >= ${1 << (blockIndexBits)}) {
+                    val $d1 = ${rec(2)}
+                    ${displayAt(0)} = $d1((index >> ${blockIndexBits}) & $blockMask).asInstanceOf[Array[AnyRef]]
+                }
+             """
+        }
     }
 
 
-    def gotoNextBlockStartCode(index: TermName, xor: TermName) = {
-        def loadDisplayAtIndex(lvl: Int, i: Int) = {
-            if (i == lvl) q"${displayAt(i - 1)} = ${displayAt(i)}(($index >> ${blockIndexBits * i}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-            else q"${displayAt(i - 1)} = ${displayAt(i)}(0).asInstanceOf[Array[AnyRef]]"
+    private def gotoBlockStart(index: TermName, xor: TermName, defaultIndex: Int): Tree = {
+        if (!DIRECT_LEVEL) {
+            def gotoBlockStartRec(lvl: Int): Seq[Tree] = {
+                if (lvl == 6)
+                    q"""
+                        if($xor >= ${1 << (blockIndexBits * lvl)}) {
+                            throw new IllegalArgumentException
+                        } else {
+                            ${displayAt(lvl - 2)} = ${displayAt(lvl - 1)}((index >> ${(lvl - 1) * blockIndexBits}) & $blockMask).asInstanceOf[Array[AnyRef]]
+                        }
+                     """ :: Nil
+                else
+                    Seq(
+                        q"""
+                            if($xor >= ${1 << (blockIndexBits * lvl)}) {
+                                ..${gotoBlockStartRec(lvl + 1)}
+                                ..${if (lvl < 6) q"idx = $defaultIndex" :: Nil else Nil}
+                            } else {
+                                idx = ($index >> ${(lvl - 1) * blockIndexBits}) & $blockMask
+                            }
+                         """,
+                        q"${displayAt(lvl - 2)} = ${displayAt(lvl - 1)}(idx).asInstanceOf[Array[AnyRef]]"
+                    )
+            }
+            q"""
+                var idx = $defaultIndex
+                ..${gotoBlockStartRec(2)}
+             """
+        } else {
+            def loadDisplayAtIndex(lvl: Int, i: Int) = {
+                if (i == lvl) q"${displayAt(i - 1)} = ${displayAt(i)}(($index >> ${blockIndexBits * i}) & $blockMask).asInstanceOf[Array[AnyRef]]"
+                else q"${displayAt(i - 1)} = ${displayAt(i)}($defaultIndex).asInstanceOf[Array[AnyRef]]"
+            }
+            ifInLevel(q"$xor", 1 to 5, lvl => q"..${(lvl to 1 by -1) map (i => loadDisplayAtIndex(lvl, i))}", q"throw new IllegalArgumentException")
         }
-        ifInLevel(q"$xor", 1 to 5, lvl => q"..${(lvl to 1 by -1) map (i => loadDisplayAtIndex(lvl, i))}", q"throw new IllegalArgumentException")
+
+    }
+
+    def gotoNextBlockStartCode(index: TermName, xor: TermName) = {
+        gotoBlockStart(index, xor, 0)
+
     }
 
     def gotoPrevBlockStartCode(index: TermName, xor: TermName) = {
-        def loadDisplayAtIndex(lvl: Int, i: Int) = {
-            if (i == lvl) q"${displayAt(i - 1)} = ${displayAt(i)}(($index >> ${blockIndexBits * i}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-            else q"${displayAt(i - 1)} = ${displayAt(i)}($blockMask).asInstanceOf[Array[AnyRef]]"
-        }
-        ifInLevel(q"$xor", 1 to 5, lvl => q"..${(lvl to 1 by -1) map (i => loadDisplayAtIndex(lvl, i))}", q"throw new IllegalArgumentException")
+        gotoBlockStart(index, xor, blockMask)
     }
 
     def gotoNextBlockStartWritableCode(index: TermName, xor: TermName) = {
