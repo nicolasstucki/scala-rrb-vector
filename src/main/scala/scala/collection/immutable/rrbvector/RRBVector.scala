@@ -55,16 +55,16 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     def apply(index: Int): A = {
-        val _focusStart = this.focusStart
-        if (_focusStart.<=(index).&&(index.<(focusEnd))) {
-            val indexInFocus = index.-(_focusStart)
-            getElement(indexInFocus, indexInFocus.^(focus)).asInstanceOf[A]
-        }
-        else
-        if (0.<=(index).&&(index.<(endIndex)))
-            getElementFromRoot(index).asInstanceOf[A]
-        else
-            throw new IndexOutOfBoundsException(index.toString)
+        {
+            val _focusStart = this.focusStart
+            if (_focusStart.<=(index).&&(index.<(focusEnd))) {
+                val indexInFocus = index.-(_focusStart)
+                getElement(indexInFocus, indexInFocus.^(focus))
+            } else if (0.<=(index).&&(index.<(endIndex)))
+                getElementFromRoot(index)
+            else
+                throw new IndexOutOfBoundsException(index.toString)
+        }.asInstanceOf[A]
     }
 
     override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
@@ -932,7 +932,6 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
     private var endLo: Int = _
     private var _hasNext: Boolean = _
 
-
     final private[collection] def initIteratorFrom[B >: A](that: RRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that)
         _hasNext = startIndex < endIndex
@@ -987,8 +986,6 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
     else
         throw new NoSuchElementException("reached iterator end")
 }
-
-private[immutable] final class RRBVectorBranch[A](private[immutable] val endIndex: Int) extends RRBVectorPointer[A@uncheckedVariance]
 
 private[immutable] trait RRBVectorPointer[A] {
     final private[immutable] var display0: Array[AnyRef] = _
@@ -1107,22 +1104,26 @@ private[immutable] trait RRBVectorPointer[A] {
             case 5 => display4
             case 6 => display5
         }
-        while (currentDepth.>(1)) {
-            val sizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
-            if (sizes.==(null)) {
-                val depthShift = 5.*(currentDepth.-(1))
-                val idx = indexInSubTree.>>(depthShift)
-                indexInSubTree.-=(idx.<<(depthShift))
-                display = display(idx).asInstanceOf[Array[AnyRef]]
-            }
-            else {
-                val sizesIdx = getIndexInSizes(sizes, indexInSubTree)
-                if (sizesIdx.!=(0))
-                    indexInSubTree.-=(sizes(sizesIdx.-(1)))
 
-                display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
-            }
-            currentDepth.-=(1)
+        var sizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
+        do {
+            val sizesIdx = getIndexInSizes(sizes, indexInSubTree)
+            if (sizesIdx != 0)
+                indexInSubTree -= sizes(sizesIdx - 1)
+            display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
+            if (currentDepth > 2)
+                sizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
+            else
+                sizes = null
+            currentDepth -= 1
+        } while (sizes != null)
+
+        while (currentDepth > 1) {
+            val depthShift = 5 * (currentDepth - 1)
+            val idx = indexInSubTree >> depthShift
+            indexInSubTree -= idx << depthShift
+            display = display(idx).asInstanceOf[Array[AnyRef]]
+            currentDepth -= 1
         }
         display(indexInSubTree).asInstanceOf[A]
     }
@@ -1791,7 +1792,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
                 val idx = stabilizationIndex.>>(5.*(currentDepth)).&(31)
                 val newDisplay = copyOf(display, idx, idx.+(2))
-                newDisplay.update(display.length.-(1), newSizes)
+                newDisplay.update(newDisplay.length.-(1), newSizes)
                 currentDepth match {
                     case 2 =>
                         newDisplay.update(idx, display0)
