@@ -8,35 +8,13 @@ import scala.collection.immutable.vectorutils._
 abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with RRBVectorAbstractBenchmark[A]
 
 class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
-    def sum1(vec: RRBVector[Int], times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
-            v = vec :+ 0
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
 
-    def sum8(vec: RRBVector[Int], times: Int): Int = {
+    def append(vec: RRBVector[Int], n: Int, times: Int): Int = {
         var i = 0
-        var v = vec
+        var v: RRBVector[Int] = null
         var sum = 0
         while (i < times) {
-            v = vec :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
-
-    def sum(vec: RRBVector[Int], n: Int, times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
+            v = vec
             var j = 0
             while (j<n) {
                 v = vec :+ 0
@@ -52,35 +30,13 @@ class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] 
 
 class RRBVectorAppendStringBenchmark extends RRBVectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
-    def sum1(vec: Vec, times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
-            v = vec :+ ref
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
 
-    def sum8(vec: RRBVector[String], times: Int): Int = {
+    def append(vec: RRBVector[String], n: Int, times: Int): Int = {
         var i = 0
-        var v = vec
+        var v: RRBVector[String] = null
         var sum = 0
         while (i < times) {
-            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
-
-    def sum(vec: RRBVector[String], n: Int, times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
+            v = vec
             var j = 0
             while (j<n) {
                 v = vec :+ ref

@@ -11,35 +11,11 @@ abstract class VectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with
 
 class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
-    def sum1(vec: Vector[Int], times: Int): Int = {
+    def append(vec: Vector[Int], n: Int, times: Int): Int = {
         var i = 0
-        var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ 0
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
-
-    def sum8(vec: Vector[Int], times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
-            v = vec :+ 0 :+ 1 :+ 2 :+ 3 :+ 4 :+ 5 :+ 6 :+ 7
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
-
-    def sum(vec: Vector[Int], n: Int, times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
+            var v = vec
             var j = 0
             while (j<n) {
                 v = vec :+ 0
@@ -56,34 +32,11 @@ class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with V
 class VectorAppendStringBenchmark extends VectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
 
-    def sum1(vec: Vector[String], times: Int): Int = {
+    def append(vec: Vector[String], n: Int, times: Int): Int = {
         var i = 0
-        var v = vec
         var sum = 0
         while (i < times) {
-            v = vec :+ ref
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
-    def sum8(vec: Vector[String], times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
-            v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
-            sum += v.length
-            i += 1
-        }
-        sum
-    }
-
-    def sum(vec: Vector[String], n: Int, times: Int): Int = {
-        var i = 0
-        var v = vec
-        var sum = 0
-        while (i < times) {
+            var v = vec
             var j = 0
             while (j<n) {
                 v = vec :+ ref

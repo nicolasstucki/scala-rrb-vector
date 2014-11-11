@@ -8,9 +8,7 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
-    def sum1(vec: Vec, times: Int): Int
-    def sum8(vec: Vec, times: Int): Int
-    def sum(vec: Vec, n: Int, times: Int): Int
+    def append(vec: Vec, n: Int, times: Int): Int
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
@@ -27,7 +25,7 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = sum1(vec, times)
+                        sideeffect = append(vec, 1, times)
                     }
                 }
             }
@@ -36,7 +34,7 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = sum8(vec, times)
+                        sideeffect = append(vec, 1, times)
                     }
                 }
             }
@@ -45,16 +43,16 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = sum(vec, 32, times)
+                        sideeffect = append(vec, 32, times)
                     }
                 }
             }
 
-            performance of s"append 100 elements, $times times" in {
+            performance of s"append 100 elements, ${times/10} times" in {
 
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = sum(vec, 100, times)
+                        sideeffect = append(vec, 100, times/10)
                     }
                 }
             }
