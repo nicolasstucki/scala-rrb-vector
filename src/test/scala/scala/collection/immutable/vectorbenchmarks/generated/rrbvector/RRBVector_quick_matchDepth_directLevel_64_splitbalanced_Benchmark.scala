@@ -21,38 +21,12 @@ package scala {
               abstract class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Benchmark[A]
 
               class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_AppendInt_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def sum1(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], times: Int): Int = {
+                def append(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
@@ -70,42 +44,69 @@ package scala {
 
               class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_AppendString_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def sum1(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], times: Int): Int = {
+                def append(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
                           v = vec.:+(ref);
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              abstract class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Prepend_Benchmark[A] extends PrependBenchmarks[A] with RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Benchmark[A]
+
+              class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_PrependInt_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Prepend_Benchmark[Int] with VectorGeneratorType.IntGenerator {
+                def prepend(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$34 = 0;
+                            vec.+:(x$34)
+                          };
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_PrependString_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Prepend_Benchmark[String] with VectorGeneratorType.StringGenerator {
+                val ref = "";
+                def prepend(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$33 = ref;
+                            vec.+:(x$33)
+                          };
                           j.+=(1)
                         }
                       ;
@@ -194,38 +195,12 @@ package scala {
               abstract class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Benchmark[A]
 
               class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_AppendInt_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def sum1(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], times: Int): Int = {
+                def append(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
@@ -243,42 +218,69 @@ package scala {
 
               class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_AppendString_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def sum1(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], times: Int): Int = {
+                def append(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
                           v = vec.:+(ref);
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              abstract class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Prepend_Benchmark[A] extends PrependBenchmarks[A] with RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Benchmark[A]
+
+              class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_PrependInt_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Prepend_Benchmark[Int] with VectorGeneratorType.IntGenerator {
+                def prepend(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[Int], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$36 = 0;
+                            vec.+:(x$36)
+                          };
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              class RRBVector_quick_matchDepth_directLevel_64_splitbalanced_PrependString_Benchmark extends RRBVector_quick_matchDepth_directLevel_64_splitbalanced_Prepend_Benchmark[String] with VectorGeneratorType.StringGenerator {
+                val ref = "";
+                def prepend(vec: RRBVector_quick_matchDepth_directLevel_64_splitbalanced[String], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$35 = ref;
+                            vec.+:(x$35)
+                          };
                           j.+=(1)
                         }
                       ;

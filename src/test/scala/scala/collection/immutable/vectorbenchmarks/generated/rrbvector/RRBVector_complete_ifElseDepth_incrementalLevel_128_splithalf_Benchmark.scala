@@ -21,38 +21,12 @@ package scala {
               abstract class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Benchmark[A]
 
               class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_AppendInt_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def sum1(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], times: Int): Int = {
+                def append(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
@@ -70,42 +44,69 @@ package scala {
 
               class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_AppendString_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def sum1(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], times: Int): Int = {
+                def append(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
                           v = vec.:+(ref);
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              abstract class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Prepend_Benchmark[A] extends PrependBenchmarks[A] with RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Benchmark[A]
+
+              class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_PrependInt_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Prepend_Benchmark[Int] with VectorGeneratorType.IntGenerator {
+                def prepend(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$118 = 0;
+                            vec.+:(x$118)
+                          };
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_PrependString_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Prepend_Benchmark[String] with VectorGeneratorType.StringGenerator {
+                val ref = "";
+                def prepend(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$117 = ref;
+                            vec.+:(x$117)
+                          };
                           j.+=(1)
                         }
                       ;
@@ -194,38 +195,12 @@ package scala {
               abstract class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Benchmark[A]
 
               class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_AppendInt_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def sum1(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], times: Int): Int = {
+                def append(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0).:+(0);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
@@ -243,42 +218,69 @@ package scala {
 
               class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_AppendString_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def sum1(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], times: Int): Int = {
+                def append(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], n: Int, times: Int): Int = {
                   var i = 0;
-                  var v = vec;
                   var sum = 0;
                   while (i.<(times)) 
                     {
-                      v = vec.:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum8(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
-                      v = vec.:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref).:+(ref);
-                      sum.+=(v.length);
-                      i.+=(1)
-                    }
-                  ;
-                  sum
-                };
-                def sum(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], n: Int, times: Int): Int = {
-                  var i = 0;
-                  var v = vec;
-                  var sum = 0;
-                  while (i.<(times)) 
-                    {
+                      var v = vec;
                       var j = 0;
                       while (j.<(n)) 
                         {
                           v = vec.:+(ref);
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              abstract class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Prepend_Benchmark[A] extends PrependBenchmarks[A] with RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Benchmark[A]
+
+              class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_PrependInt_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Prepend_Benchmark[Int] with VectorGeneratorType.IntGenerator {
+                def prepend(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[Int], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$120 = 0;
+                            vec.+:(x$120)
+                          };
+                          j.+=(1)
+                        }
+                      ;
+                      sum.+=(v.length);
+                      i.+=(1)
+                    }
+                  ;
+                  sum
+                }
+              }
+
+              class RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_PrependString_Benchmark extends RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf_Prepend_Benchmark[String] with VectorGeneratorType.StringGenerator {
+                val ref = "";
+                def prepend(vec: RRBVector_complete_ifElseDepth_incrementalLevel_128_splithalf[String], n: Int, times: Int): Int = {
+                  var i = 0;
+                  var sum = 0;
+                  while (i.<(times)) 
+                    {
+                      var v = vec;
+                      var j = 0;
+                      while (j.<(n)) 
+                        {
+                          v = {
+                            val x$119 = ref;
+                            vec.+:(x$119)
+                          };
                           j.+=(1)
                         }
                       ;
