@@ -24,17 +24,17 @@ class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.balanced.RRBVectorAppendIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorAppendIntBenchmark]
 
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_32_splitbalanced_AppendInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_64_splitbalanced_AppendInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_128_splitbalanced_AppendInt_Benchmark]
-//
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_AppendInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_AppendInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_AppendInt_Benchmark]
-//
-//    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_AppendInt_Benchmark]
-//    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_AppendInt_Benchmark]
-//    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_32_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_64_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_128_splitbalanced_AppendInt_Benchmark]
+
+    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_AppendInt_Benchmark]
+
+    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_AppendInt_Benchmark]
+    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_AppendInt_Benchmark]
 }
 
 class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
