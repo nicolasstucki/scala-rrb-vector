@@ -138,7 +138,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                         testNonEmptyVectorProperties(vector, i)
                     }
                 }
-                i = (1.5 * i).toInt
+                i = (1.2 * i).toInt
             }
         }
 
