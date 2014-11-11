@@ -25,35 +25,11 @@ trait VectorBenchmarksGen {
                     abstract class ${vectorBenchmarkClassName("Append")}[A] extends AppendBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
                     class ${vectorBenchmarkClassName("AppendInt")} extends ${vectorBenchmarkClassName("Append")}[Int] with VectorGeneratorType.IntGenerator {
 
-                        def sum1(vec: $vectorClassName[Int], times: Int): Int = {
+                        def append(vec: $vectorClassName[Int], n: Int, times: Int): Int = {
                             var i = 0
-                            var v = vec
                             var sum = 0
                             while (i < times) {
-                                v = vec :+ 0
-                                sum += v.length
-                                i += 1
-                            }
-                            sum
-                        }
-
-                        def sum8(vec: $vectorClassName[Int], times: Int): Int = {
-                            var i = 0
-                            var v = vec
-                            var sum = 0
-                            while (i < times) {
-                                v = vec :+ 0 :+ 0 :+ 0 :+ 0 :+ 0 :+ 0 :+ 0 :+ 0
-                                sum += v.length
-                                i += 1
-                            }
-                            sum
-                        }
-
-                        def sum(vec: $vectorClassName[Int], n: Int, times: Int): Int = {
-                            var i = 0
-                            var v = vec
-                            var sum = 0
-                            while (i < times) {
+                                var v = vec
                                 var j = 0
                                 while (j<n) {
                                     v = vec :+ 0
@@ -67,38 +43,54 @@ trait VectorBenchmarksGen {
                     }
                     class ${vectorBenchmarkClassName("AppendString")} extends ${vectorBenchmarkClassName("Append")}[String] with VectorGeneratorType.StringGenerator {
                         val ref = ""
-                        def sum1(vec: $vectorClassName[String], times: Int): Int = {
-                            var i = 0
-                            var v = vec
-                            var sum = 0
-                            while (i < times) {
-                                v = vec :+ ref
-                                sum += v.length
-                                i += 1
-                            }
-                            sum
-                        }
-                        def sum8(vec: $vectorClassName[String], times: Int): Int = {
-                            var i = 0
-                            var v = vec
-                            var sum = 0
-                            while (i < times) {
-                                v = vec :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref :+ ref
-                                sum += v.length
-                                i += 1
-                            }
-                            sum
-                        }
 
-
-                        def sum(vec: $vectorClassName[String], n: Int, times: Int): Int = {
+                        def append(vec: $vectorClassName[String], n: Int, times: Int): Int = {
                             var i = 0
-                            var v = vec
                             var sum = 0
                             while (i < times) {
+                                var v = vec
                                 var j = 0
                                 while (j<n) {
                                     v = vec :+ ref
+                                    j += 1
+                                }
+                                sum += v.length
+                                i += 1
+                            }
+                            sum
+                        }
+                    }
+
+                    abstract class ${vectorBenchmarkClassName("Prepend")}[A] extends PrependBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    class ${vectorBenchmarkClassName("PrependInt")} extends ${vectorBenchmarkClassName("Prepend")}[Int] with VectorGeneratorType.IntGenerator {
+
+                        def prepend(vec: $vectorClassName[Int], n: Int, times: Int): Int = {
+                            var i = 0
+                            var sum = 0
+                            while (i < times) {
+                                var v = vec
+                                var j = 0
+                                while (j<n) {
+                                    v = 0 +: vec
+                                    j += 1
+                                }
+                                sum += v.length
+                                i += 1
+                            }
+                            sum
+                        }
+                    }
+                    class ${vectorBenchmarkClassName("PrependString")} extends ${vectorBenchmarkClassName("Prepend")}[String] with VectorGeneratorType.StringGenerator {
+                        val ref = ""
+
+                        def prepend(vec: $vectorClassName[String], n: Int, times: Int): Int = {
+                            var i = 0
+                            var sum = 0
+                            while (i < times) {
+                                var v = vec
+                                var j = 0
+                                while (j<n) {
+                                    v = ref +: vec
                                     j += 1
                                 }
                                 sum += v.length
