@@ -39,9 +39,13 @@ class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorApplyIntBenchmark]
+    include[vector.VectorApplyStringBenchmark]
 
     include[rrbvector.balanced.RRBVectorApplyIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorApplyIntBenchmark]
+
+    include[rrbvector.balanced.RRBVectorApplyStringBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorApplyStringBenchmark]
 
     // Benchmarks showed that directLevel is slower than incrementalLevel
     //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_32_splitbalanced_ApplyInt_Benchmark]
@@ -147,20 +151,20 @@ class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
 class RunPrependBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorPrependIntBenchmark]
 
-        include[rrbvector.balanced.RRBVectorPrependIntBenchmark]
-        include[rrbvector.xunbalanced.RRBVectorPrependIntBenchmark]
+    include[rrbvector.balanced.RRBVectorPrependIntBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorPrependIntBenchmark]
 
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_32_splitbalanced_PrependInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_64_splitbalanced_PrependInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_128_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_32_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_64_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_directLevel_128_splitbalanced_PrependInt_Benchmark]
 
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_PrependInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_PrependInt_Benchmark]
-//    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.balanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_PrependInt_Benchmark]
 
-//    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_PrependInt_Benchmark]
-//    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_PrependInt_Benchmark]
-//    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_32_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_64_splitbalanced_PrependInt_Benchmark]
+    //    include[generated.rrbvector.xunbalanced.RRBVector_complete_matchDepth_incrementalLevel_128_splitbalanced_PrependInt_Benchmark]
 }
 
 class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
