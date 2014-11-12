@@ -24,7 +24,7 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
     def length = vector.length
 
     def splitter: SeqSplitter[T] = {
-        val pit = new ParRRBVectorIterator(0, vector.length)
+        val pit = new ParRRBVectorSplitter(0, vector.length)
         pit.initIteratorFrom(vector)
         pit
     }
@@ -33,19 +33,16 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
 
     override def toVector: Vector[T] = vector.toVector
 
-    class ParRRBVectorIterator(_start: Int, _end: Int) extends RRBVectorIterator[T](_start, _end) with SeqSplitter[T] {
+    class ParRRBVectorSplitter(_start: Int, _end: Int) extends RRBVectorIterator[T](_start, _end) with SeqSplitter[T] {
         override def remaining: Int = super.remaining
 
         def dup: SeqSplitter[T] = {
-            val pit = new ParRRBVectorIterator(_end - remaining, _end)
+            val pit = new ParRRBVectorSplitter(_end - remaining, _end)
             pit.initIteratorFrom(this)
             pit
         }
 
-        def split: Seq[ParRRBVectorIterator] = {
-            //            val rem = remaining
-            //            if (rem >= 2) psplit(rem / 2, rem - rem / 2)
-            //            else Seq(this)
+        def split: Seq[ParRRBVectorSplitter] = {
             val rem = remaining
             if (rem >= 2) {
                 val splitSize =
@@ -55,10 +52,10 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
                     else if (rem < 1048576) 1 << 15
                     else if (rem < 33554432) 1 << 20
                     else 1 << 25
-                val splitted = new ArrayBuffer[ParRRBVectorIterator]
+                val splitted = new ArrayBuffer[ParRRBVectorSplitter]
                 var currentPos = _end - remaining
                 while (currentPos < rem) {
-                    val pit = new ParRRBVectorIterator(currentPos, math.min(currentPos + splitSize, _end))
+                    val pit = new ParRRBVectorSplitter(currentPos, math.min(currentPos + splitSize, _end))
                     pit.initIteratorFrom(this)
                     splitted += pit
                     currentPos += splitSize
@@ -69,11 +66,11 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
         }
 
 
-        def psplit(sizes: Int*): Seq[ParRRBVectorIterator] = {
-            val splitted = new ArrayBuffer[ParRRBVectorIterator]
+        def psplit(sizes: Int*): Seq[ParRRBVectorSplitter] = {
+            val splitted = new ArrayBuffer[ParRRBVectorSplitter]
             var currentPos = _end - remaining
             for (sz <- sizes) {
-                val pit = new ParRRBVectorIterator(currentPos, currentPos + sz)
+                val pit = new ParRRBVectorSplitter(currentPos, currentPos + sz)
                 pit.initIteratorFrom(this)
                 splitted += pit
                 currentPos += sz
