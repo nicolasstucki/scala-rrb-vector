@@ -15,7 +15,7 @@ trait VectorGeneratorGen {
 
                     override type Vec = ${vectorClassName}[$A]
 
-                    final def vectorClassName: String = $vectorName
+                    final def vectorClassName: String = ${vectorName()}
 
                     override final def tabulatedVector(n: Int): Vec = $vectorObjectName.tabulate(n)(element)
 

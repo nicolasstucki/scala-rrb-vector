@@ -355,7 +355,7 @@ trait VectorCodeGen {
         val branching = TermName("branching")
 
         def computeSizes: Seq[Tree] = {
-            if (COMPLETE_REBALANCE)
+            if (useCompleteRebalance)
                 Seq(q"val $branching = $v_computeBranching($displayLeft, $concat, $displayRight, $currentDepth)")
             else {
                 Seq(q"val tup = $v_computeNewSizes($displayLeft, $concat, $displayRight, $currentDepth)",
@@ -370,9 +370,9 @@ trait VectorCodeGen {
 
             ..$computeSizes
 
-            val top = new Array[AnyRef](${if (COMPLETE_REBALANCE) q"($branching >> ${2 * blockIndexBits}) + (if(($branching & ${blockMask | (blockMask << blockIndexBits)}) == 0) $blockInvariants else ${blockInvariants + 1})" else q"($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2)"})
+            val top = new Array[AnyRef](${if (useCompleteRebalance) q"($branching >> ${2 * blockIndexBits}) + (if(($branching & ${blockMask | (blockMask << blockIndexBits)}) == 0) $blockInvariants else ${blockInvariants + 1})" else q"($lengthSizes >> $blockIndexBits) + (if (($lengthSizes & $blockMask) == 0) 1 else 2)"})
 
-            var mid = new Array[AnyRef](${if (COMPLETE_REBALANCE) q"(if (($branching >> ${2 * blockIndexBits}) == 0) (($branching + ${blockWidth - 1}) >> $blockIndexBits) + $blockInvariants else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
+            var mid = new Array[AnyRef](${if (useCompleteRebalance) q"(if (($branching >> ${2 * blockIndexBits}) == 0) (($branching + ${blockWidth - 1}) >> $blockIndexBits) + $blockInvariants else ${blockWidth + blockInvariants})" else q"(if($lengthSizes <= $blockWidth) $lengthSizes else $blockWidth) + $blockInvariants"})
             var bot: Array[AnyRef] = null
 
             var iSizes = 0
@@ -414,7 +414,7 @@ trait VectorCodeGen {
                 while (i < displayEnd) {
                     val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]]
                     val displayValueEnd = displayValue.length - (if (currentDepth==2) 0 else 1)
-                    if ( /* iBot==0 && j==0 */ (iBot | j) == 0 && displayValueEnd == ${if (COMPLETE_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
+                    if ( /* iBot==0 && j==0 */ (iBot | j) == 0 && displayValueEnd == ${if (useCompleteRebalance) q"$blockWidth" else q"$sizes(iSizes)"}) {
                         if ($currentDepth!=2 && bot!=null) {
                             $v_withComputedSizes(bot, currentDepth - 1)
                             bot = null
@@ -424,11 +424,11 @@ trait VectorCodeGen {
                         iMid += 1
                         iSizes += 1
                     } else {
-                        val numElementsToCopy = math.min(displayValueEnd - j, ${if (COMPLETE_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
+                        val numElementsToCopy = math.min(displayValueEnd - j, ${if (useCompleteRebalance) q"$blockWidth" else q"$sizes(iSizes)"} - iBot)
                         if (iBot == 0) {
                             if ($currentDepth!=2 && bot!=null)
                                 $v_withComputedSizes(bot, currentDepth - 1)
-                            bot = new Array[AnyRef](${if (COMPLETE_REBALANCE) q"math.min($branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits), $blockWidth)" else q"$sizes(iSizes)"} + (if ($currentDepth == 2) 0 else $blockInvariants))
+                            bot = new Array[AnyRef](${if (useCompleteRebalance) q"math.min($branching - (iTop << ${2 * blockIndexBits}) - (iMid << $blockIndexBits), $blockWidth)" else q"$sizes(iSizes)"} + (if ($currentDepth == 2) 0 else $blockInvariants))
                             mid(iMid) = bot
                         }
                         Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
@@ -438,7 +438,7 @@ trait VectorCodeGen {
                             i += 1
                             j = 0
                         }
-                        if (iBot == ${if (COMPLETE_REBALANCE) q"$blockWidth" else q"$sizes(iSizes)"}) {
+                        if (iBot == ${if (useCompleteRebalance) q"$blockWidth" else q"$sizes(iSizes)"}) {
                             iMid += 1
                             iBot = 0
                             iSizes += 1
@@ -451,7 +451,7 @@ trait VectorCodeGen {
                         iTop += 1
                         iMid = 0
                         ..${
-            if (COMPLETE_REBALANCE) Seq(
+            if (useCompleteRebalance) Seq(
                 q"val remainingBranches = $branching - ((((iTop << $blockIndexBits) | iMid) << $blockIndexBits) | iBot)",
                 q"""
                     if (remainingBranches > 0) {

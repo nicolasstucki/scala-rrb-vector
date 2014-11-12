@@ -42,7 +42,7 @@ trait VectorMethodsGen {
                 concatenateDef,
                 rebalancedDef,
                 rebalancedLeafsDef,
-                if (COMPLETE_REBALANCE) computeBranchingDef else computeNewSizesDef,
+                if (useCompleteRebalance) computeBranchingDef else computeNewSizesDef,
                 withComputedSizesDef,
                 treeSizeDef,
                 takeFront0Def

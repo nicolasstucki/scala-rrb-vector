@@ -254,20 +254,16 @@ trait VectorPointerCodeGen {
     }
 
     def gotoPosCode(index: TermName, xor: TermName) = {
-        if (DIRECT_LEVEL) {
-            def loadDisplay(lvl: Int) = q"${displayAt(lvl - 1)} = ${displayAt(lvl)}(($index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-            ifInLevel(q"$xor", 0 to 5, lvl => q"..${(lvl to 1 by -1) map loadDisplay}", q"throw new IllegalArgumentException")
-        } else {
-            def rec(lvl: Int): Tree = {
-                val di = TermName("d" + lvl)
-                val disub = TermName("_d" + (lvl - 1))
-                val recCall =
-                    if (lvl < 5) q" val $di = ${rec(lvl + 1)}"
-                    else q"if (xor >= 1073741824) throw new IllegalArgumentException"
-                val disubVal =
-                    if (lvl < 5) q"$di((index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-                    else q"${displayAt(lvl)}((index>>${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-                q"""
+        def rec(lvl: Int): Tree = {
+            val di = TermName("d" + lvl)
+            val disub = TermName("_d" + (lvl - 1))
+            val recCall =
+                if (lvl < 5) q" val $di = ${rec(lvl + 1)}"
+                else q"if (xor >= 1073741824) throw new IllegalArgumentException"
+            val disubVal =
+                if (lvl < 5) q"$di((index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
+                else q"${displayAt(lvl)}((index>>${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
+            q"""
                     if($xor >= ${1 << (blockIndexBits * lvl)}) {
                         $recCall
                         val $disub = $disubVal
@@ -276,32 +272,30 @@ trait VectorPointerCodeGen {
                     } else ${displayAt(lvl - 1)}
                  """
 
-            }
-            val d1 = TermName("d1")
-            q"""
-                if($xor >= ${1 << blockIndexBits}) {
-                    val $d1 = ${rec(2)}
-                    ${displayAt(0)} = $d1((index >> $blockIndexBits) & $blockMask).asInstanceOf[Array[AnyRef]]
-                }
-             """
         }
+        val d1 = TermName("d1")
+        q"""
+            if($xor >= ${1 << blockIndexBits}) {
+                val $d1 = ${rec(2)}
+                ${displayAt(0)} = $d1((index >> $blockIndexBits) & $blockMask).asInstanceOf[Array[AnyRef]]
+            }
+         """
     }
 
 
     private def gotoBlockStart(index: TermName, xor: TermName, defaultIndex: Int): Tree = {
-        if (!DIRECT_LEVEL) {
-            def gotoBlockStartRec(lvl: Int): Seq[Tree] = {
-                if (lvl == 6)
-                    q"""
+        def gotoBlockStartRec(lvl: Int): Seq[Tree] = {
+            if (lvl == 6)
+                q"""
                         if($xor >= ${1 << (blockIndexBits * lvl)}) {
                             throw new IllegalArgumentException
                         } else {
                             ${displayAt(lvl - 2)} = ${displayAt(lvl - 1)}((index >> ${(lvl - 1) * blockIndexBits}) & $blockMask).asInstanceOf[Array[AnyRef]]
                         }
                      """ :: Nil
-                else
-                    Seq(
-                        q"""
+            else
+                Seq(
+                    q"""
                             if($xor >= ${1 << (blockIndexBits * lvl)}) {
                                 ..${gotoBlockStartRec(lvl + 1)}
                                 ..${if (lvl < 6) q"idx = $defaultIndex" :: Nil else Nil}
@@ -309,21 +303,13 @@ trait VectorPointerCodeGen {
                                 idx = ($index >> ${(lvl - 1) * blockIndexBits}) & $blockMask
                             }
                          """,
-                        q"${displayAt(lvl - 2)} = ${displayAt(lvl - 1)}(idx).asInstanceOf[Array[AnyRef]]"
-                    )
-            }
-            q"""
-                var idx = $defaultIndex
-                ..${gotoBlockStartRec(2)}
-             """
-        } else {
-            def loadDisplayAtIndex(lvl: Int, i: Int) = {
-                if (i == lvl) q"${displayAt(i - 1)} = ${displayAt(i)}(($index >> ${blockIndexBits * i}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-                else q"${displayAt(i - 1)} = ${displayAt(i)}($defaultIndex).asInstanceOf[Array[AnyRef]]"
-            }
-            ifInLevel(q"$xor", 1 to 5, lvl => q"..${(lvl to 1 by -1) map (i => loadDisplayAtIndex(lvl, i))}", q"throw new IllegalArgumentException")
+                    q"${displayAt(lvl - 2)} = ${displayAt(lvl - 1)}(idx).asInstanceOf[Array[AnyRef]]"
+                )
         }
-
+        q"""
+            var idx = $defaultIndex
+            ..${gotoBlockStartRec(2)}
+         """
     }
 
     def gotoNextBlockStartCode(index: TermName, xor: TermName) = {
@@ -484,7 +470,6 @@ trait VectorPointerCodeGen {
     }
 
     protected def matchOnInt(num: Tree, numCases: Seq[Int], code: Int => Tree, defaultOption: Option[Tree] = None): Tree = {
-
         num match {
             case q"${d: Int}" =>
                 if (numCases.contains(d))
@@ -495,35 +480,10 @@ trait VectorPointerCodeGen {
                 else
                     code(d)
             case _ =>
-                DEPTH_MATCH match {
-                    case DEPTH_MATCH_METHOD.WITH_MATCH =>
-                        val cases = numCases map (i => cq"$i => ${code(i)}")
-                        defaultOption match {
-                            case Some(default) => q"$num match { case ..$cases; case _ => $default }"
-                            case None => q"$num match { case ..$cases }"
-                        }
-                    case DEPTH_MATCH_METHOD.WITH_IF_ELSE_IF =>
-                        def matchOnIntRec(numRef: TermName, numCases: Seq[Int]): Tree = {
-                            numCases.headOption match {
-                                case Some(caseNumber) =>
-                                    q"if($numRef == $caseNumber) ${code(caseNumber)} else ${matchOnIntRec(numRef, numCases.tail)}"
-                                case None =>
-                                    defaultOption match {
-                                        case Some(default) => default
-                                        case None => q"()"
-                                    }
-                            }
-                        }
-                        num match {
-                            case q"${numRef: TermName}" =>
-                                matchOnIntRec(numRef, numCases)
-                            case _ =>
-                                val numRef = TermName("valueToMatch")
-                                q"""
-                                    val $numRef = $num
-                                    ${matchOnIntRec(numRef, numCases)}
-                                 """
-                        }
+                val cases = numCases map (i => cq"$i => ${code(i)}")
+                defaultOption match {
+                    case Some(default) => q"$num match { case ..$cases; case _ => $default }"
+                    case None => q"$num match { case ..$cases }"
                 }
         }
     }
@@ -541,17 +501,12 @@ trait VectorPointerCodeGen {
     }
 
     protected def ifInLevel(xor: Tree, levels: Seq[Int], code: Int => Tree, ifNotInLevels: Tree): Tree = {
-        if (DIRECT_LEVEL) {
-            matchOnInt(getIndexLevel(xor), levels, code, Some(ifNotInLevels))
-        } else {
-            if (levels.isEmpty) ifNotInLevels
-            else {
-                val currentLevel = levels.head
-                val ifClause = code(currentLevel)
-                val elseClause = ifInLevel(xor, levels.tail, code, ifNotInLevels)
-                q"if (${indexIsInLevel(xor, q"$currentLevel")}) $ifClause else $elseClause"
-            }
+        if (levels.isEmpty) ifNotInLevels
+        else {
+            val currentLevel = levels.head
+            val ifClause = code(currentLevel)
+            val elseClause = ifInLevel(xor, levels.tail, code, ifNotInLevels)
+            q"if (${indexIsInLevel(xor, q"$currentLevel")}) $ifClause else $elseClause"
         }
-
     }
 }

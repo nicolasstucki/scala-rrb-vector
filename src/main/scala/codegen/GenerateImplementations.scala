@@ -45,7 +45,7 @@ object GenerateImplementations extends App {
 
         def outputFile = {
             val subpackagePath = subpackage.toString.replace('.', '/')
-            s"./src/main/scala/scala/collection/immutable/generated/$subpackagePath/$vectorName.scala"
+            s"./src/main/scala/scala/collection/immutable/generated/$subpackagePath/${vectorName()}.scala"
         }
 
         def outputGeneratorFile = {
@@ -67,30 +67,23 @@ object GenerateImplementations extends App {
             saveToFile(outputFile, showCode(generateVectorPackage()) + "\n\n" + showCode(generateParVectorPackage()))
             saveToFile(outputGeneratorFile, showCode(generateVectorGeneratorClass()))
             saveToFile(outputTestFile, showCode(generateVectorTestClasses()))
-            saveToFile(outputBenchmarkFile, showCode(generateVectorBenchmarkClasses()))
+            if (!useAssertions) {
+                saveToFile(outputBenchmarkFile, showCode(generateVectorBenchmarkClasses()))
+            }
         }
     }
 
     val USE_ASSERTIONS = false
 
     for {
-        useDirectLevel <- Iterator(true, false)
-        depthMatch <- Seq(DEPTH_MATCH_METHOD.WITH_MATCH, DEPTH_MATCH_METHOD.WITH_IF_ELSE_IF)
-        if !useDirectLevel || depthMatch == DEPTH_MATCH_METHOD.WITH_MATCH
-        useCompleteRebalance <- Iterator(true, false)
-        indexBits <- 5 to 7
-        par_split_method <- Seq(PAR_SPLIT_METHOD.SPLIT_IN_COMPLETE_SUBTREES, PAR_SPLIT_METHOD.SPLIT_IN_HALF /*, PAR_SPLIT_METHOD.BLOCK_SPLIT */)
+        completeRebalanceOn <- Iterator(true, false)
+        assertionsOn <- Iterator(true, false)
+        indexBits <- 5 to 8
     } {
-
-
         val packageGenerator = new VectorImplementation {
-
-            override protected val PAR_SPLIT = par_split_method
-            override protected val DEPTH_MATCH = depthMatch
-            protected val COMPLETE_REBALANCE: Boolean = useCompleteRebalance
-            protected val DIRECT_LEVEL: Boolean = useDirectLevel
+            protected val useCompleteRebalance: Boolean = completeRebalanceOn
+            protected val useAssertions: Boolean = assertionsOn
             override protected val blockIndexBits: Int = indexBits
-            override protected val useAssertions: Boolean = USE_ASSERTIONS
         }
         packageGenerator.exportCodeToFiles()
     }

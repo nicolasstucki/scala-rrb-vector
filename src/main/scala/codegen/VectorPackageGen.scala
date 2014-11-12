@@ -34,7 +34,7 @@ trait VectorPackageGen {
                     import scala.compat.Platform
                     import scala.annotation.unchecked.uncheckedVariance
                     import scala.collection.generic.{GenericCompanion, GenericTraversableTemplate, CanBuildFrom, IndexedSeqFactory}
-                    import scala.collection.parallel.immutable.generated.rrbvector.$parVectorClassName
+                    import scala.collection.parallel.immutable.generated.$subpackage.$parVectorClassName
                     ..${generateClassesDef()}
                 }
              """)
