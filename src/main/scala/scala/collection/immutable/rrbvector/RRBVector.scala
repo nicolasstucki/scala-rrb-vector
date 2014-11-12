@@ -689,7 +689,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 var _currentDepth = currentDepth
                 var acc = 0
                 while (_currentDepth.>(1)) {
-                    acc += (_tree.length - 2) * (1.<<(5.*(_currentDepth.-(1))))
+                    acc += (_tree.length - 2) * (1 << (5 * (_currentDepth - 1)))
                     _currentDepth.-=(1)
                     _tree = _tree(_tree.length - 2).asInstanceOf[Array[AnyRef]]
                 }
@@ -1063,32 +1063,6 @@ private[immutable] trait RRBVectorPointer[A] {
         depth = 1
     }
 
-    final private[collection] def rootSizesIterator(): Iterator[Int] = {
-        val _root = root().asInstanceOf[Array[AnyRef]]
-        if (depth == 0) {
-            Iterator.empty
-        } else if (depth == 1) {
-            Iterator.fill(_root.length)(1)
-        } else {
-            val sizes = _root(_root.length - 1).asInstanceOf[Array[Int]]
-            if (sizes != null) {
-                val len = sizes.length
-                val treeSizes = new Array[Int](len)
-                treeSizes(0) = sizes(0)
-                var i = 1
-                while (i < len) {
-                    treeSizes(i) = sizes(i) - sizes(i - 1)
-                    i += 1
-                }
-                treeSizes.iterator
-            } else {
-
-                ???
-            }
-        }
-
-    }
-
     final private[immutable] def root(): AnyRef = depth match {
         case 0 => null
         case 1 => display0
@@ -1148,8 +1122,8 @@ private[immutable] trait RRBVectorPointer[A] {
 
     final private def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
         var is = 0
-        while (sizes(is).<=(indexInSubTree))
-            is.+=(1)
+        while (sizes(is) <=indexInSubTree)
+            is+=1
         is
     }
 
@@ -1160,7 +1134,7 @@ private[immutable] trait RRBVectorPointer[A] {
         var _focusRelax: Int = 0
         var continue: Boolean = currentDepth.>(1)
         while (continue)
-            if (currentDepth.<=(1))
+            if (currentDepth <= 1)
                 continue = false
             else {
                 val display = currentDepth match {
@@ -1187,14 +1161,14 @@ private[immutable] trait RRBVectorPointer[A] {
                         _endIndex = _startIndex.+(sizes(is))
 
                     if (is.!=(0))
-                        _startIndex.+=(sizes(is.-(1)))
+                        _startIndex += sizes(is.-(1))
 
                     currentDepth.-=(1)
                     _focusRelax.|=(is.<<(5.*(currentDepth)))
                 }
             }
-        val indexInFocus = index.-(_startIndex)
-        gotoPos(indexInFocus, 1.<<(5.*(currentDepth.-(1))))
+        val indexInFocus = index - _startIndex
+        gotoPos(indexInFocus, 1 << (5 * (currentDepth - 1)))
         initFocus(indexInFocus, _startIndex, _endIndex, currentDepth, _focusRelax)
     }
 
@@ -1909,8 +1883,6 @@ private[immutable] trait RRBVectorPointer[A] {
             val stabilizationIndex = focus.|(focusRelax)
             val deltaSize = display0.length.-(display1(stabilizationIndex.>>(5).&(31)).asInstanceOf[Array[AnyRef]].length)
             val _focusDepth = focusDepth
-            //            copyDisplays(_focusDepth, stabilizationIndex)
-            //            stabilizeDisplayPath(_focusDepth, stabilizationIndex)
             copyDisplaysAndStabilizeDisplayPath(_focusDepth, stabilizationIndex)
             var currentDepth = _focusDepth.+(1)
             var display = currentDepth match {
