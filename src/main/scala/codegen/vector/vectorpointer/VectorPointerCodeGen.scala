@@ -36,7 +36,10 @@ trait VectorPointerCodeGen {
     protected[vectorpointer] val gotoPosFromRoot = TermName("gotoPosFromRoot")
     val setupNewBlockInNextBranch = TermName("setupNewBlockInNextBranch")
 
-    val getElement = TermName("getElement")
+    val getElement = TermName("getElem")
+
+    def getElementI(i: Int) = TermName("getElem" + i)
+
     val gotoPos = TermName("gotoPos")
 
     val gotoNextBlockStart = TermName("gotoNextBlockStart")
@@ -245,12 +248,16 @@ trait VectorPointerCodeGen {
     }
 
     private[codegen] def getElementCode(index: TermName, xor: TermName): Tree = {
+        ifInLevel(q"$xor", 0 to 5, lvl => q"${getElementI(lvl)}(${displayAt(lvl)}, $index)", q"throw new IllegalArgumentException")
+    }
+
+    private[codegen] def getElementICode(i: Int, block: TermName, index: TermName): Tree = {
         @tailrec def getElemFromDisplay(display: Tree, level: Int): Tree = {
             val idx = branchIndex(q"$index", q"$level")
             if (level == 0) q"$display($idx).asInstanceOf[$A]"
             else getElemFromDisplay(q"$display($idx).asInstanceOf[Array[AnyRef]]", level - 1)
         }
-        ifInLevel(q"$xor", 0 to 5, i => getElemFromDisplay(displayAt(i), i), q"throw new IllegalArgumentException")
+        getElemFromDisplay(displayAt(i), i)
     }
 
     def gotoPosCode(index: TermName, xor: TermName) = {

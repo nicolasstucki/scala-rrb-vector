@@ -17,10 +17,12 @@ trait VectorPointerMethodsGen {
         fields = fields ++ Seq(focusStart, focusEnd, focusDepth, focus, focusRelax).map(tn => fieldDef(tn, tq"Int", Some(q"0")))
         fields = fields :+ q"private[immutable] def $endIndex: Int"
 
-        val methods = Seq(initWithFocusFromDef, initFocusDef, initFromRootDef, initFromDef, initSingletonDef, rootDef,
-            focusOnDef, getElementFromRootDef, getIndexInSizesDef, gotoPosFromRootDef, setupNewBlockInNextBranchDef,
-            getElementDef, gotoPosDef, gotoNextBlockStartDef, gotoPrevBlockStartDef, gotoNextBlockStartWritableDef,
-            stabilizeDef, copyDisplaysDef, copyDisplaysTopDef, stabilizeDisplayPathDef, cleanTopDef, copyOfDef)
+        val methods =
+            Seq(initWithFocusFromDef, initFocusDef, initFromRootDef, initFromDef, initSingletonDef, rootDef,
+                focusOnDef, getElementFromRootDef, getIndexInSizesDef, gotoPosFromRootDef, setupNewBlockInNextBranchDef,
+                gotoPosDef, gotoNextBlockStartDef, gotoPrevBlockStartDef, gotoNextBlockStartWritableDef,
+                stabilizeDef, copyDisplaysDef, copyDisplaysTopDef, stabilizeDisplayPathDef, cleanTopDef, copyOfDef, getElementDef) ++
+              ((0 to 5) map getElementIDef)
 
         displays ++ fields ++ methods
     }
@@ -109,6 +111,13 @@ trait VectorPointerMethodsGen {
         val xor = TermName("xor")
         val code = getElementCode(index, xor)
         q"private[immutable] final def $getElement($index: Int, $xor: Int): $A = $code"
+    }
+
+    private def getElementIDef(i: Int): Tree = {
+        val block = TermName("block")
+        val index = TermName("index")
+        val code = getElementICode(i, block, index)
+        q"private final def ${getElementI(i)}($block: Array[AnyRef], $index: Int): $A = $code"
     }
 
     private def gotoPosDef: Tree = {

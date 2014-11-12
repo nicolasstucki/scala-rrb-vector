@@ -55,7 +55,7 @@ package scala {
               if (_focusStart.<=(index).&&(index.<(focusEnd)))
                 {
                   val indexInFocus = index.-(_focusStart);
-                  getElement(indexInFocus, indexInFocus.^(focus)).asInstanceOf[A]
+                  getElem(indexInFocus, indexInFocus.^(focus)).asInstanceOf[A]
                 }
               else
                 if ((0).<=(index).&&(index.<(endIndex)))
@@ -1524,25 +1524,6 @@ else
                       }
                     else
                       throw new IllegalArgumentException();
-            final private[immutable] def getElement(index: Int, xor: Int): A = if (xor.<(32))
-              display0(index.&(31)).asInstanceOf[A]
-            else
-              if (xor.<(1024))
-                display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-              else
-                if (xor.<(32768))
-                  display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-                else
-                  if (xor.<(1048576))
-                    display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-                  else
-                    if (xor.<(33554432))
-                      display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-                    else
-                      if (xor.<(1073741824))
-                        display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
-                      else
-                        throw new IllegalArgumentException();
             final private[immutable] def gotoPos(index: Int, xor: Int): Unit = if (xor.>=(32))
               {
                 val d1 = if (xor.>=(1024))
@@ -2008,7 +1989,32 @@ else
               val newArray = new Array[AnyRef](newSize);
               Platform.arraycopy(array, 0, newArray, 0, numElements);
               newArray
-            }
+            };
+            final private[immutable] def getElem(index: Int, xor: Int): A = if (xor.<(32))
+              getElem0(display0, index)
+            else
+              if (xor.<(1024))
+                getElem1(display1, index)
+              else
+                if (xor.<(32768))
+                  getElem2(display2, index)
+                else
+                  if (xor.<(1048576))
+                    getElem3(display3, index)
+                  else
+                    if (xor.<(33554432))
+                      getElem4(display4, index)
+                    else
+                      if (xor.<(1073741824))
+                        getElem5(display5, index)
+                      else
+                        throw new IllegalArgumentException();
+            final private def getElem0(block: Array[AnyRef], index: Int): A = display0(index.&(31)).asInstanceOf[A];
+            final private def getElem1(block: Array[AnyRef], index: Int): A = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem2(block: Array[AnyRef], index: Int): A = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem3(block: Array[AnyRef], index: Int): A = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem4(block: Array[AnyRef], index: Int): A = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem5(block: Array[AnyRef], index: Int): A = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
           }
         }
       }
