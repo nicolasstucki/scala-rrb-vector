@@ -18,6 +18,8 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     lazy private val EMPTY_VECTOR = new RRBVector[Nothing](0)
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
+
+    private[immutable] final val compileAssertions = true
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
@@ -83,14 +85,14 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 resultVector.focusOn(_endIndex.-(1))
             }
 
-            val elemIndexInBlock = _endIndex.-(resultVector.focusStart).&(31)
+            val elemIndexInBlock = (_endIndex - resultVector.focusStart) & 31
             if /* next element will go in a new block position */ (elemIndexInBlock == 0) {
                 if (resultVector.dirty) {
                     resultVector.stabilize()
                     resultVector.dirty = false
                 }
                 resultVector.appendBackSetupNewBlock()
-                resultVector.display0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef])
+                resultVector.display0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
                 resultVector.asInstanceOf[That]
             } else /* if next element will go in current block position */ {
                 resultVector.dirty = true
@@ -99,6 +101,40 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 Platform.arraycopy(resultVector.display0, 0, d0, 0, elemIndexInBlock)
                 d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
                 resultVector.display0 = d0
+                resultVector.asInstanceOf[That]
+            }
+        }
+    else
+        super.:+(elem)(bf)
+
+    override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
+        if (this.endIndex == 0) {
+            val resultVector = new RRBVector[B](1)
+            resultVector.initSingleton(elem)
+            resultVector.asInstanceOf[That]
+        } else {
+            val resultVector = new RRBVector[B](this.endIndex + 1)
+            resultVector.initWithFocusFrom(this)
+            if (resultVector.focusStart != 0 || (resultVector.focus & -32) != 0) {
+                /* the current focused block is not on the left most leaf block of the vector */
+                if (this.dirty) {
+                    resultVector.stabilize()
+                }
+                resultVector.focusOn(0)
+            }
+
+            val newD0len = display0.length + 1
+            if /* element fits in current block */ (newD0len <= 32) {
+                resultVector.focusEnd = newD0len
+                val newD0 = new Array[AnyRef](newD0len)
+                newD0(0) = elem.asInstanceOf[AnyRef]
+                Platform.arraycopy(resultVector.display0, 0, newD0, 1, newD0len - 1)
+                resultVector.display0 = newD0
+                copyTopAndComputeSizes(2)
+                resultVector.asInstanceOf[That]
+            } else {
+                resultVector.prependFrontSetupNewBlock()
+                resultVector.display0(0) = elem.asInstanceOf[AnyRef]
                 resultVector.asInstanceOf[That]
             }
         }
@@ -138,7 +174,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             this.asInstanceOf[That]
         else {
             that match {
-                case thatVec: RRBVector[B] =>
+                case thatVec: RRBVector[B] /* if thatVec.length > 1024 */ =>
                     if (this.isEmpty)
                         thatVec.asInstanceOf[That]
                     else {
@@ -152,20 +188,23 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             }
         } else super.++(that.seq)
 
-    override def tail: RRBVector[A] = if (this.endIndex.!=(0))
-        this.drop(1)
-    else
-        throw new UnsupportedOperationException("empty.tail")
+    override def tail: RRBVector[A] =
+        if (this.endIndex.!=(0))
+            this.drop(1)
+        else
+            throw new UnsupportedOperationException("empty.tail")
 
-    override def last: A = if (this.endIndex.!=(0))
-        this.apply(this.length.-(1))
-    else
-        throw new UnsupportedOperationException("empty.last")
+    override def last: A =
+        if (this.endIndex != 0)
+            this.apply(this.endIndex - 1)
+        else
+            throw new UnsupportedOperationException("empty.last")
 
-    override def init: RRBVector[A] = if (this.endIndex.!=(0))
-        dropRight(1)
-    else
-        throw new UnsupportedOperationException("empty.init")
+    override def init: RRBVector[A] =
+        if (this.endIndex != 0)
+            dropRight(1)
+        else
+            throw new UnsupportedOperationException("empty.init")
 
     private[immutable] def appendBackSetupNewBlock() = {
         val oldDepth = depth
@@ -173,54 +212,57 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         val xor = newRelaxedIndex ^ (focus | focusRelax)
         setupNewBlockInNextBranch(newRelaxedIndex, xor)
         if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
-
             var i =
                 if (xor < 1024) 2
                 else if (xor < 32768) 3
                 else if (xor < 1048576) 4
                 else if (xor < 33554432) 5
                 else 6
-            val _focusDepth = focusDepth
-            while (i.<(oldDepth)) {
-                var display: Array[AnyRef] = null
-                var newDisplay: Array[AnyRef] = null
-                var newSizes: Array[Int] = null
-                i match {
-                    case 2 => display = display2
-                    case 3 => display = display3
-                    case 4 => display = display4
-                    case 5 => display = display5
+            if (i < oldDepth) {
+                val _focusDepth = focusDepth
+                var display: Array[AnyRef] = i match {
+                    case 2 => display2
+                    case 3 => display3
+                    case 4 => display4
+                    case 5 => display5
                 }
-                val displayLen = display.length.-(1)
-                if (i.>=(_focusDepth)) {
-                    val oldSizes = display(displayLen).asInstanceOf[Array[Int]]
-                    newSizes = new Array[Int](displayLen)
-                    Platform.arraycopy(oldSizes, 0, newSizes, 0, displayLen.-(1))
-                    newSizes.update(displayLen.-(1), oldSizes(displayLen.-(1)).+(1))
-                }
+                do {
+                    var newDisplay: Array[AnyRef] = null
+                    var newSizes: Array[Int] = null
 
-                newDisplay = new Array[AnyRef](display.length)
-                Platform.arraycopy(display, 0, newDisplay, 0, displayLen)
-                if (i >= _focusDepth)
-                    newDisplay(displayLen) = newSizes
+                    val displayLen = display.length.-(1)
+                    if (i >= _focusDepth) {
+                        val oldSizes = display(displayLen).asInstanceOf[Array[Int]]
+                        newSizes = new Array[Int](displayLen)
+                        Platform.arraycopy(oldSizes, 0, newSizes, 0, displayLen - 1)
+                        newSizes.update(displayLen - 1, oldSizes(displayLen - 1) + 1)
+                    }
 
-                i match {
-                    case 2 =>
-                        newDisplay((newRelaxedIndex >> 10) & 31) = display1
-                        display2 = newDisplay
-                    case 3 =>
-                        newDisplay((newRelaxedIndex >> 15) & 31) = display2
-                        display3 = newDisplay
-                    case 4 =>
-                        newDisplay((newRelaxedIndex >> 20) & 31) = display3
-                        display4 = newDisplay
-                    case 5 =>
-                        newDisplay((newRelaxedIndex >> 25) & 31) = display4
-                        display5 = newDisplay
-                }
-                i += 1
+                    newDisplay = new Array[AnyRef](display.length)
+                    Platform.arraycopy(display, 0, newDisplay, 0, displayLen)
+                    if (i >= _focusDepth)
+                        newDisplay(displayLen) = newSizes
+
+                    i match {
+                        case 2 =>
+                            newDisplay((newRelaxedIndex >> 10) & 31) = display1
+                            display2 = newDisplay
+                            display = display3
+                        case 3 =>
+                            newDisplay((newRelaxedIndex >> 15) & 31) = display2
+                            display3 = newDisplay
+                            display = display4
+                        case 4 =>
+                            newDisplay((newRelaxedIndex >> 20) & 31) = display3
+                            display4 = newDisplay
+                            display = display5
+                        case 5 =>
+                            newDisplay((newRelaxedIndex >> 25) & 31) = display4
+                            display5 = newDisplay
+                    }
+                    i += 1
+                } while (i < oldDepth)
             }
-
         }
 
         if (oldDepth.==(focusDepth))
@@ -228,6 +270,46 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         else
             initFocus(endIndex.-(1), endIndex.-(1), endIndex, 1, newRelaxedIndex.&(-32))
     }
+
+    private[immutable] def prependFrontSetupNewBlock(): Unit = {
+        if (RRBVector.compileAssertions) {
+            assert(display0.length == 32)
+        }
+
+        var currentDepth = focusDepth
+        if (currentDepth == 1)
+            currentDepth += 1
+        var display = currentDepth match {
+            case 1 =>
+                currentDepth = 2
+                display1
+            case 2 => display1
+            case 3 => display2
+            case 4 => display3
+            case 5 => display4
+            case 6 => display5
+        }
+        while /* the insertion depth has not been found */ (display != null && display.length == 33) {
+            currentDepth += 1
+            currentDepth match {
+                case 2 => display = display1
+                case 3 => display = display2
+                case 4 => display = display3
+                case 5 => display = display4
+                case 6 => display = display5
+                case _ => throw new IllegalStateException()
+            }
+        }
+
+        // create new node at this depth and all singleton nodes under it on left most branch
+        setupNewBlockInInitBranch(currentDepth)
+
+        // update sizes of nodes above the insertion depth
+        copyTopAndComputeSizes(currentDepth + 1)
+
+        initFocus(0, 0, 1, 1, 0)
+    }
+
 
     private[immutable] def concatenate[B >: A](currentSize: Int, that: RRBVector[B]): scala.Unit = {
         if (this.dirty) {
@@ -244,18 +326,14 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         math.max(this.depth, that.depth) match {
             case 1 =>
                 val concat = rebalancedLeafs(display0, that.display0, isTop = true)
-                initFromRoot(concat, if (endIndex.<=(32))
-                    1
-                else
-                    2)
+                initFromRoot(concat, if (endIndex <= 32) 1 else 2)
             case 2 =>
                 var d0: Array[AnyRef] = null
                 var d1: Array[AnyRef] = null
                 if (that.focus.&(-32).==(0)) {
                     d1 = that.display1
                     d0 = that.display0
-                }
-                else {
+                } else {
                     if (that.display1.!=(null))
                         d1 = that.display1
                     if (d1 == null)
@@ -521,7 +599,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     j.+=(numElementsToCopy)
                     iBot.+=(numElementsToCopy)
                     if (j.==(displayValueEnd)) {
-                        i.+=(1)
+                        i += 1
                         j = 0
                     }
 
@@ -556,7 +634,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             withComputedSizes(bot, currentDepth.-(1))
 
         if (mid.!=(null))
-            top.update(iTop, withComputedSizes(mid, currentDepth))
+            top(iTop) = withComputedSizes(mid, currentDepth)
 
         top
     }
@@ -566,8 +644,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         val rightLength = displayRight.length
         if (leftLength.==(32)) {
             val top = new Array[AnyRef](3)
-            top.update(0, displayLeft)
-            top.update(1, displayRight)
+            top(0) = displayLeft
+            top(1) = displayRight
             top
         }
         else
@@ -579,19 +657,19 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 mergedDisplay
             else {
                 val top = new Array[AnyRef](2)
-                top.update(0, mergedDisplay)
+                top(0) = mergedDisplay
                 top
             }
         }
         else {
             val top = new Array[AnyRef](3)
             val arr0 = new Array[AnyRef](32)
-            val arr1 = new Array[AnyRef](leftLength.+(rightLength).-(32))
-            top.update(0, arr0)
-            top.update(1, arr1)
+            val arr1 = new Array[AnyRef](leftLength + rightLength - 32)
+            top(0) = arr0
+            top(1) = arr1
             Platform.arraycopy(displayLeft, 0, arr0, 0, leftLength)
-            Platform.arraycopy(displayRight, 0, arr0, leftLength, 32.-(leftLength))
-            Platform.arraycopy(displayRight, 32.-(leftLength), arr1, 0, rightLength.-(32).+(leftLength))
+            Platform.arraycopy(displayRight, 0, arr0, leftLength, 32 - leftLength)
+            Platform.arraycopy(displayRight, 32 - leftLength, arr1, 0, rightLength - 32 + leftLength)
             top
         }
     }
@@ -621,17 +699,17 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             var i = 0
             while (i.<(leftLength.-(1))) {
                 branching.+=(displayLeft(i).asInstanceOf[Array[AnyRef]].length)
-                i.+=(1)
+                i += 1
             }
             i = 0
             while (i.<(concatLength)) {
                 branching.+=(concat(i).asInstanceOf[Array[AnyRef]].length)
-                i.+=(1)
+                i += 1
             }
             i = 1
             while (i.<(rightLength)) {
                 branching.+=(displayRight(i).asInstanceOf[Array[AnyRef]].length)
-                i.+=(1)
+                i += 1
             }
             if (currentDepth.!=(2)) {
                 branching.-=(leftLength.+(concatLength).+(rightLength))
@@ -646,54 +724,6 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
         branching
     }
-
-    private def withComputedSizes(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
-        var i = 0
-        var acc = 0
-        val end = node.length.-(1)
-        val sizes = new Array[Int](end)
-        if (currentDepth.>(1)) {
-            while (i.<(end)) {
-                acc.+=(treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1)))
-                sizes.update(i, acc)
-                i.+=(1)
-            }
-            val last = node(end.-(1)).asInstanceOf[Array[AnyRef]]
-            if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<(5.*(currentDepth.-(1))))).||(currentDepth.>(2).&&(last(last.length.-(1)).!=(null))))
-                node.update(end, sizes)
-
-        } else {
-            while (i.<(end)) {
-                acc.+=(node(i).asInstanceOf[Array[AnyRef]].length)
-                sizes.update(i, acc)
-                i.+=(1)
-            }
-            if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<(5))))
-                node.update(end, sizes)
-
-        }
-        node
-    }
-
-    private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int =
-        if (currentDepth == 1)
-            tree.length
-        else {
-            val treeSizes = tree(tree.length - 1).asInstanceOf[Array[Int]]
-            if (treeSizes != null)
-                treeSizes(treeSizes.length - 1)
-            else {
-                var _tree = tree
-                var _currentDepth = currentDepth
-                var acc = 0
-                while (_currentDepth.>(1)) {
-                    acc += (_tree.length - 2) * (1 << (5 * (_currentDepth - 1)))
-                    _currentDepth.-=(1)
-                    _tree = _tree(_tree.length - 2).asInstanceOf[Array[AnyRef]]
-                }
-                acc.+(_tree.length)
-            }
-        }
 
     private def takeFront0(n: Int): RRBVector[A] = {
         if (dirty) {
@@ -719,7 +749,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 vec.copyDisplays(vec.focusDepth, cutIndex)
                 var i = vec.depth
                 var offset = 0
-                while (i.>(vec.focusDepth)) {
+                while (i > vec.focusDepth) {
                     val display = i match {
                         case 2 => vec.display1
                         case 3 => vec.display2
@@ -1056,7 +1086,7 @@ private[immutable] trait RRBVectorPointer[A] {
     private[immutable] final def initSingleton[B >: A](elem: B): Unit = {
         initFocus(0, 0, 1, 1, 0)
         val d0 = new Array[AnyRef](1)
-        d0.update(0, elem.asInstanceOf[AnyRef])
+        d0(0) = elem.asInstanceOf[AnyRef]
         display0 = d0
         depth = 1
     }
@@ -1072,16 +1102,15 @@ private[immutable] trait RRBVectorPointer[A] {
         case _ => throw new IllegalStateException()
     }
 
-    private[immutable] final def focusOn(index: Int): Unit = if (focusStart.<=(index).&&(index.<(focusEnd))) {
-        val indexInFocus = index.-(focusStart)
-        val xor = indexInFocus.^(focus)
-        if (xor.>=(32))
-            gotoPos(indexInFocus, xor)
-
-        focus = index
-    }
-    else
-        gotoPosFromRoot(index)
+    private[immutable] final def focusOn(index: Int): Unit =
+        if (focusStart <= index && index < focusEnd) {
+            val indexInFocus = index - focusStart
+            val xor = indexInFocus ^ focus
+            if (xor.>=(32))
+                gotoPos(indexInFocus, xor)
+            focus = index
+        } else
+            gotoPosFromRoot(index)
 
     private[immutable] final def getElementFromRoot(index: Int): A = {
         var indexInSubTree = index
@@ -1101,7 +1130,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 indexInSubTree -= sizes(sizesIdx - 1)
             display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
             if (currentDepth > 2)
-                sizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
+                sizes = display(display.length - 1).asInstanceOf[Array[Int]]
             else
                 sizes = null
             currentDepth -= 1
@@ -1201,287 +1230,202 @@ private[immutable] trait RRBVectorPointer[A] {
         newRoot
     }
 
-    private final def setupNewBlockInNextBranch2(index: Int, xor: Int): Array[AnyRef] = {
-        val d1 = new Array[AnyRef](2)
-        val d2: Array[AnyRef] =
-            if (xor >= 32768) {
-                setupNewBlockInNextBranch3(index, xor)
-            } else if (depth == 2) {
-                depth = 3
-                makeNewRoot(display1)
-            } else {
-                copyAndIncRoot(display2)
-            }
-        d2((index >> 10) & 31) = d1
-        display2 = d2
-        d1
-    }
-
-    private final def setupNewBlockInNextBranch3(index: Int, xor: Int): Array[AnyRef] = {
-        val d2 = new Array[AnyRef](2)
-        val d3: Array[AnyRef] =
-            if (xor >= 1048576) {
-                setupNewBlockInNextBranch4(index, xor)
-            } else if (depth == 3) {
-                depth = 4
-                makeNewRoot(display2)
-            } else {
-                copyAndIncRoot(display3)
-            }
-        d3((index >> 15) & 31) = d2
-        display3 = d3
-        d2
-    }
-
-    private final def setupNewBlockInNextBranch4(index: Int, xor: Int): Array[AnyRef] = {
-        val d3 = new Array[AnyRef](2)
-        val d4: Array[AnyRef] =
-            if (xor >= 33554432) {
-                setupNewBlockInNextBranch5(index, xor)
-            } else if (depth == 4) {
-                depth = 5
-                makeNewRoot(display3)
-            } else {
-                copyAndIncRoot(display4)
-            }
-        d4((index >> 20) & 31) = d3
-        display4 = d4
-        d3
-    }
-
-    private final def setupNewBlockInNextBranch5(index: Int, xor: Int): Array[AnyRef] = {
-        if (xor >= 1073741824)
-            throw new IllegalArgumentException(xor.toString)
-        val d4 = new Array[AnyRef](2)
-        val d5: Array[AnyRef] =
-            if (depth == 5) {
-                depth = 6
-                makeNewRoot(display4)
-            } else {
-                copyAndIncRoot(display5)
-            }
-        d5((index >> 25) & 31) = d4
-        display5 = d5
-        d4
-    }
-
     private[immutable] final def setupNewBlockInNextBranch(index: Int, xor: Int): Unit = {
-        val d1: Array[AnyRef] =
-            if (xor >= 1024) {
-                setupNewBlockInNextBranch2(index, xor)
-            } else if (depth == 1) {
+        if (xor < 1024) {
+            if (depth == 1) {
+                val newRoot = new Array[AnyRef](3)
+                newRoot(0) = display0
+                display1 = newRoot
                 depth = 2
-                val _d1 = new Array[AnyRef](3)
-                _d1(0) = display0
-                _d1
-            } else {
-                val len = display1.length
-                val _d1 = copyOf(display1, len, len + 1)
-                val sizes = display1(len - 1)
-                if (sizes != null) {
-                    val newSizes = new Array[Int](len)
-                    Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len - 1)
-                    newSizes(len - 1) = newSizes(len - 2) + 1
-                    _d1(len) = newSizes
-                }
-                _d1
             }
-        val d0 = new Array[AnyRef](1)
-        d1((index >> 5) & 31) = d0
-        display1 = d1
-        display0 = d0
+            else {
+                display1 = copyAndIncRoot(display1)
+            }
+            display0 = new Array(1)
+            display1(index.>>(5).&(31)) = display0
+        }
+        else
+        if (xor < 32768) {
+            if (depth == 2) {
+                display2 = makeNewRoot(display1)
+                depth = 3
+            } else {
+                display2 = copyAndIncRoot(display2)
+            }
+            display0 = new Array(1)
+            display1 = new Array(2)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+        }
+        else
+        if (xor < 1048576) {
+            if (depth.==(3)) {
+                display3 = makeNewRoot(display2)
+                depth = 4
+            } else {
+                display3 = copyAndIncRoot(display3)
+            }
+            display0 = new Array(1)
+            display1 = new Array(2)
+            display2 = new Array(2)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+            display3.update((index >> 15) & 31, display2)
+        }
+        else
+        if (xor < 33554432) {
+            if (depth.==(4)) {
+                display4 = makeNewRoot(display3)
+                depth = 5
+            } else {
+                display4 = copyAndIncRoot(display4)
+            }
+            display0 = new Array(1)
+            display1 = new Array(2)
+            display2 = new Array(2)
+            display3 = new Array(2)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+            display3((index >> 15) & 31) = display2
+            display4((index >> 20) & 31) = display3
+        }
+        else
+        if (xor < 1073741824) {
+            if (depth.==(5)) {
+                display5 = makeNewRoot(display4)
+                depth = 6
+            } else {
+                display5 = copyAndIncRoot(display3)
+            }
+            display0 = new Array(1)
+            display1 = new Array(2)
+            display2 = new Array(2)
+            display3 = new Array(2)
+            display4 = new Array(2)
+            display1((index >> 5) & 31) = display0
+            display2((index >> 10) & 31) = display1
+            display3((index >> 15) & 31) = display2
+            display4((index >> 20) & 31) = display3
+            display5((index >> 25) & 31) = display4
+        }
+        else
+            throw new IllegalArgumentException()
+    }
 
-        ////////////////////////////////////////////
-
-        //        if (xor < 1024) {
-        //            if (depth == 1) {
-        //                val newRoot = new Array[AnyRef](3)
-        //                newRoot.update(0, display0)
-        //                display1 = newRoot
-        //                depth = 2
-        //            }
-        //            else {
-        //                val len = display1.length
-        //                val newRoot = copyOf(display1, len, len.+(1))
-        //                val sizes = display1(len.-(1))
-        //                if (sizes.!=(null)) {
-        //                    val newSizes = new Array[Int](len)
-        //                    Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1))
-        //                    newSizes.update(len.-(1), newSizes(len.-(2)).+(1))
-        //                    newRoot.update(len, newSizes)
-        //                }
-        //
-        //                display1 = newRoot
-        //            }
-        //            display0 = new Array(1)
-        //            display1.update(((index>>5)&31), display0)
-        //        }
-        //        else
-        //        if (xor < 32768) {
-        //            if (depth == 2) {
-        //                val newRoot = new Array[AnyRef](3)
-        //                newRoot.update(0, display1);
-        //                {
-        //                    val dLen = display1.length
-        //                    val dSizes = display1(dLen.-(1))
-        //                    if (dSizes.!=(null)) {
-        //                        val newRootSizes = new Array[Int](2)
-        //                        val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2))
-        //                        newRootSizes.update(0, dSize)
-        //                        newRootSizes.update(1, dSize.+(1))
-        //                        newRoot.update(2, newRootSizes)
-        //                    }
-        //
-        //                }
-        //                display2 = newRoot
-        //                depth = 3
-        //            }
-        //            else {
-        //                val len = display2.length
-        //                val newRoot = copyOf(display2, len, len.+(1))
-        //                val sizes = display2(len.-(1))
-        //                if (sizes.!=(null)) {
-        //                    val newSizes = new Array[Int](len)
-        //                    Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1))
-        //                    newSizes.update(len.-(1), newSizes(len.-(2)).+(1))
-        //                    newRoot.update(len, newSizes)
-        //                }
-        //
-        //                display2 = newRoot
-        //            }
-        //            display0 = new Array(1)
-        //            display1 = new Array(2)
-        //            display1.update(((index>>5)&31), display0)
-        //            display2.update(((index>>10)&31), display1)
-        //        }
-        //        else
-        //        if (xor < 1048576) {
-        //            if (depth.==(3)) {
-        //                val newRoot = new Array[AnyRef](3)
-        //                newRoot.update(0, display2);
-        //                {
-        //                    val dLen = display2.length
-        //                    val dSizes = display2(dLen.-(1))
-        //                    if (dSizes.!=(null)) {
-        //                        val newRootSizes = new Array[Int](2)
-        //                        val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2))
-        //                        newRootSizes.update(0, dSize)
-        //                        newRootSizes.update(1, dSize.+(1))
-        //                        newRoot.update(2, newRootSizes)
-        //                    }
-        //
-        //                }
-        //                display3 = newRoot
-        //                depth = 4
-        //            }
-        //            else {
-        //                val len = display3.length
-        //                val newRoot = copyOf(display3, len, len.+(1))
-        //                val sizes = display3(len.-(1))
-        //                if (sizes.!=(null)) {
-        //                    val newSizes = new Array[Int](len)
-        //                    Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1))
-        //                    newSizes.update(len.-(1), newSizes(len.-(2)).+(1))
-        //                    newRoot.update(len, newSizes)
-        //                }
-        //
-        //                display3 = newRoot
-        //            }
-        //            display0 = new Array(1)
-        //            display1 = new Array(2)
-        //            display2 = new Array(2)
-        //            display1.update(((index>>5)&31), display0)
-        //            display2.update(((index>>10)&31), display1)
-        //            display3.update(((index>>15)&31), display2)
-        //        }
-        //        else
-        //        if (xor < 33554432) {
-        //            if (depth.==(4)) {
-        //                val newRoot = new Array[AnyRef](3)
-        //                newRoot.update(0, display3);
-        //                {
-        //                    val dLen = display3.length
-        //                    val dSizes = display3(dLen.-(1))
-        //                    if (dSizes.!=(null)) {
-        //                        val newRootSizes = new Array[Int](2)
-        //                        val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2))
-        //                        newRootSizes.update(0, dSize)
-        //                        newRootSizes.update(1, dSize.+(1))
-        //                        newRoot.update(2, newRootSizes)
-        //                    }
-        //
-        //                }
-        //                display4 = newRoot
-        //                depth = 5
-        //            }
-        //            else {
-        //                val len = display4.length
-        //                val newRoot = copyOf(display4, len, len.+(1))
-        //                val sizes = display4(len.-(1))
-        //                if (sizes.!=(null)) {
-        //                    val newSizes = new Array[Int](len)
-        //                    Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1))
-        //                    newSizes.update(len.-(1), newSizes(len.-(2)).+(1))
-        //                    newRoot.update(len, newSizes)
-        //                }
-        //
-        //                display4 = newRoot
-        //            }
-        //            display0 = new Array(1)
-        //            display1 = new Array(2)
-        //            display2 = new Array(2)
-        //            display3 = new Array(2)
-        //            display1.update(((index>>5)&31), display0)
-        //            display2.update(((index>>10)&31), display1)
-        //            display3.update(((index>>15)&31), display2)
-        //            display4.update(((index>>20)&31), display3)
-        //        }
-        //        else
-        //        if (xor<1073741824) {
-        //            if (depth.==(5)) {
-        //                val newRoot = new Array[AnyRef](3)
-        //                newRoot.update(0, display4);
-        //                {
-        //                    val dLen = display4.length
-        //                    val dSizes = display4(dLen.-(1))
-        //                    if (dSizes.!=(null)) {
-        //                        val newRootSizes = new Array[Int](2)
-        //                        val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2))
-        //                        newRootSizes.update(0, dSize)
-        //                        newRootSizes.update(1, dSize.+(1))
-        //                        newRoot.update(2, newRootSizes)
-        //                    }
-        //
-        //                }
-        //                display5 = newRoot
-        //                depth = 6
-        //            }
-        //            else {
-        //                val len = display5.length
-        //                val newRoot = copyOf(display5, len, len.+(1))
-        //                val sizes = display5(len.-(1))
-        //                if (sizes.!=(null)) {
-        //                    val newSizes = new Array[Int](len)
-        //                    Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1))
-        //                    newSizes.update(len.-(1), newSizes(len.-(2)).+(1))
-        //                    newRoot.update(len, newSizes)
-        //                }
-        //
-        //                display5 = newRoot
-        //            }
-        //            display0 = new Array(1)
-        //            display1 = new Array(2)
-        //            display2 = new Array(2)
-        //            display3 = new Array(2)
-        //            display4 = new Array(2)
-        //            display1.update(((index>>5)&31), display0)
-        //            display2.update(((index>>10)&31), display1)
-        //            display3.update(((index>>15)&31), display2)
-        //            display4.update(((index>>20)&31), display3)
-        //            display5.update(((index>>25)&31), display4)
-        //        }
-        //        else
-        //            throw new IllegalArgumentException()
+    private[immutable] final def setupNewBlockInInitBranch(insertionDepth: Int): Unit = {
+        insertionDepth match {
+            case 2 =>
+                val d0 = new Array[AnyRef](1)
+                var d1: Array[AnyRef] = null
+                if (depth == 1) {
+                    depth = 2
+                    d1 = new Array[AnyRef](3)
+                    d1(0) = d0
+                    d1(1) = display0
+                } else {
+                    val oldD1 = display1
+                    d1 = new Array[AnyRef](oldD1.length + 1)
+                    d1(0) = d0
+                    Platform.arraycopy(oldD1, 0, d1, 1, oldD1.length - 1)
+                }
+                display1 = withComputedSizes(d1, 2)
+                display0 = d0
+            case 3 =>
+                val d0 = new Array[AnyRef](1)
+                val d1 = new Array[AnyRef](2)
+                d1(0) = d0
+                var d2: Array[AnyRef] = null
+                if (depth == 2) {
+                    depth = 3
+                    d2 = new Array[AnyRef](3)
+                    d2(0) = d1
+                    d2(1) = display1
+                } else {
+                    val oldD2 = display2
+                    d2 = new Array[AnyRef](oldD2.length + 1)
+                    d2(0) = d1
+                    Platform.arraycopy(oldD2, 0, d2, 1, oldD2.length - 1)
+                }
+                display2 = withComputedSizes(d2, 3)
+                display1 = d1
+                display0 = d0
+            case 4 =>
+                val d0 = new Array[AnyRef](1)
+                val d1 = new Array[AnyRef](2)
+                val d2 = new Array[AnyRef](2)
+                d1(0) = d0
+                d2(0) = d1
+                var d3: Array[AnyRef] = null
+                if (depth == 3) {
+                    depth = 4
+                    d3 = new Array[AnyRef](3)
+                    d3(0) = d2
+                    d3(1) = display2
+                } else {
+                    val oldD3 = display3
+                    d3 = new Array[AnyRef](oldD3.length + 1)
+                    d3(0) = d2
+                    Platform.arraycopy(oldD3, 0, d3, 1, oldD3.length - 1)
+                }
+                display3 = withComputedSizes(d3, 4)
+                display2 = d2
+                display1 = d1
+                display0 = d0
+            case 5 =>
+                val d0 = new Array[AnyRef](1)
+                val d1 = new Array[AnyRef](2)
+                val d2 = new Array[AnyRef](2)
+                val d3 = new Array[AnyRef](2)
+                d1(0) = d0
+                d2(0) = d1
+                d3(0) = d2
+                var d4: Array[AnyRef] = null
+                if (depth == 4) {
+                    depth = 5
+                    d4 = new Array[AnyRef](3)
+                    d4(0) = d3
+                    d4(1) = display3
+                } else {
+                    val oldD4 = display4
+                    d4 = new Array[AnyRef](oldD4.length + 1)
+                    d4(0) = d3
+                    Platform.arraycopy(oldD4, 0, d4, 1, oldD4.length - 1)
+                }
+                display4 = withComputedSizes(d4, 5)
+                display3 = d3
+                display2 = d2
+                display1 = d1
+                display0 = d0
+            case 6 =>
+                val d0 = new Array[AnyRef](1)
+                val d1 = new Array[AnyRef](2)
+                val d2 = new Array[AnyRef](2)
+                val d3 = new Array[AnyRef](2)
+                val d4 = new Array[AnyRef](2)
+                d1(0) = d0
+                d2(0) = d1
+                d3(0) = d2
+                d4(0) = d3
+                var d5: Array[AnyRef] = null
+                if (depth == 5) {
+                    depth = 6
+                    d5 = new Array[AnyRef](3)
+                    d5(0) = d4
+                    d5(1) = display4
+                } else {
+                    val oldD5 = display5
+                    d5 = new Array[AnyRef](oldD5.length + 1)
+                    d5(0) = d4
+                    Platform.arraycopy(oldD5, 0, d5, 1, oldD5.length - 1)
+                }
+                display5 = withComputedSizes(d5, 6)
+                display4 = d4
+                display3 = d3
+                display2 = d2
+                display1 = d1
+                display0 = d0
+            case _ => throw new IllegalStateException()
+        }
     }
 
     private[immutable] final def getElem(index: Int, xor: Int): A = {
@@ -1511,7 +1455,6 @@ private[immutable] trait RRBVectorPointer[A] {
 
     private final def getElem5(display: Array[AnyRef], index: Int): A =
         display((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
-
 
     private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
         if (xor >= 32) {
@@ -1642,7 +1585,7 @@ private[immutable] trait RRBVectorPointer[A] {
             if (depth.==(1)) {
                 display1 = new Array(33)
                 display1.update(0, display0)
-                depth.+=(1)
+                depth += 1
             }
             display0 = new Array(32)
             display1((index >> 5) & 31) = display0
@@ -1650,7 +1593,7 @@ private[immutable] trait RRBVectorPointer[A] {
             if (depth.==(2)) {
                 display2 = new Array(33)
                 display2.update(0, display1)
-                depth.+=(1)
+                depth += 1
             }
             display0 = new Array(32)
             display1 = new Array(33)
@@ -1660,19 +1603,19 @@ private[immutable] trait RRBVectorPointer[A] {
             if (depth.==(3)) {
                 display3 = new Array(33)
                 display3.update(0, display2)
-                depth.+=(1)
+                depth += 1
             }
             display0 = new Array(32)
             display1 = new Array(33)
             display2 = new Array(33)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
-            display3.update((index >> 15) & 31, display2)
+            display3((index >> 15) & 31) = display2
         } else if (xor < 33554432) {
-            if (depth.==(4)) {
+            if (depth == 4) {
                 display4 = new Array(33)
                 display4.update(0, display3)
-                depth.+=(1)
+                depth += 1
             }
             display0 = new Array(32)
             display1 = new Array(33)
@@ -1680,13 +1623,13 @@ private[immutable] trait RRBVectorPointer[A] {
             display3 = new Array(33)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
-            display3.update((index >> 15) & 31, display2)
-            display4.update((index >> 20) & 31, display3)
+            display3((index >> 15) & 31) = display2
+            display4((index >> 20) & 31) = display3
         } else if (xor < 1073741824) {
-            if (depth.==(5)) {
+            if (depth == 5) {
                 display5 = new Array(33)
                 display5.update(0, display4)
-                depth.+=(1)
+                depth += 1
             }
             display0 = new Array(32)
             display1 = new Array(33)
@@ -1695,9 +1638,9 @@ private[immutable] trait RRBVectorPointer[A] {
             display4 = new Array(33)
             display1((index >> 5) & 31) = display0
             display2((index >> 10) & 31) = display1
-            display3.update((index >> 15) & 31, display2)
-            display4.update((index >> 20) & 31, display3)
-            display5.update((index >> 25) & 31, display4)
+            display3((index >> 15) & 31) = display2
+            display4((index >> 20) & 31) = display3
+            display5((index >> 25) & 31) = display4
         } else
             throw new IllegalArgumentException()
     }
@@ -1728,24 +1671,24 @@ private[immutable] trait RRBVectorPointer[A] {
                 newDisplay.update(newDisplay.length.-(1), newSizes)
                 currentDepth match {
                     case 2 =>
-                        newDisplay.update(idx, display0)
-                        display1.update(idx, newDisplay)
+                        newDisplay(idx) = display0
+                        display1(idx) = newDisplay
                         display = display2
                     case 3 =>
-                        newDisplay.update(idx, display1)
-                        display2.update(idx, newDisplay)
+                        newDisplay(idx) = display0
+                        display2(idx) = newDisplay
                         display = display3
                     case 4 =>
-                        newDisplay.update(idx, display2)
-                        display3.update(idx, newDisplay)
+                        newDisplay(idx) = display2
+                        display3(idx) = newDisplay
                         display = display4
                     case 5 =>
-                        newDisplay.update(idx, display3)
-                        display4.update(idx, newDisplay)
+                        newDisplay(idx) = display3
+                        display4(idx) = newDisplay
                         display = display5
                     case 6 =>
-                        newDisplay.update(idx, display4)
-                        display5.update(idx, newDisplay)
+                        newDisplay(idx) = display4
+                        display5(idx) = newDisplay
                 }
                 currentDepth.+=(1)
             }
@@ -1808,6 +1751,46 @@ private[immutable] trait RRBVectorPointer[A] {
                     }
                 }
             }
+        }
+    }
+
+    private[immutable] final def copyTopAndComputeSizes(fromDepth: Int): Unit = {
+        val _depth = depth
+        var currentDepth = fromDepth
+        while (currentDepth <= _depth) {
+            currentDepth match {
+                case 2 =>
+                    val d1 = display1
+                    val len = d1.length
+                    val newD1 = copyOf(d1, len - 1, len)
+                    newD1(0) = display0
+                    display1 = withComputedSizes(newD1, 2)
+                case 3 =>
+                    val d2 = display2
+                    val len = d2.length
+                    val newD2 = copyOf(d2, len - 1, len)
+                    newD2(0) = display1
+                    display2 = withComputedSizes(newD2, 3)
+                case 4 =>
+                    val d3 = display3
+                    val len = d3.length
+                    val newD3 = copyOf(d3, len - 1, len)
+                    newD3(0) = display2
+                    display3 = withComputedSizes(newD3, 4)
+                case 5 =>
+                    val d4 = display4
+                    val len = d4.length
+                    val newD4 = copyOf(d4, len - 1, len)
+                    newD4(0) = display3
+                    display4 = withComputedSizes(newD4, 5)
+                case 6 =>
+                    val d5 = display5
+                    val len = d5.length
+                    val newD5 = copyOf(d5, len - 1, len)
+                    newD5(0) = display4
+                    display5 = withComputedSizes(newD5, 6)
+            }
+            currentDepth += 1
         }
     }
 
@@ -1883,41 +1866,23 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] def cleanTop(cutIndex: Int): Unit = this.depth match {
-        case 2 => if ((cutIndex >> 5) == 0) {
-            display1 = null
-            this.depth = 1
-        }
-        else
-            this.depth = 2
-        case 3 => if ((cutIndex >> 10) == 0) {
-            display2 = null
+        case 2 =>
             if ((cutIndex >> 5) == 0) {
                 display1 = null
                 this.depth = 1
-            }
-            else
+            } else
                 this.depth = 2
-        }
-        else
-            this.depth = 3
-        case 4 => if ((cutIndex >> 15) == 0) {
-            display3 = null
+        case 3 =>
             if ((cutIndex >> 10) == 0) {
                 display2 = null
                 if ((cutIndex >> 5) == 0) {
                     display1 = null
                     this.depth = 1
-                }
-                else
+                } else
                     this.depth = 2
-            }
-            else
+            } else
                 this.depth = 3
-        }
-        else
-            this.depth = 4
-        case 5 => if ((cutIndex >> 20) == 0) {
-            display4 = null
+        case 4 =>
             if ((cutIndex >> 15) == 0) {
                 display3 = null
                 if ((cutIndex >> 10) == 0) {
@@ -1925,20 +1890,13 @@ private[immutable] trait RRBVectorPointer[A] {
                     if ((cutIndex >> 5) == 0) {
                         display1 = null
                         this.depth = 1
-                    }
-                    else
+                    } else
                         this.depth = 2
-                }
-                else
+                } else
                     this.depth = 3
-            }
-            else
+            } else
                 this.depth = 4
-        }
-        else
-            this.depth = 5
-        case 6 => if ((cutIndex >> 25) == 0) {
-            display5 = null
+        case 5 =>
             if ((cutIndex >> 20) == 0) {
                 display4 = null
                 if ((cutIndex >> 15) == 0) {
@@ -1948,26 +1906,90 @@ private[immutable] trait RRBVectorPointer[A] {
                         if ((cutIndex >> 5) == 0) {
                             display1 = null
                             this.depth = 1
-                        }
-                        else
+                        } else
                             this.depth = 2
-                    }
-                    else
+                    } else
                         this.depth = 3
-                }
-                else
+                } else
                     this.depth = 4
-            }
-            else
+            } else
                 this.depth = 5
-        }
-        else
-            this.depth = 6
+        case 6 =>
+            if ((cutIndex >> 25) == 0) {
+                display5 = null
+                if ((cutIndex >> 20) == 0) {
+                    display4 = null
+                    if ((cutIndex >> 15) == 0) {
+                        display3 = null
+                        if ((cutIndex >> 10) == 0) {
+                            display2 = null
+                            if ((cutIndex >> 5) == 0) {
+                                display1 = null
+                                this.depth = 1
+                            } else
+                                this.depth = 2
+                        } else
+                            this.depth = 3
+                    } else
+                        this.depth = 4
+                } else
+                    this.depth = 5
+            } else
+                this.depth = 6
     }
 
     private[immutable] final def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
         val newArray = new Array[AnyRef](newSize)
         Platform.arraycopy(array, 0, newArray, 0, numElements)
         newArray
+    }
+
+    protected def withComputedSizes(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+        var i = 0
+        var acc = 0
+        val end = node.length.-(1)
+        val sizes = new Array[Int](end)
+        if (currentDepth.>(1)) {
+            while (i.<(end)) {
+                acc.+=(treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1)))
+                sizes.update(i, acc)
+                i += 1
+            }
+            val last = node(end.-(1)).asInstanceOf[Array[AnyRef]]
+            if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<(5.*(currentDepth.-(1))))).||(currentDepth.>(2).&&(last(last.length.-(1)).!=(null))))
+                node(end) = sizes
+
+        } else {
+            while (i < end) {
+                acc += node(i).asInstanceOf[Array[AnyRef]].length
+                sizes(i) = acc
+                i += 1
+            }
+            if (end > 1 && sizes(end - 2) != ((end - 1) << 5))
+                node(end) = sizes
+
+        }
+        node
+    }
+
+    private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = {
+        if (currentDepth == 1)
+            tree.length
+        else {
+            val treeSizes = tree(tree.length - 1).asInstanceOf[Array[Int]]
+            if (treeSizes != null)
+                treeSizes(treeSizes.length - 1)
+            else {
+                var _tree = tree
+                var _currentDepth = currentDepth
+                var acc = 0
+                while (_currentDepth.>(1)) {
+                    acc += (_tree.length - 2) * (1 << (5 * (_currentDepth - 1)))
+                    _currentDepth.-=(1)
+                    _tree = _tree(_tree.length - 2).asInstanceOf[Array[AnyRef]]
+                }
+                acc.+(_tree.length)
+            }
+        }
     }
 }
