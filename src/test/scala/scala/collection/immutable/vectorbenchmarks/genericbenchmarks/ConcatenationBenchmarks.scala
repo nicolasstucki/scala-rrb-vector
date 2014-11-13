@@ -19,9 +19,9 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
           Key.exec.maxWarmupRuns -> 2000
           ) in {
             val times = 1000
-            performance of s"concat vector of 1024 elements $times times" in {
+            performance of s"concat vector $times times" in {
 
-                for (otherSize <- Seq(512, 1000, 1024)) {
+                for (otherSize <- Seq(8, 16, 32, 64, 512, 1000, 1024)) {
                     val otherVector = tabulatedVector(otherSize)
 
                     performance of s"Vector_$otherSize ++ vector" in {
