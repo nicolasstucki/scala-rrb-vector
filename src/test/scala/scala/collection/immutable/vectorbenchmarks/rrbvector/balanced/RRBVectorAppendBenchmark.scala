@@ -11,10 +11,9 @@ class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] 
 
     def append(vec: RRBVector[Int], n: Int, times: Int): Int = {
         var i = 0
-        var v: RRBVector[Int] = null
         var sum = 0
         while (i < times) {
-            v = vec
+            var v = vec
             var j = 0
             while (j<n) {
                 v = vec :+ 0
@@ -33,10 +32,9 @@ class RRBVectorAppendStringBenchmark extends RRBVectorAbstractAppendBenchmark[St
 
     def append(vec: RRBVector[String], n: Int, times: Int): Int = {
         var i = 0
-        var v: RRBVector[String] = null
         var sum = 0
         while (i < times) {
-            v = vec
+            var v = vec
             var j = 0
             while (j<n) {
                 v = vec :+ ref
