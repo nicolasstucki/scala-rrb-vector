@@ -9,7 +9,7 @@ class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[rrbvector.balanced.RRBVectorAppendIntBenchmark]
 //    include[rrbvector.xunbalanced.RRBVectorAppendIntBenchmark]
 
-    include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_AppendInt_Benchmark]
+//    include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_AppendInt_Benchmark]
 //    include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_AppendInt_Benchmark]
 //    include[generated.rrbvector.complete.block128.balanced.RRBVector_c_128_AppendInt_Benchmark]
 //    include[generated.rrbvector.complete.block256.balanced.RRBVector_c_256_AppendInt_Benchmark]

@@ -8,6 +8,7 @@ import scala.collection.parallel.immutable.rrbvector.ParRRBVector
 import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic._
+import scala.compat.Platform
 
 object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     def newBuilder[A]: mutable.Builder[A, RRBVector[A]] = new RRBVectorBuilder[A]()
@@ -83,17 +84,41 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 resultVector.initWithFocusFrom(this)
                 resultVector.dirty = this.dirty
                 resultVector.append(elem)
-                //                if /* vector focus in not on the last block */ (((resultVector.focusStart + resultVector.focus) ^ (_endIndex - 1)) >= 32) {
-                //                    resultVector.stabilizeAndFocusOn(_endIndex - 1)
+                if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                resultVector.asInstanceOf[That]
+                //                val resultVector = new RRBVector[B](_endIndex + 1)
+                //                resultVector.initWithFocusFrom(this)
+                //                resultVector.dirty = this.dirty
+                //                if /* next element will go in another */ ((((_endIndex - 1) - this.focusStart) ^ this.focus) >= 32) {
+                //                    if (resultVector.dirty) {
+                //                        resultVector.stabilize()
+                //                        resultVector.dirty = false
+                //                        if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                //                    }
+                //                    resultVector.focusOn(_endIndex - 1)
                 //                }
                 //
                 //                val elemIndexInBlock = (_endIndex - resultVector.focusStart) & 31
                 //                if /* if next element will go in current block position */ (elemIndexInBlock != 0) {
-                //                    resultVector.appendOnCurrentBlock(elem, elemIndexInBlock)
+                //                    val _depth = resultVector.depth
+                //                    resultVector.focusEnd = resultVector.endIndex
+                //                    val d0 = new Array[AnyRef](elemIndexInBlock + 1)
+                //                    Platform.arraycopy(resultVector.display0, 0, d0, 0, elemIndexInBlock)
+                //                    d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
+                //                    resultVector.display0 = d0
+                //                    if (_depth > 1) {
+                //                        if (!resultVector.dirty) {
+                //                            resultVector.copyDisplaysAndNullFocusedBranch(_depth, resultVector.focus | resultVector.focusRelax)
+                //                            resultVector.dirty = true
+                //                        }
+                //                    }
+                //                    if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                //                    resultVector.asInstanceOf[That]
                 //                } else /* next element will go in a new block position */ {
                 //                    resultVector.appendBackSetupNewBlock(elem, elemIndexInBlock)
+                //                    if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                //                    resultVector.asInstanceOf[That]
                 //                }
-                resultVector.asInstanceOf[That]
             } else {
                 createSingletonVector(elem).asInstanceOf[That]
             }
@@ -102,12 +127,12 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
 
     private def append[B](elem: B) = {
-        val _endIndex = endIndex
-        if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 2)) >= 32) {
-            stabilizeAndFocusOn(_endIndex - 2)
+        val _endIndex = endIndex - 1
+        if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
+            stabilizeAndFocusOn(_endIndex - 1)
         }
 
-        val elemIndexInBlock = (_endIndex - 1 - focusStart) & 31
+        val elemIndexInBlock = (_endIndex - focusStart) & 31
         if /* if next element will go in current block position */ (elemIndexInBlock != 0) {
             appendOnCurrentBlock(elem, elemIndexInBlock)
         } else /* next element will go in a new block position */ {
@@ -115,18 +140,11 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    private[immutable] def stabilizeAndFocusOn(index: Int): Unit = {
-        if (dirty) {
-            stabilize()
-            dirty = false
-            if (RRBVector.compileAssertions) assertVectorInvariant()
-        }
-        focusOn(index)
-    }
+
 
     private def appendOnCurrentBlock[B](elem: B, elemIndexInBlock: Int): Unit = {
         val d0 = new Array[AnyRef](elemIndexInBlock + 1)
-        System.arraycopy(display0, 0, d0, 0, elemIndexInBlock)
+        Platform.arraycopy(display0, 0, d0, 0, elemIndexInBlock)
         d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
         display0 = d0
         focusEnd = endIndex
@@ -140,6 +158,14 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
+    private[immutable] def stabilizeAndFocusOn(index: Int): Unit = {
+        if (dirty) {
+            stabilize()
+            dirty = false
+            if (RRBVector.compileAssertions) assertVectorInvariant()
+        }
+        focusOn(index)
+    }
 
     override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That =
         if (bf.eq(IndexedSeq.ReusableCBF))
@@ -166,7 +192,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     resultVector.focusEnd = newD0len
                     val newD0 = new Array[AnyRef](newD0len)
                     newD0(0) = elem.asInstanceOf[AnyRef]
-                    System.arraycopy(resultVector.display0, 0, newD0, 1, newD0len - 1)
+                    Platform.arraycopy(resultVector.display0, 0, newD0, 1, newD0len - 1)
                     resultVector.display0 = newD0
                     copyTopAndComputeSizes(2)
                 } else {
@@ -272,12 +298,12 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     if (i >= _focusDepth) {
                         val oldSizes = display(displayLen).asInstanceOf[Array[Int]]
                         newSizes = new Array[Int](displayLen)
-                        System.arraycopy(oldSizes, 0, newSizes, 0, displayLen - 1)
+                        Platform.arraycopy(oldSizes, 0, newSizes, 0, displayLen - 1)
                         newSizes.update(displayLen - 1, oldSizes(displayLen - 1) + 1)
                     }
 
                     newDisplay = new Array[AnyRef](display.length)
-                    System.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
+                    Platform.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
                     if (i >= _focusDepth)
                         newDisplay(displayLen) = newSizes
 
@@ -610,7 +636,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         mid(iMid) = bot
                     }
 
-                    System.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
+                    Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
                     j.+=(numElementsToCopy)
                     iBot.+=(numElementsToCopy)
                     if (j.==(displayValueEnd)) {
@@ -662,8 +688,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         else
         if (leftLength.+(rightLength).<=(32)) {
             val mergedDisplay = new Array[AnyRef](leftLength.+(rightLength))
-            System.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
-            System.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
+            Platform.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
+            Platform.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
             if (isTop)
                 mergedDisplay
             else {
@@ -678,9 +704,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             val arr1 = new Array[AnyRef](leftLength + rightLength - 32)
             top(0) = arr0
             top(1) = arr1
-            System.arraycopy(displayLeft, 0, arr0, 0, leftLength)
-            System.arraycopy(displayRight, 0, arr0, leftLength, 32 - leftLength)
-            System.arraycopy(displayRight, 32 - leftLength, arr1, 0, rightLength - 32 + leftLength)
+            Platform.arraycopy(displayLeft, 0, arr0, 0, leftLength)
+            Platform.arraycopy(displayRight, 0, arr0, leftLength, 32 - leftLength)
+            Platform.arraycopy(displayRight, 32 - leftLength, arr1, 0, rightLength - 32 + leftLength)
             top
         }
     }
@@ -749,7 +775,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             val d0len = vec.focus.&(31).+(1)
             if (d0len.!=(32)) {
                 val d0 = new Array[AnyRef](d0len)
-                System.arraycopy(vec.display0, 0, d0, 0, d0len)
+                Platform.arraycopy(vec.display0, 0, d0, 0, d0len)
                 vec.display0 = d0
             }
 
@@ -771,13 +797,13 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
                     val newLen = ((vec.focusRelax >> (5 * (i - 1))) & 31) + 1
                     val newSizes = new Array[Int](newLen)
-                    System.arraycopy(oldSizes, 0, newSizes, 0, newLen.-(1))
+                    Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen.-(1))
                     newSizes(newLen - 1) = n - offset
                     if (newLen.>(1))
                         offset.+=(newSizes(newLen.-(2)))
 
                     val newDisplay = new Array[AnyRef](newLen.+(1))
-                    System.arraycopy(display, 0, newDisplay, 0, newLen)
+                    Platform.arraycopy(display, 0, newDisplay, 0, newLen)
                     newDisplay.update(newLen.-(1), null)
                     newDisplay.update(newLen, newSizes)
                     i match {
@@ -796,7 +822,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 vec.focusEnd = n
         } else if ( /* depth==1 && */ n != 32) {
             val d0 = new Array[AnyRef](n)
-            System.arraycopy(vec.display0, 0, d0, 0, n)
+            Platform.arraycopy(vec.display0, 0, d0, 0, n)
             vec.display0 = d0
             vec.initFocus(0, 0, n, 1, 0)
         } /* else { do nothing } */
@@ -885,13 +911,23 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                             if (!dirty)
                                 assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex))
 
-                            0.until(sizes.length.-(1)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0)) 0 else sizes(i.-(1))))))
+                            var i = 0
+                            while (i<sizes.length.-(1)) {
+                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0)) 0 else sizes(i.-(1))))
+                                i+=1
+                            }
+//                            0.until(sizes.length.-(1)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0)) 0 else sizes(i.-(1))))))
                             checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), if (sizes.length.>(1)) sizes.last.-(sizes(sizes.length.-(2))) else sizes.last)
                         }
                         else {
-                            0.until(node.length.-(2)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), (1).<<((5).*(currentDepth.-(1))))))
-                            val expectedLast = _endIndex.-((1).<<((5).*(currentDepth.-(1))).*(node.length.-(2)))
-                            assert(1 <= expectedLast && (expectedLast.<=((1).<<((5).*(currentDepth)))))
+                            var i = 0
+                            while (i<node.length.-(2)) {
+                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), 1.<<(5.*(currentDepth.-(1))))
+                                i+=1
+                            }
+//                            0.until(node.length.-(2)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), (1).<<((5).*(currentDepth.-(1))))))
+                            val expectedLast = _endIndex.-(1.<<(5.*(currentDepth.-(1))).*(node.length.-(2)))
+                            assert(1 <= expectedLast && expectedLast.<=(1.<<(5.*(currentDepth))))
                             checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), expectedLast)
                         }
                     } else {
@@ -913,6 +949,26 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 case _ => ()
             }
         }
+    }
+
+    private[immutable] def debugToString: String = {
+        s"""
+           |RRBVector {
+           |    display0 = $display0 ${if (display0 != null) display0.mkString("[", ", ", "]") else ""}
+           |    display1 = $display1 ${if (display1 != null) display1.mkString("[", ", ", "]") else ""}
+           |    display2 = $display2 ${if (display2 != null) display2.mkString("[", ", ", "]") else ""}
+           |    display3 = $display3 ${if (display3 != null) display3.mkString("[", ", ", "]") else ""}
+           |    display4 = $display4 ${if (display4 != null) display4.mkString("[", ", ", "]") else ""}
+           |    display5 = $display5 ${if (display5 != null) display5.mkString("[", ", ", "]") else ""}
+           |    depth = $depth
+           |    endIndex = $endIndex
+           |    focus = $focus
+           |    focusStart = $focusStart
+           |    focusEnd = $focusEnd
+           |    focusRelax = $focusRelax
+           |    dirty = $dirty
+           |}
+         """.stripMargin
     }
 }
 
@@ -1086,8 +1142,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
             lastIndexOfBlock = idx
             lo = (idx - focusStart) & 31
             endLo = math.max(startIndex.-(focusStart).-(lastIndexOfBlock), 0)
-        }
-        else {
+        } else {
             lastIndexOfBlock = 0
             lo = 0
             endLo = 0
@@ -1112,23 +1167,19 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
                 lo = 31
                 endLo = math.max(startIndex - focusStart - focus, 0)
                 res
-            }
-            else
-            if (startIndex < focusStart) {
+            } else if (startIndex < focusStart) {
                 val newIndex = focusStart - 1
                 focusOn(newIndex)
                 lastIndexOfBlock = newIndex
                 lo = (newIndex - focusStart) & 31
                 endLo = math.max(startIndex - focusStart - lastIndexOfBlock, 0)
                 res
-            }
-            else {
+            } else {
                 _hasNext = false
                 res
             }
         }
-    }
-    else
+    } else
         throw new NoSuchElementException("reached iterator end")
 }
 
@@ -1349,7 +1400,7 @@ private[immutable] trait RRBVectorPointer[A] {
         val sizes = display(len - 1)
         if (sizes != null) {
             val newSizes = new Array[Int](len)
-            System.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len - 1)
+            Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len - 1)
             newSizes(len - 1) = newSizes(len - 2)
             newRoot(len) = newSizes
         }
@@ -1442,7 +1493,7 @@ private[immutable] trait RRBVectorPointer[A] {
                     val oldD1 = display1
                     d1 = new Array[AnyRef](oldD1.length + 1)
                     d1(0) = d0
-                    System.arraycopy(oldD1, 0, d1, 1, oldD1.length - 1)
+                    Platform.arraycopy(oldD1, 0, d1, 1, oldD1.length - 1)
                 }
                 display1 = withComputedSizes(d1, 2)
                 display0 = d0
@@ -1460,7 +1511,7 @@ private[immutable] trait RRBVectorPointer[A] {
                     val oldD2 = display2
                     d2 = new Array[AnyRef](oldD2.length + 1)
                     d2(0) = d1
-                    System.arraycopy(oldD2, 0, d2, 1, oldD2.length - 1)
+                    Platform.arraycopy(oldD2, 0, d2, 1, oldD2.length - 1)
                 }
                 display2 = withComputedSizes(d2, 3)
                 display1 = d1
@@ -1481,7 +1532,7 @@ private[immutable] trait RRBVectorPointer[A] {
                     val oldD3 = display3
                     d3 = new Array[AnyRef](oldD3.length + 1)
                     d3(0) = d2
-                    System.arraycopy(oldD3, 0, d3, 1, oldD3.length - 1)
+                    Platform.arraycopy(oldD3, 0, d3, 1, oldD3.length - 1)
                 }
                 display3 = withComputedSizes(d3, 4)
                 display2 = d2
@@ -1505,7 +1556,7 @@ private[immutable] trait RRBVectorPointer[A] {
                     val oldD4 = display4
                     d4 = new Array[AnyRef](oldD4.length + 1)
                     d4(0) = d3
-                    System.arraycopy(oldD4, 0, d4, 1, oldD4.length - 1)
+                    Platform.arraycopy(oldD4, 0, d4, 1, oldD4.length - 1)
                 }
                 display4 = withComputedSizes(d4, 5)
                 display3 = d3
@@ -1532,7 +1583,7 @@ private[immutable] trait RRBVectorPointer[A] {
                     val oldD5 = display5
                     d5 = new Array[AnyRef](oldD5.length + 1)
                     d5(0) = d4
-                    System.arraycopy(oldD5, 0, d5, 1, oldD5.length - 1)
+                    Platform.arraycopy(oldD5, 0, d5, 1, oldD5.length - 1)
                 }
                 display5 = withComputedSizes(d5, 6)
                 display4 = d4
@@ -1816,7 +1867,7 @@ private[immutable] trait RRBVectorPointer[A] {
         //                val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
         //                val newSizes = new Array[Int](oldSizes.length)
         //                val lastSizesIndex = oldSizes.length.-(1)
-        //                System.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex)
+        //                Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex)
         //                newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
         //                val idx = stabilizationIndex.>>(5.*(currentDepth)).&(31)
         //                val newDisplay = copyOf(display, idx, idx.+(2))
@@ -2163,24 +2214,22 @@ private[immutable] trait RRBVectorPointer[A] {
 
     private[immutable] final def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
         val newArray = new Array[AnyRef](newSize)
-        System.arraycopy(array, 0, newArray, 0, numElements)
+        Platform.arraycopy(array, 0, newArray, 0, numElements)
         newArray
     }
 
     private[immutable] final def copyOfAndNull(array: Array[AnyRef], nullIndex: Int) = {
         val len = array.length
         val newArray = new Array[AnyRef](len)
-        System.arraycopy(array, 0, newArray, 0, len)
-        array(nullIndex) = null
-        //        System.arraycopy(array, 0, newArray, 0, nullIndex)
-        //        System.arraycopy(array, nullIndex + 1, newArray, nullIndex + 1, len - nullIndex - 1)
+        Platform.arraycopy(array, 0, newArray, 0, len)
+        newArray(nullIndex) = null
         newArray
     }
 
     private[immutable] final def copyOf(array: Array[AnyRef]) = {
         val len = array.length
         val newArray = new Array[AnyRef](len)
-        System.arraycopy(array, 0, newArray, 0, len)
+        Platform.arraycopy(array, 0, newArray, 0, len)
         newArray
     }
 
