@@ -24,8 +24,6 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
 
-    @inline private val appendOrConcatThreshold = 64
-
     private[immutable] var dirty: Boolean = false
 
     override def par = new ParRRBVector[A](this)
@@ -85,7 +83,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 val resultVector = new RRBVector[B](_endIndex + 1)
                 resultVector.dirty = this.dirty
                 resultVector.initWithFocusFrom(this)
-                resultVector.append(elem)
+                resultVector.append(elem, _endIndex)
                 if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
                 resultVector.asInstanceOf[That]
             } else {
@@ -95,8 +93,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             super.:+(elem)(bf)
         }
 
-    private def append[B](elem: B) = {
-        val _endIndex = endIndex - 1
+    private def append[B](elem: B, _endIndex: Int) = {
         if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
             stabilizeAndFocusOn(_endIndex - 1)
         }
@@ -107,9 +104,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         } else /* next element will go in a new block position */ {
             appendBackSetupNewBlock(elem, elemIndexInBlock)
         }
-        if (RRBVector.compileAssertions) assertVectorInvariant()
     }
-
 
     private def appendOnCurrentBlock[B](elem: B, elemIndexInBlock: Int): Unit = {
         focusEnd = endIndex
@@ -213,13 +208,15 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             this.asInstanceOf[That]
         else {
             that match {
-                case thatVec: RRBVector[B] if thatVec.length > appendOrConcatThreshold =>
+                case thatVec: RRBVector[B] =>
                     if (this.isEmpty)
                         thatVec.asInstanceOf[That]
                     else {
                         val newVec = new RRBVector(this.endIndex + thatVec.endIndex)
                         newVec.initWithFocusFrom(this)
-                        newVec.concatenate(this.endIndex, thatVec)
+                        newVec.dirty = this.dirty
+
+                            newVec.concatenate(this.endIndex, thatVec)
                         newVec.asInstanceOf[That]
                     }
                 case _ =>
