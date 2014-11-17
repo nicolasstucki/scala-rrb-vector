@@ -24,6 +24,8 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
 
+    @inline private val appendOrConcatThreshold = 64
+
     private[immutable] var dirty: Boolean = false
 
     override def par = new ParRRBVector[A](this)
@@ -211,7 +213,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             this.asInstanceOf[That]
         else {
             that match {
-                case thatVec: RRBVector[B] /* if thatVec.length > 1024 */ =>
+                case thatVec: RRBVector[B] if thatVec.length > appendOrConcatThreshold =>
                     if (this.isEmpty)
                         thatVec.asInstanceOf[That]
                     else {
@@ -980,6 +982,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 }
 
 final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] {
+
+    @inline private val appendOrConcatThreshold = 1024
+
     display0 = new Array[AnyRef](32)
     depth = 1
     private var blockIndex = 0
@@ -1009,7 +1014,7 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
     override def ++=(xs: TraversableOnce[A]): this.type = {
         if (xs.nonEmpty) {
             xs match {
-                case thatVec: RRBVector[A] /* if thatVec.length > 1024 */ =>
+                case thatVec: RRBVector[A] if thatVec.length > appendOrConcatThreshold =>
                     if (endIndex != 0) {
                         acc = this.result() ++ xs
                         this.clearCurrent()
