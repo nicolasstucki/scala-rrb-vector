@@ -1529,15 +1529,17 @@ private[immutable] trait RRBVectorPointer[A] {
      */
     private final def copyAndIncRightRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
         val len = node.length
-        val newRoot = copyOf(node, len, len + 1)
-        val oldSizes = node(len - 1)
+        val newRoot = copyOf(node, len - 1, len + 1)
+        val oldSizes = node(len - 1).asInstanceOf[Array[Int]]
         if (oldSizes != null) {
-            val newSizes = new Array[Int](len + 1)
-            System.arraycopy(oldSizes, 0, newSizes, 0, len)
+            val newSizes = new Array[Int](len)
+
+            System.arraycopy(oldSizes, 0, newSizes, 0, len - 1)
+
             if (transient) {
                 newSizes(len - 1) = 1 << (5 * currentLevel)
             }
-            newSizes(len) = newSizes(len - 1)
+            newSizes(len - 1) = newSizes(len - 2)
             newRoot(len) = newSizes
         }
         newRoot
