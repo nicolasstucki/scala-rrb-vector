@@ -133,7 +133,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
             var i = 17
             while (i < (1 << 16)) {
                 for (j <- 1 to 3) {
-                    s"vector of size $i (rnd $j)" should {
+                    s"vector of size $i (rnd ${i+j})" should {
                         val vector = randomVectorOfSize(i)(BaseVectorGenerator.defaultVectorConfig(i + j))
                         testNonEmptyVectorProperties(vector, i)
                     }
