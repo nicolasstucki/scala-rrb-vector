@@ -70,5 +70,63 @@ abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
                 }
             }
         }
+
+
+        measure method "drop" config(
+          Key.exec.minWarmupRuns -> 500,
+          Key.exec.maxWarmupRuns -> 1000
+          ) in {
+
+            performance of s"drop half x$times" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                        val n = vec.length / 2
+                        var sum = 0
+                        var i = 0
+                        val lim = times
+                        while (i < lim) {
+                            val vec2 = drop(vec, n)
+                            sum += vec2.length
+                            i += 1
+                        }
+                        sideeffect = sum
+                    }
+                }
+            }
+
+            performance of s"drop quarter x$times" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                        val n = vec.length / 4
+                        var sum = 0
+                        var i = 0
+                        val lim = times
+                        while (i < lim) {
+                            val vec2 = drop(vec, n)
+                            sum += vec2.length
+                            i += 1
+                        }
+                        sideeffect = sum
+                    }
+                }
+            }
+
+            performance of s"drop three quarters x$times" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                        val n = (3 * vec.length) / 4
+                        var sum = 0
+                        var i = 0
+                        val lim = times
+                        while (i < lim) {
+                            val vec2 = drop(vec, n)
+                            sum += vec2.length
+                            i += 1
+                        }
+                        sideeffect = sum
+                    }
+                }
+            }
+        }
     }
 }
