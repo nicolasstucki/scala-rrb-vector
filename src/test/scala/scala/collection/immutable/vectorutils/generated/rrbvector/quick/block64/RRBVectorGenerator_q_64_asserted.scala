@@ -10,6 +10,7 @@ package scala {
                   import scala.collection.immutable.generated.rrbvector.quick.block64._;
                   override type Vec = RRBVector_q_64_asserted[A];
                   final def vectorClassName: String = "RRBVector_q_64_asserted";
+                  final override def newBuilder() = RRBVector_q_64_asserted.newBuilder[A];
                   final override def tabulatedVector(n: Int): Vec = RRBVector_q_64_asserted.tabulate(n)(element);
                   final override def rangedVector(start: Int, end: Int): Vec = RRBVector_q_64_asserted.range(start, end).map(element);
                   final override def emptyVector: Vec = RRBVector_q_64_asserted.empty[A];

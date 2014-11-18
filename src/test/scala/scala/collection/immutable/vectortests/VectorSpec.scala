@@ -133,7 +133,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
             var i = 17
             while (i < (1 << 16)) {
                 for (j <- 1 to 3) {
-                    s"vector of size $i (rnd ${i+j})" should {
+                    s"vector of size $i (rnd ${i + j})" should {
                         val vector = randomVectorOfSize(i)(BaseVectorGenerator.defaultVectorConfig(i + j))
                         testNonEmptyVectorProperties(vector, i)
                     }
@@ -183,6 +183,74 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
             def v = drop(vector, n / 4)
             assertResult(vector.length - (n / 4))(v.length)
         }
+    }
+
+    "A VectorBuilder" should {
+        "build with +=" when {
+            for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    0 until n foreach (e => b += element(e))
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assert(vec(i) == i))
+                }
+            }
+        }
+
+        "build with ++= by adding singleton lists" when {
+            for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    0 until n foreach (e => b ++= element(e) :: Nil)
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(i)(vec(i)))
+                }
+            }
+        }
+
+        "build with ++= by adding singleton vectors" when {
+            for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    0 until n foreach (e => b ++= plus(emptyVector, element(e)))
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(i)(vec(i)))
+                }
+            }
+        }
+        "build with ++= by adding small vectors" when {
+            for (n <- Seq(5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    val step = 17
+                    for (i <- 0 until n by step) {
+                        b ++= rangedVector(i, (i + step) min n)
+                    }
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(i)(vec(i)))
+                }
+            }
+        }
+
+        "build with ++= by adding big vectors" when {
+            for (n <- Seq(1024, 1025, 2345, 5557, 8466, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    val step = 1050
+                    for (i <- 0 until n by step) {
+                        b ++= rangedVector(i, (i + step) min n)
+                    }
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(i)(vec(i)))
+                }
+            }
+        }
+
     }
 
 }

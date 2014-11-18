@@ -49,6 +49,9 @@ object BaseVectorGenerator {
 
         final def vectorClassName: String = "Vector"
 
+
+        override final def newBuilder() = Vector.newBuilder[A]
+
         override final def tabulatedVector(n: Int): Vec = Vector.tabulate(n)(element)
 
         override final def rangedVector(start: Int, end: Int): Vec = Vector.range(start, end) map element
@@ -70,6 +73,8 @@ object BaseVectorGenerator {
         override type Vec = RRBVector[A]
 
         final def vectorClassName: String = "RRBVector"
+
+        override final def newBuilder() = RRBVector.newBuilder[A]
 
         override final def tabulatedVector(n: Int): Vec = RRBVector.tabulate(n)(element)
 

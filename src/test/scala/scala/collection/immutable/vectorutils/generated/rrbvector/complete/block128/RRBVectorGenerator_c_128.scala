@@ -10,6 +10,7 @@ package scala {
                   import scala.collection.immutable.generated.rrbvector.complete.block128._;
                   override type Vec = RRBVector_c_128[A];
                   final def vectorClassName: String = "RRBVector_c_128";
+                  final override def newBuilder() = RRBVector_c_128.newBuilder[A];
                   final override def tabulatedVector(n: Int): Vec = RRBVector_c_128.tabulate(n)(element);
                   final override def rangedVector(start: Int, end: Int): Vec = RRBVector_c_128.range(start, end).map(element);
                   final override def emptyVector: Vec = RRBVector_c_128.empty[A];

@@ -1,4 +1,5 @@
-package scala.collection.immutable.vectorutils
+package scala.collection
+package immutable.vectorutils
 
 /**
  * Created by nicolasstucki on 06/10/2014.
@@ -7,6 +8,8 @@ trait VectorOps[A] {
     type Vec <: IndexedSeq[A]
 
     def element(n: Int): A
+
+    def newBuilder(): mutable.Builder[A, Vec]
 
     def emptyVector: Vec
 

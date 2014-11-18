@@ -17,6 +17,8 @@ trait VectorGeneratorGen {
 
                     final def vectorClassName: String = ${vectorName()}
 
+                    override final def newBuilder() = $vectorObjectName.newBuilder[$A]
+
                     override final def tabulatedVector(n: Int): Vec = $vectorObjectName.tabulate(n)(element)
 
                     override final def rangedVector(start: Int, end: Int): Vec = $vectorObjectName.range(start, end) map element
