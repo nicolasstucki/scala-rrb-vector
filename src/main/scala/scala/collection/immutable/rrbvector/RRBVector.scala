@@ -18,13 +18,13 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 
-    @inline private[immutable] final val compileAssertions = false
+    @inline private[immutable] final val compileAssertions = true
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
 
-    private[immutable] var dirty: Boolean = false
+    private[immutable] var transient: Boolean = false
 
     override def par = new ParRRBVector[A](this)
 
@@ -37,9 +37,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     override def lengthCompare(len: Int): Int = endIndex.-(len)
 
     override def iterator: RRBVectorIterator[A] = {
-        if (this.dirty) {
+        if (this.transient) {
             this.stabilize(depth)
-            this.dirty = false
+            this.transient = false
             if (RRBVector.compileAssertions) this.assertVectorInvariant()
         }
         val it = new RRBVectorIterator[A](0, endIndex)
@@ -48,9 +48,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     override def reverseIterator: RRBVectorReverseIterator[A] = {
-        if (this.dirty) {
+        if (this.transient) {
             this.stabilize(depth)
-            this.dirty = false
+            this.transient = false
             if (RRBVector.compileAssertions) this.assertVectorInvariant()
         }
         val it = new RRBVectorReverseIterator[A](0, endIndex)
@@ -61,7 +61,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     def apply(index: Int): A = {
         val _focusStart = this.focusStart
         if /* index is in focused subtree */ (_focusStart <= index && index < focusEnd) {
-            val indexInFocus = index.-(_focusStart)
+            val indexInFocus = index - _focusStart
             getElem(indexInFocus, indexInFocus ^ focus)
         } else if /* index is in the vector bounds */ (0 <= index && index < endIndex) {
             getElementFromRoot(index)
@@ -81,7 +81,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             val _endIndex = this.endIndex
             if (_endIndex != 0) {
                 val resultVector = new RRBVector[B](_endIndex + 1)
-                resultVector.dirty = this.dirty
+                resultVector.transient = this.transient
                 resultVector.initWithFocusFrom(this)
                 resultVector.append(elem, _endIndex)
                 if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
@@ -129,16 +129,16 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     private def makeDirtyIfNeeded() = {
         val _depth = depth
-        if (_depth > 1 && !dirty) {
+        if (_depth > 1 && !transient) {
             copyDisplaysAndNullFocusedBranch(_depth, focus | focusRelax)
-            dirty = true
+            transient = true
         }
     }
 
     private[immutable] def stabilizeAndFocusOn(index: Int): Unit = {
-        if (dirty) {
+        if (transient) {
             stabilize(depth)
-            dirty = false
+            transient = false
         }
         focusOn(index)
     }
@@ -152,7 +152,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 resultVector.asInstanceOf[That]
             } else {
                 val resultVector = new RRBVector[B](this.endIndex + 1)
-                resultVector.dirty = this.dirty
+                resultVector.transient = this.transient
                 resultVector.initWithFocusFrom(this)
                 resultVector.prepend(elem)
                 if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
@@ -191,6 +191,22 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         else
             this
 
+    override def takeRight(n: Int): RRBVector[A] =
+        if (n <= 0)
+            RRBVector.empty
+        else if (n < endIndex)
+            dropFront0(endIndex - n)
+        else
+            this
+
+    override def drop(n: Int): RRBVector[A] =
+        if (n <= 0)
+            this
+        else if (n < endIndex)
+            dropFront0(n)
+        else
+            RRBVector.empty
+
     override def dropRight(n: Int): RRBVector[A] =
         if (n <= 0)
             this
@@ -214,9 +230,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     else {
                         val newVec = new RRBVector(this.endIndex + thatVec.endIndex)
                         newVec.initWithFocusFrom(this)
-                        newVec.dirty = this.dirty
+                        newVec.transient = this.transient
 
-                            newVec.concatenate(this.endIndex, thatVec)
+                        newVec.concatenate(this.endIndex, thatVec)
                         newVec.asInstanceOf[That]
                     }
                 case _ =>
@@ -248,11 +264,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         val newRelaxedIndex = (endIndex - 1) - focusStart + focusRelax
         val focusJoined = focus | focusRelax
         val xor = newRelaxedIndex ^ focusJoined
-        val _dirty = dirty
-        setupNewBlockInNextBranch(xor, _dirty)
+        val _transient = transient
+        setupNewBlockInNextBranch(xor, _transient)
         if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
-            // TODO handle dirty and non dirty
-
             var i = if (xor < 1024) 2 else if (xor < 32768) 3 else if (xor < 1048576) 4 else if (xor < 33554432) 5 else 6
             if (i < oldDepth) {
                 val _focusDepth = focusDepth
@@ -298,7 +312,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             initFocus(endIndex - 1, endIndex - 1, endIndex, 1, newRelaxedIndex & -32)
 
         display0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
-        dirty = true
+        transient = true
         if (RRBVector.compileAssertions) this.assertVectorInvariant()
     }
 
@@ -333,14 +347,13 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
 
         val oldDepth = depth
-        val _dirty = dirty
+        val _transient = transient
 
         // create new node at this depth and all singleton nodes under it on left most branch
-        setupNewBlockInInitBranch(currentDepth, _dirty)
+        setupNewBlockInInitBranch(currentDepth, _transient)
 
         // update sizes of nodes above the insertion depth
         if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
-            // TODO handle dirty ando non dirty
             var i = currentDepth
             if (i < oldDepth) {
                 val _focusDepth = focusDepth
@@ -383,19 +396,19 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         initFocus(0, 0, 1, 1, 0)
 
         display0(0) = elem.asInstanceOf[AnyRef]
-        dirty = true
+        transient = true
     }
 
 
     private[immutable] def concatenate[B >: A](currentSize: Int, that: RRBVector[B]): scala.Unit = {
-        if (this.dirty) {
+        if (this.transient) {
             this.stabilize(depth)
-            this.dirty = false
+            this.transient = false
         }
 
-        if (that.dirty) {
+        if (that.transient) {
             that.stabilize(that.depth)
-            that.dirty = false
+            that.transient = false
         }
 
         this.focusOn(currentSize.-(1))
@@ -771,9 +784,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private def takeFront0(n: Int): RRBVector[A] = {
-        if (dirty) {
+        if (transient) {
             stabilize(depth)
-            dirty = false
+            transient = false
         }
 
         val vec = new RRBVector[A](n)
@@ -788,7 +801,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             }
 
             val cutIndex = vec.focus | vec.focusRelax
-            vec.cleanTop(cutIndex)
+            vec.cleanTopTake(cutIndex)
             vec.focusDepth = math.min(vec.depth, vec.focusDepth)
             if (vec.depth > 1) {
                 vec.copyDisplays(vec.focusDepth, cutIndex)
@@ -838,6 +851,72 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         vec
     }
 
+    private def dropFront0(n: Int): RRBVector[A] = {
+        if (transient) {
+            stabilize(depth)
+            transient = false
+        }
+
+        val vec = new RRBVector[A](this.endIndex - n)
+        vec.initWithFocusFrom(this)
+        if (depth > 1) {
+            vec.focusOn(n)
+            val cutIndex = vec.focus | vec.focusRelax
+            val d0Start = cutIndex & 31
+            if (d0Start != 0) {
+                val d0len = vec.display0.length - d0Start
+                val d0 = new Array[AnyRef](d0len)
+                System.arraycopy(vec.display0, d0Start, d0, 0, d0len)
+                vec.display0 = d0
+            }
+
+
+            vec.cleanTopDrop(cutIndex)
+            if (vec.depth > 1) {
+                var i = 2
+                var display = vec.display1
+                while (i <= vec.depth) {
+                    val splitStart = (cutIndex >> (5 * (i - 1))) & 31
+                    val newLen = display.length - splitStart - 1
+                    val newDisplay = new Array[AnyRef](newLen + 1)
+                    System.arraycopy(display, splitStart + 1, newDisplay, 1, newLen - 1)
+                    i match {
+                        case 2 =>
+                            newDisplay(0) = vec.display0
+                            vec.display1 = withComputedSizes(newDisplay, 2)
+                            display = vec.display2
+                        case 3 =>
+                            newDisplay(0) = vec.display1
+                            vec.display2 = withComputedSizes(newDisplay, 3)
+                            display = vec.display3
+                        case 4 =>
+                            newDisplay(0) = vec.display2
+                            vec.display3 = withComputedSizes(newDisplay, 4)
+                            display = vec.display4
+                        case 5 =>
+                            newDisplay(0) = vec.display3
+                            vec.display4 = withComputedSizes(newDisplay, 5)
+                            display = vec.display5
+                        case 6 =>
+                            newDisplay(0) = vec.display4
+                            vec.display5 = withComputedSizes(newDisplay, 6)
+                    }
+                    i += 1
+                }
+            }
+            // May not be optimal, but most of the time it will be
+            vec.initFocus(0, 0, vec.display0.length, 1, 0)
+        } else {
+            val newLen = vec.display0.length - n
+            val d0 = new Array[AnyRef](newLen)
+            System.arraycopy(vec.display0, n, d0, 0, newLen)
+            vec.display0 = d0
+            vec.initFocus(0, 0, newLen, 1, 0)
+        }
+        if (RRBVector.compileAssertions) vec.assertVectorInvariant()
+        vec
+    }
+
     private[immutable] def assertVectorInvariant(): Unit = {
         if (RRBVector.compileAssertions) {
             assert(0 <= depth && depth <= 6, depth)
@@ -851,7 +930,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             assert((depth <= 4 && display4 == null) || (depth > 0 && display4 != null))
             assert((depth <= 5 && display5 == null) || (depth > 0 && display5 != null))
 
-            if (!dirty) {
+            if (!transient) {
                 if (display5 != null) {
                     assert(display4 != null)
                     if (focusDepth <= 5) assert(display5((focusRelax >> 25) & 31) == display4)
@@ -916,7 +995,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         val sizes = node.last.asInstanceOf[Array[Int]]
                         if (sizes != null) {
                             assert(node.length.==(sizes.length.+(1)))
-                            if (!dirty)
+                            if (!transient)
                                 assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex))
 
                             var i = 0
@@ -937,12 +1016,12 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                             checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), expectedLast)
                         }
                     } else {
-                        assert(dirty)
+                        assert(transient)
                     }
                 } else if (node != null) {
                     assert(node.length == _endIndex)
                 } else {
-                    assert(dirty)
+                    assert(transient)
                 }
             }
             depth match {
@@ -972,7 +1051,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
            |    focusStart = $focusStart
            |    focusEnd = $focusEnd
            |    focusRelax = $focusRelax
-           |    dirty = $dirty
+           |    transient = $transient
            |)
          """.stripMargin
     }
@@ -1389,20 +1468,20 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     /**
-     * Returns a new version of oldSizes where the size of the dirty subtree is set to 0 and the rest
+     * Returns a new version of oldSizes where the size of the transient subtree is set to 0 and the rest
      * of the sizes are adjusted
      * @param oldSizes
-     * @param dirtyBranchIndex
+     * @param transientBranchIndex
      * @return a new Array[Int] with the adjusted sizes
      */
-    private[immutable] final def makeDirtySizes(oldSizes: Array[Int], newSizes: Array[Int], dirtyBranchIndex: Int): Array[Int] = {
-        var delta = oldSizes(dirtyBranchIndex)
-        if (dirtyBranchIndex > 0) {
-            delta -= oldSizes(dirtyBranchIndex - 1)
+    private[immutable] final def makeDirtySizes(oldSizes: Array[Int], newSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
+        var delta = oldSizes(transientBranchIndex)
+        if (transientBranchIndex > 0) {
+            delta -= oldSizes(transientBranchIndex - 1)
             if (!oldSizes.eq(newSizes))
-                System.arraycopy(oldSizes, 0, newSizes, 0, dirtyBranchIndex)
+                System.arraycopy(oldSizes, 0, newSizes, 0, transientBranchIndex)
         }
-        var i = dirtyBranchIndex
+        var i = transientBranchIndex
         val len = newSizes.length
         while (i < len) {
             newSizes(i) = oldSizes(i) - delta
@@ -1411,8 +1490,8 @@ private[immutable] trait RRBVectorPointer[A] {
         newSizes
     }
 
-    private[immutable] final def makeDirtySizes(oldSizes: Array[Int], dirtyBranchIndex: Int): Array[Int] = {
-        makeDirtySizes(oldSizes, new Array[Int](oldSizes.length), dirtyBranchIndex)
+    private[immutable] final def makeDirtySizes(oldSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
+        makeDirtySizes(oldSizes, new Array[Int](oldSizes.length), transientBranchIndex)
     }
 
 
@@ -1444,19 +1523,19 @@ private[immutable] trait RRBVectorPointer[A] {
 
 
     /**
-     * Makes a dirty copy of the node
+     * Makes a transient copy of the node
      * @param node
-     * @param dirty
+     * @param transient
      * @return
      */
-    private final def copyAndIncRightRoot(node: Array[AnyRef], dirty: Boolean, currentLevel: Int): Array[AnyRef] = {
+    private final def copyAndIncRightRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
         val len = node.length
         val newRoot = copyOf(node, len, len + 1)
         val oldSizes = node(len - 1)
         if (oldSizes != null) {
             val newSizes = new Array[Int](len + 1)
             System.arraycopy(oldSizes, 0, newSizes, 0, len)
-            if (dirty) {
+            if (transient) {
                 newSizes(len - 1) = 1 << (5 * currentLevel)
             }
             newSizes(len) = newSizes(len - 1)
@@ -1465,7 +1544,7 @@ private[immutable] trait RRBVectorPointer[A] {
         newRoot
     }
 
-    private final def copyAndIncLeftRoot(node: Array[AnyRef], dirty: Boolean, currentLevel: Int): Array[AnyRef] = {
+    private final def copyAndIncLeftRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
         val len = node.length
         val newRoot = new Array[AnyRef](len + 1)
         System.arraycopy(node, 0, newRoot, 1, len - 1)
@@ -1473,7 +1552,7 @@ private[immutable] trait RRBVectorPointer[A] {
         val oldSizes = node(len - 1)
         val newSizes = new Array[Int](len)
         if (oldSizes != null) {
-            if (dirty) {
+            if (transient) {
                 System.arraycopy(oldSizes, 1, newSizes, 2, len - 2)
             } else {
                 System.arraycopy(oldSizes, 0, newSizes, 1, len - 1)
@@ -1493,7 +1572,7 @@ private[immutable] trait RRBVectorPointer[A] {
         newRoot
     }
 
-    private[immutable] final def setupNewBlockInNextBranch(xor: Int, dirty: Boolean): Unit = {
+    private[immutable] final def setupNewBlockInNextBranch(xor: Int, transient: Boolean): Unit = {
         if (xor < 1024) {
             if (depth == 1) {
                 depth = 2
@@ -1501,44 +1580,44 @@ private[immutable] trait RRBVectorPointer[A] {
                 newRoot(0) = display0
                 display1 = newRoot
             } else {
-                val newRoot = copyAndIncRightRoot(display1, dirty, 1)
-                if (dirty) {
-                    val dirtyBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 2, dirtyBranch)
-                    newRoot(dirtyBranch) = display0
+                val newRoot = copyAndIncRightRoot(display1, transient, 1)
+                if (transient) {
+                    val transientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 2, transientBranch)
+                    newRoot(transientBranch) = display0
                 }
                 display1 = newRoot
             }
             display0 = new Array(1)
         } else if (xor < 32768) {
-            if (dirty)
+            if (transient)
                 stabilize(2)
             if (depth == 2) {
                 depth = 3
                 display2 = makeNewRoot0(display1)
             } else {
-                val newRoot = copyAndIncRightRoot(display2, dirty, 2)
-                if (dirty) {
-                    val dirtyBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 3, dirtyBranch)
-                    newRoot(dirtyBranch) = display1
+                val newRoot = copyAndIncRightRoot(display2, transient, 2)
+                if (transient) {
+                    val transientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 3, transientBranch)
+                    newRoot(transientBranch) = display1
                 }
                 display2 = newRoot
             }
             display0 = new Array(1)
             display1 = new Array(2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
         } else if (xor < 1048576) {
-            if (dirty)
+            if (transient)
                 stabilize(3)
             if (depth == 3) {
                 depth = 4
                 display3 = makeNewRoot0(display2)
             } else {
-                val newRoot = copyAndIncRightRoot(display3, dirty, 3)
-                if (dirty) {
-                    val dirtyBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 4, dirtyBranch)
-                    newRoot(dirtyBranch) = display2
+                val newRoot = copyAndIncRightRoot(display3, transient, 3)
+                if (transient) {
+                    val transientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 4, transientBranch)
+                    newRoot(transientBranch) = display2
                 }
                 display3 = newRoot
             }
@@ -1546,17 +1625,17 @@ private[immutable] trait RRBVectorPointer[A] {
             display1 = new Array(2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
             display2 = new Array(2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
         } else if (xor < 33554432) {
-            if (dirty)
+            if (transient)
                 stabilize(4)
             if (depth == 4) {
                 depth = 5
                 display4 = makeNewRoot0(display3)
             } else {
-                val newRoot = copyAndIncRightRoot(display4, dirty, 4)
-                if (dirty) {
-                    val dirtyBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 5, dirtyBranch)
-                    newRoot(dirtyBranch) = display3
+                val newRoot = copyAndIncRightRoot(display4, transient, 4)
+                if (transient) {
+                    val transientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 5, transientBranch)
+                    newRoot(transientBranch) = display3
                 }
                 display4 = newRoot
             }
@@ -1571,11 +1650,11 @@ private[immutable] trait RRBVectorPointer[A] {
                 depth = 6
                 display5 = makeNewRoot0(display4)
             } else {
-                val newRoot = copyAndIncRightRoot(display5, dirty, 5)
-                if (dirty) {
-                    val dirtyBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 6, dirtyBranch)
-                    newRoot(dirtyBranch) = display4
+                val newRoot = copyAndIncRightRoot(display5, transient, 5)
+                if (transient) {
+                    val transientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 6, transientBranch)
+                    newRoot(transientBranch) = display4
                 }
                 display5 = newRoot
             }
@@ -1588,7 +1667,7 @@ private[immutable] trait RRBVectorPointer[A] {
             throw new IllegalArgumentException()
     }
 
-    private[immutable] final def setupNewBlockInInitBranch(insertionDepth: Int, dirty: Boolean): Unit = {
+    private[immutable] final def setupNewBlockInInitBranch(insertionDepth: Int, transient: Boolean): Unit = {
         insertionDepth match {
             case 2 =>
                 if (depth == 1) {
@@ -1601,8 +1680,8 @@ private[immutable] trait RRBVectorPointer[A] {
                     newRoot(2) = sizes
                     display1 = newRoot
                 } else {
-                    val newRoot = copyAndIncLeftRoot(display1, dirty, 1)
-                    if (dirty) {
+                    val newRoot = copyAndIncLeftRoot(display1, transient, 1)
+                    if (transient) {
                         withRecomputeSizes(newRoot, 2, 1)
                         newRoot(1) = display0
                     }
@@ -1610,14 +1689,14 @@ private[immutable] trait RRBVectorPointer[A] {
                 }
                 display0 = new Array[AnyRef](1)
             case 3 =>
-                if (dirty)
+                if (transient)
                     stabilize(2)
                 if (depth == 2) {
                     depth = 3
                     display2 = makeNewRoot1(display1, 3)
                 } else {
-                    val newRoot = copyAndIncLeftRoot(display2, dirty, 2)
-                    if (dirty) {
+                    val newRoot = copyAndIncLeftRoot(display2, transient, 2)
+                    if (transient) {
                         withRecomputeSizes(newRoot, 3, 1)
                         newRoot(1) = display1
                     }
@@ -1626,14 +1705,14 @@ private[immutable] trait RRBVectorPointer[A] {
                 display1 = new Array[AnyRef](2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
                 display0 = new Array[AnyRef](1)
             case 4 =>
-                if (dirty)
+                if (transient)
                     stabilize(3)
                 if (depth == 3) {
                     depth = 4
                     display3 = makeNewRoot1(display2, 4)
                 } else {
-                    val newRoot = copyAndIncLeftRoot(display3, dirty, 3)
-                    if (dirty) {
+                    val newRoot = copyAndIncLeftRoot(display3, transient, 3)
+                    if (transient) {
                         withRecomputeSizes(newRoot, 4, 1)
                         newRoot(1) = display2
                     }
@@ -1643,14 +1722,14 @@ private[immutable] trait RRBVectorPointer[A] {
                 display1 = new Array[AnyRef](2)
                 display0 = new Array[AnyRef](1)
             case 5 =>
-                if (dirty)
+                if (transient)
                     stabilize(4)
                 if (depth == 4) {
                     depth = 5
                     display4 = makeNewRoot1(display3, 5)
                 } else {
-                    val newRoot = copyAndIncLeftRoot(display4, dirty, 4)
-                    if (dirty) {
+                    val newRoot = copyAndIncLeftRoot(display4, transient, 4)
+                    if (transient) {
                         withRecomputeSizes(newRoot, 5, 1)
                         newRoot(1) = display3
                     }
@@ -1661,14 +1740,14 @@ private[immutable] trait RRBVectorPointer[A] {
                 display1 = new Array[AnyRef](2)
                 display0 = new Array[AnyRef](1)
             case 6 =>
-                if (dirty)
+                if (transient)
                     stabilize(5)
                 if (depth == 5) {
                     depth = 6
                     display5 = makeNewRoot1(display4, 6)
                 } else {
-                    val newRoot = copyAndIncLeftRoot(display5, dirty, 5)
-                    if (dirty) {
+                    val newRoot = copyAndIncLeftRoot(display5, transient, 5)
+                    if (transient) {
                         withRecomputeSizes(newRoot, 6, 1)
                         newRoot(1) = display4
                     }
@@ -1961,6 +2040,24 @@ private[immutable] trait RRBVectorPointer[A] {
         }
     }
 
+    private[immutable] final def copyDisplaysSplitRight(_depth: Int, _focus: Int): Unit = {
+        if (_depth >= 2) {
+            if (_depth >= 3) {
+                if (_depth >= 4) {
+                    if (_depth >= 5) {
+                        if (_depth == 6) {
+                            display5 = copyOfRight(display5, (_focus >> 25) & 31)
+                        }
+                        display4 = copyOfRight(display4, (_focus >> 20) & 31)
+                    }
+                    display3 = copyOfRight(display3, (_focus >> 15) & 31)
+                }
+                display2 = copyOfRight(display2, (_focus >> 10) & 31)
+            }
+            display1 = copyOfRight(display1, (_focus >> 5) & 31)
+        }
+    }
+
     private[immutable] final def copyDisplaysAndNullFocusedBranch(_depth: Int, _focus: Int): Unit = {
         _depth match {
             case 2 =>
@@ -2113,7 +2210,7 @@ private[immutable] trait RRBVectorPointer[A] {
         //        }
     }
 
-    private[immutable] final def cleanTop(cutIndex: Int): Unit = this.depth match {
+    private[immutable] final def cleanTopTake(cutIndex: Int): Unit = this.depth match {
         case 2 =>
             if ((cutIndex >> 5) == 0) {
                 display1 = null
@@ -2186,6 +2283,85 @@ private[immutable] trait RRBVectorPointer[A] {
                 this.depth = 6
     }
 
+    private[immutable] final def cleanTopDrop(cutIndex: Int): Unit = this.depth match {
+        case 2 =>
+            if ((cutIndex >> 5) == display1.length - 2) {
+                display1 = null
+                this.depth = 1
+            } else
+                this.depth = 2
+        case 3 =>
+            if ((cutIndex >> 10) == display2.length - 2) {
+                display2 = null
+                if ((cutIndex >> 5) == display1.length - 2) {
+                    display1 = null
+                    this.depth = 1
+                } else
+                    this.depth = 2
+            } else
+                this.depth = 3
+        case 4 =>
+            if ((cutIndex >> 15) == display3.length - 2) {
+                display3 = null
+                if ((cutIndex >> 10) == display2.length - 2) {
+                    display2 = null
+                    if ((cutIndex >> 5) == display1.length - 2) {
+                        display1 = null
+                        this.depth = 1
+                    } else
+                        this.depth = 2
+                } else
+                    this.depth = 3
+            } else
+                this.depth = 4
+        case 5 =>
+            if ((cutIndex >> 20) == display4.length - 2) {
+                display4 = null
+                if ((cutIndex >> 15) == display3.length - 2) {
+                    display3 = null
+                    if ((cutIndex >> 10) == display2.length - 2) {
+                        display2 = null
+                        if ((cutIndex >> 5) == display1.length - 2) {
+                            display1 = null
+                            this.depth = 1
+                        } else
+                            this.depth = 2
+                    } else
+                        this.depth = 3
+                } else
+                    this.depth = 4
+            } else
+                this.depth = 5
+        case 6 =>
+            if ((cutIndex >> 25) == display5.length - 2) {
+                display5 = null
+                if ((cutIndex >> 20) == display4.length - 2) {
+                    display4 = null
+                    if ((cutIndex >> 15) == display3.length - 2) {
+                        display3 = null
+                        if ((cutIndex >> 10) == display2.length - 2) {
+                            display2 = null
+                            if ((cutIndex >> 5) == display1.length - 2) {
+                                display1 = null
+                                this.depth = 1
+                            } else
+                                this.depth = 2
+                        } else
+                            this.depth = 3
+                    } else
+                        this.depth = 4
+                } else
+                    this.depth = 5
+            } else
+                this.depth = 6
+    }
+
+    private[immutable] final def copyOfRight(array: Array[AnyRef], from: Int) = {
+        val newLen = array.length - from
+        val newArray = new Array[AnyRef](newLen)
+        System.arraycopy(array, from, newArray, 0, newLen)
+        newArray
+    }
 
     private[immutable] final def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
         val newArray = new Array[AnyRef](newSize)
