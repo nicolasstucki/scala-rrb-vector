@@ -18,7 +18,7 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 
-    @inline private[immutable] final val compileAssertions = true
+    @inline private[immutable] final val compileAssertions = false
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
@@ -869,7 +869,6 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 System.arraycopy(vec.display0, d0Start, d0, 0, d0len)
                 vec.display0 = d0
             }
-
 
             vec.cleanTopDrop(cutIndex)
             if (vec.depth > 1) {
@@ -2037,24 +2036,6 @@ private[immutable] trait RRBVectorPointer[A] {
             }
             val idx1 = ((_focus >> 5) & 31) + 1
             display1 = copyOf(display1, idx1, idx1 + 1)
-        }
-    }
-
-    private[immutable] final def copyDisplaysSplitRight(_depth: Int, _focus: Int): Unit = {
-        if (_depth >= 2) {
-            if (_depth >= 3) {
-                if (_depth >= 4) {
-                    if (_depth >= 5) {
-                        if (_depth == 6) {
-                            display5 = copyOfRight(display5, (_focus >> 25) & 31)
-                        }
-                        display4 = copyOfRight(display4, (_focus >> 20) & 31)
-                    }
-                    display3 = copyOfRight(display3, (_focus >> 15) & 31)
-                }
-                display2 = copyOfRight(display2, (_focus >> 10) & 31)
-            }
-            display1 = copyOfRight(display1, (_focus >> 5) & 31)
         }
     }
 
