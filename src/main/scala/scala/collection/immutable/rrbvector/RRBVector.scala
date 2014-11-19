@@ -18,7 +18,7 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 
-    @inline private[immutable] final val compileAssertions = true
+    @inline private[immutable] final val compileAssertions = false
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
