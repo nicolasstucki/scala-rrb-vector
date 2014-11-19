@@ -195,8 +195,8 @@ class RunParMapBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorParMapIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorParMapIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorParMapIntBenchmark]
-    include[rrbvector.xunbalanced.RRBVectorParMapIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorParMapIntBenchmark]
+//    include[rrbvector.xunbalanced.RRBVectorParMapIntBenchmark]
 
     // TODO Add generated parrrbvectors
 }
