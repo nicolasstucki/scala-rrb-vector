@@ -38,7 +38,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
         performance of "vector benchmarks" config(
           Key.exec.benchRuns -> benchRuns,
           Key.exec.independentSamples -> independentSamples,
-          Key.exec.jvmflags -> "-XX:+PrintCompilation"
+          Key.exec.jvmflags -> "-Xms16g -Xmx16g" // "-XX:+PrintCompilation"
           ) in {
             for (height <- minHeight to maxHeight) {
                 benchmarks(height)
