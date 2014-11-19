@@ -206,7 +206,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     val it = vec.iterator
                     while (it.hasNext) {
                         val value = it.next()
-                        assertResult(i)(value)
+                        assertResult(element(i))(value)
                         i += 1
                     }
                     intercept[NoSuchElementException](it.next())
@@ -221,7 +221,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                                     val it = iterator(vec, start, end)
                                     while (it.hasNext) {
                                         val value = it.next()
-                                        assertResult(i)(value)
+                                        assertResult(element(i))(value)
                                         i += 1
                                     }
                                     intercept[NoSuchElementException](it.next())
