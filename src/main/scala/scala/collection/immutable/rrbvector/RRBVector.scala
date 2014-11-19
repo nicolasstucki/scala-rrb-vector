@@ -18,7 +18,7 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 
-    @inline private[immutable] final val compileAssertions = false
+    @inline private[immutable] final val compileAssertions = true
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
@@ -448,11 +448,11 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 else {
                     if (that.display2 != null)
                         d2 = that.display2
-                    if (d2.==(null))
+                    if (d2 == null)
                         d1 = that.display1
                     else
                         d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1.==(null))
+                    if (d1 == null)
                         d0 = that.display0
                     else
                         d0 = d1(0).asInstanceOf[Array[AnyRef]]
@@ -460,7 +460,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0, isTop = false)
                 concat = rebalanced(this.display1, concat, d1, 2)
                 concat = rebalanced(this.display2, concat, that.display2, 3)
-                if (concat.length.==(2))
+                if (concat.length == 2)
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 3)
                 else
                     initFromRoot(withComputedSizes(concat, 4), 4)
@@ -469,13 +469,12 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 var d1: Array[AnyRef] = null
                 var d2: Array[AnyRef] = null
                 var d3: Array[AnyRef] = null
-                if (that.focus.&(-32).==(0)) {
+                if ((that.focus & -32) == 0) {
                     d3 = that.display3
                     d2 = that.display2
                     d1 = that.display1
                     d0 = that.display0
-                }
-                else {
+                } else {
                     if (that.display3 != null)
                         d3 = that.display3
                     if (d3.==(null))
@@ -495,7 +494,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 concat = rebalanced(this.display1, concat, d1, 2)
                 concat = rebalanced(this.display2, concat, d2, 3)
                 concat = rebalanced(this.display3, concat, that.display3, 4)
-                if (concat.length.==(2))
+                if (concat.length == 2)
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 4)
                 else
                     initFromRoot(withComputedSizes(concat, 5), 5)
@@ -537,7 +536,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 concat = rebalanced(this.display2, concat, d2, 3)
                 concat = rebalanced(this.display3, concat, d3, 4)
                 concat = rebalanced(this.display4, concat, that.display4, 5)
-                if (concat.length.==(2))
+                if (concat.length == 2)
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 5)
                 else
                     initFromRoot(withComputedSizes(concat, 6), 6)
@@ -2416,6 +2415,18 @@ private[immutable] trait RRBVectorPointer[A] {
             }
             if (notBalanced(node, sizes, currentDepth, end))
                 node(end) = sizes
+        } else if (end == 1 && currentDepth > 2) {
+            val child = node(0).asInstanceOf[Array[AnyRef]]
+            val childSizes = child(child.length - 1).asInstanceOf[Array[Int]]
+            if (childSizes != null) {
+                if (childSizes.length != 1) {
+                    val sizes = new Array[Int](1)
+                    sizes(0) = childSizes(childSizes.length - 1)
+                    node(end) = sizes
+                } else {
+                    node(end) = childSizes
+                }
+            }
         }
         node
     }
@@ -2457,15 +2468,8 @@ private[immutable] trait RRBVectorPointer[A] {
             if (treeSizes != null)
                 treeSizes(treeSizes.length - 1)
             else {
-                var _tree = tree
-                var _currentDepth = currentDepth
-                var acc = 0
-                while (_currentDepth.>(1)) {
-                    acc += (_tree.length - 2) * (1 << (5 * (_currentDepth - 1)))
-                    _currentDepth.-=(1)
-                    _tree = _tree(_tree.length - 2).asInstanceOf[Array[AnyRef]]
-                }
-                acc + _tree.length
+                val len = tree.length
+                (len - 2) * (1 << (5 * (currentDepth - 1))) + treeSize(tree(len - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1)
             }
         }
     }
