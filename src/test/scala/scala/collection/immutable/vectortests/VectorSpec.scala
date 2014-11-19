@@ -1,11 +1,15 @@
 package scala.collection.immutable.vectortests
 
+import java.util.NoSuchElementException
+
 import org.scalatest._
 
 import scala.collection.immutable.vectorutils.{VectorGeneratorType, BaseVectorGenerator}
 
 
 abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with VectorGeneratorType[A] {
+
+    def isRRBVectorImplementation: Boolean = true
 
     "A Vector" when {
         "empty" should {
@@ -185,6 +189,69 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
         }
     }
 
+    "A Vector Iterator" when {
+        "empty" should {
+            "not have a next element" in {
+                assert(!emptyVector.iterator.hasNext)
+            }
+            "throw a no such element exception with next" in {
+                intercept[NoSuchElementException](emptyVector.iterator.next())
+            }
+        }
+
+        def testIteration(vec: Vec, seq: Seq[Int], n: Int): Unit = {
+            s"of size $n" when {
+                "yield all elements of the vector and then stop" in {
+                    var i = 0
+                    val it = vec.iterator
+                    while (it.hasNext) {
+                        val value = it.next()
+                        assertResult(i)(value)
+                        i += 1
+                    }
+                    intercept[NoSuchElementException](it.next())
+                }
+
+                if (isRRBVectorImplementation) {
+                    for (start <- seq if start < n; end <- seq if start < end && end <= n) {
+                        s"iterating from $start" when {
+                            s"iterating from $end" should {
+                                "yield all elements of in that range of the vector and then stop" in {
+                                    var i = start
+                                    val it = iterator(vec, start, end)
+                                    while (it.hasNext) {
+                                        val value = it.next()
+                                        assertResult(i)(value)
+                                        i += 1
+                                    }
+                                    intercept[NoSuchElementException](it.next())
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+        "non-empty and balanced" should {
+            val seq = Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)
+            for (n <- seq) {
+                val vec = tabulatedVector(n)
+                testIteration(vec, seq, n)
+            }
+        }
+
+        "non-empty and non-balanced" should {
+            val seq = Seq(1025, 2304, 5366, 7665, 9455, 20435, 32768, 32769)
+            for (n <- seq) {
+                val vec = randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
+                testIteration(vec, seq, n)
+            }
+        }
+
+    }
+
     "A VectorBuilder" should {
         "build with +=" when {
             for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
@@ -193,7 +260,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     0 until n foreach (e => b += element(e))
                     val vec = b.result()
                     assertResult(n)(vec.length)
-                    1 until n foreach (i => assert(vec(i) == i))
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
                 }
             }
         }
@@ -205,7 +272,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     0 until n foreach (e => b ++= element(e) :: Nil)
                     val vec = b.result()
                     assertResult(n)(vec.length)
-                    1 until n foreach (i => assertResult(i)(vec(i)))
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
                 }
             }
         }
@@ -217,7 +284,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     0 until n foreach (e => b ++= plus(emptyVector, element(e)))
                     val vec = b.result()
                     assertResult(n)(vec.length)
-                    1 until n foreach (i => assertResult(i)(vec(i)))
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
                 }
             }
         }
@@ -231,7 +298,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     }
                     val vec = b.result()
                     assertResult(n)(vec.length)
-                    1 until n foreach (i => assertResult(i)(vec(i)))
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
                 }
             }
         }
@@ -246,11 +313,11 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     }
                     val vec = b.result()
                     assertResult(n)(vec.length)
-                    1 until n foreach (i => assertResult(i)(vec(i)))
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
                 }
             }
         }
 
     }
-
 }
+
