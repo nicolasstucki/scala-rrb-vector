@@ -63,7 +63,6 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
             }
         }
 
-
         def psplit(sizes: Int*): Seq[ParRRBVectorSplitter] = {
             val splitted = new ArrayBuffer[ParRRBVectorSplitter]
             var currentPos = _end - remaining
@@ -87,6 +86,7 @@ object ParRRBVector extends ParFactory[ParRRBVector] {
     def newBuilder[T]: Combiner[T, ParRRBVector[T]] = newCombiner[T]
 
     def newCombiner[T]: Combiner[T, ParRRBVector[T]] = new ParRRBVectorCombiner[T]
+
     //        def newCombiner[T]: Combiner[T, ParRRBVector[T]] = new LazyParRRBVectorCombiner[T]
 }
 
@@ -117,6 +117,8 @@ private[immutable] class ParRRBVectorCombiner[T] extends Combiner[T, ParRRBVecto
             newCombiner ++= this.builder.result()
             newCombiner ++= other.asInstanceOf[ParRRBVectorCombiner[T]].builder.result()
             newCombiner
+            // builder ++= other.asInstanceOf[ParRRBVectorCombiner[T]].builder.result()
+            // this
         }
     }
 }
