@@ -18,7 +18,7 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 
-    @inline private[immutable] final val compileAssertions = false
+    @inline private[immutable] final val compileAssertions = true
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
@@ -1166,11 +1166,12 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
         _hasNext = startIndex < endIndex
         if (_hasNext) {
             focusOn(startIndex)
-            blockIndex = focusStart.+(focus.&(-32))
+            blockIndex = focusStart + (focus & -32)
             lo = focus & 31
-            endLo = math.min(focusEnd.-(blockIndex), 32)
-        }
-        else {
+            if (endIndex < focusEnd)
+                focusEnd = endIndex
+            endLo = math.min(focusEnd - blockIndex, 32)
+        } else {
             blockIndex = 0
             lo = 0
             endLo = 1
@@ -1198,11 +1199,17 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
                 gotoNextBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ (oldBlockIndex - _focusStart))
             } else if (newBlockIndex < endIndex) {
                 focusOn(newBlockIndex)
+                if (endIndex < focusEnd)
+                    focusEnd = endIndex
             } else {
-                /* setup dummy index that will fail with IndexOutOfBound in subsequent 'next()' invocations */
-                lo = (focusEnd - 1) & 31
+                /* setup dummy index that will not fail with IndexOutOfBound in subsequent 'next()' invocations */
+                lo = 0
                 blockIndex = endIndex
-                if (_hasNext) _hasNext = false
+                endLo = lo + 1
+                if (_hasNext) {
+                    _hasNext = false
+                    return res
+                }
                 else throw new NoSuchElementException("reached iterator end")
             }
             endLo = math.min(focusEnd - newBlockIndex, 32)
