@@ -19,6 +19,8 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
 
     @inline private[immutable] final val compileAssertions = false
+
+    private[immutable] final val emptyTransientBlock = new Array[AnyRef](2)
 }
 
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
@@ -112,7 +114,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         System.arraycopy(display0, 0, d0, 0, elemIndexInBlock)
         d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
         display0 = d0
-        makeDirtyIfNeeded()
+        makeTransientIfNeeded()
         if (RRBVector.compileAssertions) assertVectorInvariant()
     }
 
@@ -123,11 +125,11 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         newD0(0) = elem.asInstanceOf[AnyRef]
         System.arraycopy(oldD0, 0, newD0, 1, newLen - 1)
         display0 = newD0
-        makeDirtyIfNeeded()
+        makeTransientIfNeeded()
         if (RRBVector.compileAssertions) assertVectorInvariant()
     }
 
-    private def makeDirtyIfNeeded() = {
+    private def makeTransientIfNeeded() = {
         val _depth = depth
         if (_depth > 1 && !transient) {
             copyDisplaysAndNullFocusedBranch(_depth, focus | focusRelax)
@@ -280,7 +282,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     val displayLen = display.length - 1
                     val newSizes: Array[Int] =
                         if (i >= _focusDepth) {
-                            makeDirtySizes(display(displayLen).asInstanceOf[Array[Int]], displayLen - 1)
+                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], displayLen - 1)
                         } else null
 
                     val newDisplay = new Array[AnyRef](display.length)
@@ -367,7 +369,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     val displayLen = display.length - 1
                     val newSizes: Array[Int] =
                         if (i >= _focusDepth) {
-                            makeDirtySizes(display(displayLen).asInstanceOf[Array[Int]], 1)
+                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], 1)
                         } else null
 
                     val newDisplay = new Array[AnyRef](display.length)
@@ -1201,7 +1203,7 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
                 /* setup dummy index that will not fail with IndexOutOfBound in subsequent 'next()' invocations */
                 lo = 0
                 blockIndex = endIndex
-                endLo = lo + 1
+                endLo = 1
                 if (_hasNext) {
                     _hasNext = false
                     return res
@@ -1476,7 +1478,7 @@ private[immutable] trait RRBVectorPointer[A] {
      * @param transientBranchIndex
      * @return a new Array[Int] with the adjusted sizes
      */
-    private[immutable] final def makeDirtySizes(oldSizes: Array[Int], newSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
+    private[immutable] final def makeTransientSizes(oldSizes: Array[Int], newSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
         var delta = oldSizes(transientBranchIndex)
         if (transientBranchIndex > 0) {
             delta -= oldSizes(transientBranchIndex - 1)
@@ -1492,8 +1494,8 @@ private[immutable] trait RRBVectorPointer[A] {
         newSizes
     }
 
-    private[immutable] final def makeDirtySizes(oldSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
-        makeDirtySizes(oldSizes, new Array[Int](oldSizes.length), transientBranchIndex)
+    private[immutable] final def makeTransientSizes(oldSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
+        makeTransientSizes(oldSizes, new Array[Int](oldSizes.length), transientBranchIndex)
     }
 
 
@@ -1609,7 +1611,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 display2 = newRoot
             }
             display0 = new Array(1)
-            display1 = new Array(2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
+            display1 = RRBVector.emptyTransientBlock
         } else if (xor < 1048576) {
             if (transient)
                 stabilize(3)
@@ -1626,8 +1628,9 @@ private[immutable] trait RRBVectorPointer[A] {
                 display3 = newRoot
             }
             display0 = new Array(1)
-            display1 = new Array(2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
-            display2 = new Array(2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
+            val _emptyTransientBlock = RRBVector.emptyTransientBlock
+            display1 = _emptyTransientBlock // new Array(2)
+            display2 = _emptyTransientBlock // new Array(2)
         } else if (xor < 33554432) {
             if (transient)
                 stabilize(4)
@@ -1645,9 +1648,10 @@ private[immutable] trait RRBVectorPointer[A] {
             }
 
             display0 = new Array(1)
-            display1 = new Array(2)
-            display2 = new Array(2)
-            display3 = new Array(2)
+            val _emptyTransientBlock = RRBVector.emptyTransientBlock
+            display1 = _emptyTransientBlock // new Array(2)
+            display2 = _emptyTransientBlock // new Array(2)
+            display3 = _emptyTransientBlock // new Array(2)
         } else if (xor < 1073741824) {
             stabilize(5)
             if (depth == 5) {
@@ -1663,10 +1667,11 @@ private[immutable] trait RRBVectorPointer[A] {
                 display5 = newRoot
             }
             display0 = new Array(1)
-            display1 = new Array(2)
-            display2 = new Array(2)
-            display3 = new Array(2)
-            display4 = new Array(2)
+            val _emptyTransientBlock = RRBVector.emptyTransientBlock
+            display1 = _emptyTransientBlock // new Array(2)
+            display2 = _emptyTransientBlock // new Array(2)
+            display3 = _emptyTransientBlock // new Array(2)
+            display4 = _emptyTransientBlock // new Array(2)
         } else
             throw new IllegalArgumentException()
     }
@@ -1706,7 +1711,8 @@ private[immutable] trait RRBVectorPointer[A] {
                     }
                     display2 = newRoot
                 }
-                display1 = new Array[AnyRef](2) // TODO check if is really necessary (maybe could be nulled an initialized when stabilized)
+                val _emptyTransientBlock = RRBVector.emptyTransientBlock
+                display1 = _emptyTransientBlock // new Array[AnyRef](2)
                 display0 = new Array[AnyRef](1)
             case 4 =>
                 if (transient)
@@ -1722,8 +1728,9 @@ private[immutable] trait RRBVectorPointer[A] {
                     }
                     display3 = newRoot
                 }
-                display2 = new Array[AnyRef](2)
-                display1 = new Array[AnyRef](2)
+                val _emptyTransientBlock = RRBVector.emptyTransientBlock
+                display2 = _emptyTransientBlock // new Array[AnyRef](2)
+                display1 = _emptyTransientBlock // new Array[AnyRef](2)
                 display0 = new Array[AnyRef](1)
             case 5 =>
                 if (transient)
@@ -1739,9 +1746,10 @@ private[immutable] trait RRBVectorPointer[A] {
                     }
                     display4 = newRoot
                 }
-                display3 = new Array[AnyRef](2)
-                display2 = new Array[AnyRef](2)
-                display1 = new Array[AnyRef](2)
+                val _emptyTransientBlock = RRBVector.emptyTransientBlock
+                display3 = _emptyTransientBlock // new Array[AnyRef](2)
+                display2 = _emptyTransientBlock // new Array[AnyRef](2)
+                display1 = _emptyTransientBlock // new Array[AnyRef](2)
                 display0 = new Array[AnyRef](1)
             case 6 =>
                 if (transient)
@@ -1757,10 +1765,11 @@ private[immutable] trait RRBVectorPointer[A] {
                     }
                     display5 = newRoot
                 }
-                display4 = new Array[AnyRef](2)
-                display3 = new Array[AnyRef](2)
-                display2 = new Array[AnyRef](2)
-                display1 = new Array[AnyRef](2)
+                val _emptyTransientBlock = RRBVector.emptyTransientBlock
+                display4 = _emptyTransientBlock // new Array[AnyRef](2)
+                display3 = _emptyTransientBlock // new Array[AnyRef](2)
+                display2 = _emptyTransientBlock // new Array[AnyRef](2)
+                display1 = _emptyTransientBlock // new Array[AnyRef](2)
                 display0 = new Array[AnyRef](1)
             case _ => throw new IllegalStateException()
         }
@@ -2362,7 +2371,7 @@ private[immutable] trait RRBVectorPointer[A] {
         newArray(nullIndex) = null
         val sizes = array(len - 1).asInstanceOf[Array[Int]]
         if (sizes != null) {
-            newArray(len - 1) = makeDirtySizes(sizes, nullIndex)
+            newArray(len - 1) = makeTransientSizes(sizes, nullIndex)
         }
         newArray
     }
