@@ -16,7 +16,7 @@ trait VectorMethodsGen {
 
         val methods =
             Seq[Tree](
-                q"private[immutable] var $v_dirty: Boolean = false",
+                q"private[immutable] var $v_transient: Boolean = false",
                 companionDef,
                 lengthDef,
                 lengthCompareDef,
@@ -26,6 +26,7 @@ trait VectorMethodsGen {
                 //SeqLike
                 applyDef,
                 collPlusDef,
+                plusCollDef,
                 // IterableLike
                 isEmptyDef,
                 headDef,
@@ -38,17 +39,24 @@ trait VectorMethodsGen {
                 lastDef,
                 initDef,
                 // Private methods
-                appendBackSetupNewBlockDef,
+                appendDef,
+                appendOnCurrentBlockDef,
+                appendBackNewBlockDef,
+                prependDef,
+                prependOnCurrentBlockDef,
+                prependFrontNewBlockDef,
+                createSingletonVectorDef,
+                normalizeAndFocusOnDef,
+                makeTransientIfNeededDef,
                 concatenateDef,
                 rebalancedDef,
                 rebalancedLeafsDef,
                 if (useCompleteRebalance) computeBranchingDef else computeNewSizesDef,
-                withComputedSizesDef,
-                treeSizeDef,
-                takeFront0Def
+                takeFront0Def,
+                dropFront0Def
             )
 
-        if (useAssertions) methods :+ assertVectorInvariantDef
+        if (useAssertions) methods :+ assertVectorInvariantDef :+ debugToStringDef
         else methods
 
     }
@@ -92,6 +100,12 @@ trait VectorMethodsGen {
         val elem = TermName("elem")
         val code = collPlusCode(elem)
         q"override def /*SeqLike*/ :+[$B >: $A, That]($elem: B)(implicit bf: CanBuildFrom[$vectorClassName[$A], $B, That]): That = $code"
+    }
+
+    private def plusCollDef = {
+        val elem = TermName("elem")
+        val code = plusCollCode(elem)
+        q"override def /*SeqLike*/ +:[$B >: $A, That]($elem: B)(implicit bf: CanBuildFrom[$vectorClassName[$A], $B, That]): That = $code"
     }
 
     //
@@ -179,9 +193,73 @@ trait VectorMethodsGen {
     // Private methods
     //
 
-    protected def appendBackSetupNewBlockDef = {
-        val code = appendBackSetupNewBlockCode()
-        q"private[immutable] def $v_appendBackSetupNewBlock() = $code"
+    protected def appendDef = {
+        val elemParam = TermName("elem")
+        val endIndexParam = TermName("_endIndex")
+        val code = appendCode(elemParam, endIndexParam)
+        q"private[immutable] def $v_append[$B]($elemParam: $B, $endIndexParam: Int) { $code }"
+    }
+
+    protected def appendOnCurrentBlockDef = {
+        val elemParam = TermName("elem")
+        val elemIndexInBlockParam = TermName("elemIndexInBlock")
+        val code = appendOnCurrentBlockCode(elemParam, elemIndexInBlockParam)
+        q"private def $v_appendOnCurrentBlock[$B]($elemParam: $B, $elemIndexInBlockParam: Int) { $code }"
+    }
+
+    protected def appendBackNewBlockDef = {
+        val elemParam = TermName("elem")
+        val elemIndexInBlockParam = TermName("elemIndexInBlock")
+        val code = appendBackNewBlockCode(elemParam, elemIndexInBlockParam)
+        q"private def $v_appendBackNewBlock[$B]($elemParam: $B, $elemIndexInBlockParam: Int) { $code }"
+    }
+
+    protected def prependDef = {
+        val elemParam = TermName("elem")
+        val code = prependCode(elemParam)
+        q"private[immutable] def $v_prepend[$B]($elemParam: $B) { $code }"
+    }
+
+    protected def prependOnCurrentBlockDef = {
+        val elemParam = TermName("elem")
+        val oldD0 = TermName("oldD0")
+        val code = prependOnCurrentBlockCode(elemParam, oldD0)
+        q"private def $v_prependOnCurrentBlock[$B]($elemParam: $B, $oldD0: Array[AnyRef]) { $code }"
+    }
+
+    protected def prependFrontNewBlockDef = {
+        val elemParam = TermName("elem")
+        val code = prependFrontNewBlockCode(elemParam)
+        q"private def $v_prependFrontNewBlock[$B]($elemParam: $B) { $code }"
+    }
+
+    protected def createSingletonVectorDef = {
+        val elemParam = TermName("elem")
+        val code = createSingletonVectorCode(elemParam)
+        q"private def $v_createSingletonVector[$B]($elemParam: $B) = $code"
+    }
+
+    protected def normalizeAndFocusOnDef = {
+        val indexParam = TermName("index")
+        val code = normalizeAndFocusOnCode(indexParam)
+        q"private[immutable] def $v_normalizeAndFocusOn($indexParam: Int) = $code"
+    }
+
+    protected def makeTransientIfNeededDef= {
+        val code = makeTransientIfNeededCode()
+        q"private[immutable] def $v_makeTransientIfNeeded() = $code"
+    }
+
+    protected def takeFront0Def: Tree = {
+        val n = TermName("n")
+        val code = takeFront0Code(n)
+        q"private def $v_takeFront0($n: Int): $vectorClassName[$A] = $code"
+    }
+
+    protected def dropFront0Def: Tree = {
+        val n = TermName("n")
+        val code = dropFront0Code(n)
+        q"private def $v_dropFront0($n: Int): $vectorClassName[$A] = $code"
     }
 
     protected def concatenateDef = {
@@ -229,29 +307,8 @@ trait VectorMethodsGen {
         q"private def $v_computeBranching($displayLeft: Array[AnyRef], $concat: Array[AnyRef], $displayRight: Array[AnyRef], $currentDepth: Int) = $code"
     }
 
-    protected def withComputedSizesDef = {
-        val node = TermName("node")
-        val currentDepth = TermName("currentDepth")
-        val endIndex = TermName("_endIndex")
-        val code = withComputedSizesCode(q"$node", q"$currentDepth", q"$endIndex")
-        q"private def $v_withComputedSizes($node: Array[AnyRef], $currentDepth: Int): Array[AnyRef] = $code"
-    }
-
-    protected def treeSizeDef = {
-        val tree = TermName("tree")
-        val currentDepth = TermName("currentDepth")
-        val code = treeSizeCode(q"$tree", q"$currentDepth")
-        q"private def $v_treeSize($tree: Array[AnyRef], $currentDepth: Int): Int = $code"
-    }
-
-    protected def takeFront0Def: Tree = {
-        val n = TermName("n")
-        val code = takeFront0Code(q"$n")
-        q"private def $v_takeFront0($n: Int): $vectorClassName[$A] = $code"
-    }
-
     //
-    // Invariant
+    // Debug
     //
 
     protected def assertVectorInvariantDef = {
@@ -259,6 +316,10 @@ trait VectorMethodsGen {
         q"private[immutable] def $v_assertVectorInvariant(): Boolean = $code"
     }
 
+    protected def debugToStringDef = {
+        val code = debugToStringCode()
+        q"private[immutable] def $v_debugToString(): String = $code"
+    }
 
 }
 

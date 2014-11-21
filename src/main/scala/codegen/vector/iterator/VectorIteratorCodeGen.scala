@@ -32,28 +32,17 @@ trait VectorIteratorCodeGen {
 
     protected def initIteratorFromCode(that: TermName) = {
         q"""
-            if ($it_hasNextVar) {
-                $focusOn($it_iteratorStartIndex)
-                $it_blockIndex = $focusStart + ($focus & ${~blockMask})
-                $it_lo = $focus & $blockMask
-                $it_endLo = math.min($focusEnd - $it_blockIndex, $blockWidth)
-            } else {
-                // init with fake first element that will be ignored
-                $it_blockIndex = 0
-                $it_lo = 0
-                $it_endLo = 1
-                ${displayAt(0)} = new Array[AnyRef](1)
-            }
-
             $initWithFocusFrom($that)
             $it_hasNextVar = $it_iteratorStartIndex < $endIndex
             if ($it_hasNextVar) {
                 $focusOn($it_iteratorStartIndex)
                 $it_blockIndex = $focusStart + ($focus & ${~blockMask})
                 $it_lo = $focus & $blockMask
+                if ($endIndex < $focusEnd) {
+                    $focusEnd = $endIndex
+                }
                 $it_endLo = math.min($focusEnd - $it_blockIndex, $blockWidth)
-            }
-            else {
+            } else {
                 $it_blockIndex = 0
                 $it_lo = 0
                 $it_endLo = 1
@@ -88,12 +77,17 @@ trait VectorIteratorCodeGen {
                     $gotoNextBlockStart($newBlockIndexInFocus, $newBlockIndexInFocus ^ ($oldBlockIndex - $localFocusStart))
                 } else if ( $newBlockIndex < $endIndex ) {
                     $focusOn($newBlockIndex)
+                    if ($endIndex < $focusEnd) {
+                        $focusEnd = $endIndex
+                    }
                 } else {
-                    // reset te lo and blockIndex where no exceptions will be thrown
-                    $it_lo = ($focusEnd - 1) & $blockMask
+                    /* setup dummy index that will not fail with IndexOutOfBound in subsequent 'next()' invocations */
+                    $it_lo = 0
                     $it_blockIndex = $endIndex
+                    $it_endLo = 1
                     if ( $it_hasNextVar ) {
                         $it_hasNextVar = false
+                        return $res
                     } else {
                         throw new NoSuchElementException("reached iterator end")
                     }

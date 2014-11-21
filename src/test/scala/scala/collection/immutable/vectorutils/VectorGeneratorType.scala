@@ -6,15 +6,8 @@ trait VectorGeneratorType[A] {
 
     def vectorTypeName: String
 
-
-    protected def mapBenchFunCompute(): Int = {
-        var y = 5436456
-        var i = 0
-        while (i < 10000) {
-            y = java.lang.Integer.reverse(y)
-            i += 1
-        }
-        y
+    protected final def mapBenchFunCompute(x: Int): Int = {
+        Math.cos(3.1415 + Math.cos(1.0 + Math.sin(2.0 + Math.cos(Math.sin(Math.sin(Math.cos(x + 1.0))))))).toInt
     }
 }
 
@@ -27,7 +20,7 @@ object VectorGeneratorType {
         final def mapSelfFun(x: Int) = x
 
         final def mapBenchFun(x: Int) = {
-            x + mapBenchFunCompute()
+            mapBenchFunCompute(1)
         }
 
 
@@ -41,7 +34,7 @@ object VectorGeneratorType {
         final def mapSelfFun(x: String) = x
 
         final def mapBenchFun(x: String) = {
-            x + mapBenchFunCompute()
+            mapBenchFunCompute(1).toString
         }
 
         final def vectorTypeName: String = "String"
