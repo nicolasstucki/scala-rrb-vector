@@ -40,7 +40,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     override def iterator: RRBVectorIterator[A] = {
         if (this.transient) {
-            this.stabilize(depth)
+            this.normalize(depth)
             this.transient = false
             if (RRBVector.compileAssertions) this.assertVectorInvariant()
         }
@@ -51,7 +51,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     override def reverseIterator: RRBVectorReverseIterator[A] = {
         if (this.transient) {
-            this.stabilize(depth)
+            this.normalize(depth)
             this.transient = false
             if (RRBVector.compileAssertions) this.assertVectorInvariant()
         }
@@ -95,16 +95,16 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             super.:+(elem)(bf)
         }
 
-    private def append[B](elem: B, _endIndex: Int) = {
+    private[immutable] def append[B](elem: B, _endIndex: Int): Unit = {
         if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
-            stabilizeAndFocusOn(_endIndex - 1)
+            normalizeAndFocusOn(_endIndex - 1)
         }
 
         val elemIndexInBlock = (_endIndex - focusStart) & 31
         if /* if next element will go in current block position */ (elemIndexInBlock != 0) {
             appendOnCurrentBlock(elem, elemIndexInBlock)
         } else /* next element will go in a new block position */ {
-            appendBackSetupNewBlock(elem, elemIndexInBlock)
+            appendBackNewBlock(elem, elemIndexInBlock)
         }
     }
 
@@ -115,6 +115,108 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
         display0 = d0
         makeTransientIfNeeded()
+        if (RRBVector.compileAssertions) assertVectorInvariant()
+    }
+
+    private def appendBackNewBlock[B](elem: B, elemIndexInBlock: Int) = {
+        val oldDepth = depth
+        val newRelaxedIndex = (endIndex - 1) - focusStart + focusRelax
+        val focusJoined = focus | focusRelax
+        val xor = newRelaxedIndex ^ focusJoined
+        val _transient = transient
+        setupNewBlockInNextBranch(xor, _transient)
+        if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
+            var i = if (xor < 1024) 2 else if (xor < 32768) 3 else if (xor < 1048576) 4 else if (xor < 33554432) 5 else 6
+            if (i < oldDepth) {
+                val _focusDepth = focusDepth
+                var display: Array[AnyRef] = i match {
+                    case 2 => display2
+                    case 3 => display3
+                    case 4 => display4
+                    case 5 => display5
+                }
+                do {
+                    val displayLen = display.length - 1
+                    val newSizes: Array[Int] =
+                        if (i >= _focusDepth) {
+                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], displayLen - 1)
+                        } else null
+
+                    val newDisplay = new Array[AnyRef](display.length)
+                    System.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
+                    if (i >= _focusDepth)
+                        newDisplay(displayLen) = newSizes
+
+                    i match {
+                        case 2 =>
+                            display2 = newDisplay
+                            display = display3
+                        case 3 =>
+                            display3 = newDisplay
+                            display = display4
+                        case 4 =>
+                            display4 = newDisplay
+                            display = display5
+                        case 5 =>
+                            display5 = newDisplay
+                    }
+                    i += 1
+                } while (i < oldDepth)
+            }
+        }
+
+        if (oldDepth == focusDepth)
+            initFocus(endIndex - 1, 0, endIndex, depth, 0)
+        else
+            initFocus(endIndex - 1, endIndex - 1, endIndex, 1, newRelaxedIndex & -32)
+
+        display0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
+        transient = true
+        if (RRBVector.compileAssertions) this.assertVectorInvariant()
+    }
+
+    private def makeTransientIfNeeded() = {
+        val _depth = depth
+        if (_depth > 1 && !transient) {
+            copyDisplaysAndNullFocusedBranch(_depth, focus | focusRelax)
+            transient = true
+        }
+    }
+
+    private[immutable] def normalizeAndFocusOn(index: Int): Unit = {
+        if (transient) {
+            normalize(depth)
+            transient = false
+        }
+        focusOn(index)
+    }
+
+    override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That =
+        if (bf.eq(IndexedSeq.ReusableCBF))
+            if (this.endIndex != 0) {
+                val resultVector = new RRBVector[B](this.endIndex + 1)
+                resultVector.transient = this.transient
+                resultVector.initWithFocusFrom(this)
+                resultVector.prepend(elem)
+                if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                resultVector.asInstanceOf[That]
+            } else {
+                createSingletonVector(elem).asInstanceOf[That]
+            }
+        else
+            super.:+(elem)(bf)
+
+    private[immutable] def prepend[B](elem: B): Unit = {
+        if (focusStart != 0 || (focus & -32) != 0) {
+            /* the current focused block is not on the left most leaf block of the vector */
+            normalizeAndFocusOn(0)
+        }
+        val d0 = display0
+        if /* element fits in current block */ (d0.length < 32) {
+            prependOnCurrentBlock(elem, d0)
+        } else {
+            prependFrontNewBlock(elem)
+        }
         if (RRBVector.compileAssertions) assertVectorInvariant()
     }
 
@@ -129,55 +231,90 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         if (RRBVector.compileAssertions) assertVectorInvariant()
     }
 
-    private def makeTransientIfNeeded() = {
-        val _depth = depth
-        if (_depth > 1 && !transient) {
-            copyDisplaysAndNullFocusedBranch(_depth, focus | focusRelax)
-            transient = true
+    private[immutable] def prependFrontNewBlock[B](elem: B): Unit = {
+        if (RRBVector.compileAssertions) {
+            assert(display0.length == 32)
         }
-    }
 
-    private[immutable] def stabilizeAndFocusOn(index: Int): Unit = {
-        if (transient) {
-            stabilize(depth)
-            transient = false
+        var currentDepth = focusDepth
+        if (currentDepth == 1)
+            currentDepth += 1
+        var display = currentDepth match {
+            case 1 =>
+                currentDepth = 2
+                display1
+            case 2 => display1
+            case 3 => display2
+            case 4 => display3
+            case 5 => display4
+            case 6 => display5
         }
-        focusOn(index)
-    }
-
-    override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That =
-        if (bf.eq(IndexedSeq.ReusableCBF))
-            if (this.endIndex == 0) {
-                val resultVector = new RRBVector[B](1)
-                resultVector.initSingleton(elem)
-                if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
-                resultVector.asInstanceOf[That]
-            } else {
-                val resultVector = new RRBVector[B](this.endIndex + 1)
-                resultVector.transient = this.transient
-                resultVector.initWithFocusFrom(this)
-                resultVector.prepend(elem)
-                if (RRBVector.compileAssertions) resultVector.assertVectorInvariant()
-                resultVector.asInstanceOf[That]
+        while /* the insertion depth has not been found */ (display != null && display.length == 33) {
+            currentDepth += 1
+            currentDepth match {
+                case 2 => display = display1
+                case 3 => display = display2
+                case 4 => display = display3
+                case 5 => display = display4
+                case 6 => display = display5
+                case _ => throw new IllegalStateException()
             }
-        else
-            super.:+(elem)(bf)
+        }
 
-    private def prepend[B](elem: B): Unit = {
-        if (focusStart != 0 || (focus & -32) != 0) {
-            /* the current focused block is not on the left most leaf block of the vector */
-            stabilizeAndFocusOn(0)
+        val oldDepth = depth
+        val _transient = transient
+
+        // create new node at this depth and all singleton nodes under it on left most branch
+        setupNewBlockInInitBranch(currentDepth, _transient)
+
+        // update sizes of nodes above the insertion depth
+        if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
+            var i = currentDepth
+            if (i < oldDepth) {
+                val _focusDepth = focusDepth
+                var display: Array[AnyRef] = i match {
+                    case 2 => display2
+                    case 3 => display3
+                    case 4 => display4
+                    case 5 => display5
+                }
+                do {
+                    val displayLen = display.length - 1
+                    val newSizes: Array[Int] =
+                        if (i >= _focusDepth) {
+                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], 1)
+                        } else null
+
+                    val newDisplay = new Array[AnyRef](display.length)
+                    System.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
+                    if (i >= _focusDepth)
+                        newDisplay(displayLen) = newSizes
+
+                    i match {
+                        case 2 =>
+                            display2 = newDisplay
+                            display = display3
+                        case 3 =>
+                            display3 = newDisplay
+                            display = display4
+                        case 4 =>
+                            display4 = newDisplay
+                            display = display5
+                        case 5 =>
+                            display5 = newDisplay
+                    }
+                    i += 1
+                } while (i < oldDepth)
+            }
         }
-        val d0 = display0
-        if /* element fits in current block */ (d0.length < 32) {
-            prependOnCurrentBlock(elem, d0)
-        } else {
-            prependFrontSetupNewBlock(elem)
-        }
-        if (RRBVector.compileAssertions) assertVectorInvariant()
+
+        initFocus(0, 0, 1, 1, 0)
+
+        display0(0) = elem.asInstanceOf[AnyRef]
+        transient = true
     }
 
-    override def isEmpty: Boolean = this.endIndex.==(0)
+    override def isEmpty: Boolean = this.endIndex == 0
 
     override def head: A =
         if (this.endIndex != 0)
@@ -261,155 +398,14 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             throw new UnsupportedOperationException("empty.init")
 
 
-    private[immutable] def appendBackSetupNewBlock[B](elem: B, elemIndexInBlock: Int) = {
-        val oldDepth = depth
-        val newRelaxedIndex = (endIndex - 1) - focusStart + focusRelax
-        val focusJoined = focus | focusRelax
-        val xor = newRelaxedIndex ^ focusJoined
-        val _transient = transient
-        setupNewBlockInNextBranch(xor, _transient)
-        if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
-            var i = if (xor < 1024) 2 else if (xor < 32768) 3 else if (xor < 1048576) 4 else if (xor < 33554432) 5 else 6
-            if (i < oldDepth) {
-                val _focusDepth = focusDepth
-                var display: Array[AnyRef] = i match {
-                    case 2 => display2
-                    case 3 => display3
-                    case 4 => display4
-                    case 5 => display5
-                }
-                do {
-                    val displayLen = display.length - 1
-                    val newSizes: Array[Int] =
-                        if (i >= _focusDepth) {
-                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], displayLen - 1)
-                        } else null
-
-                    val newDisplay = new Array[AnyRef](display.length)
-                    System.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
-                    if (i >= _focusDepth)
-                        newDisplay(displayLen) = newSizes
-
-                    i match {
-                        case 2 =>
-                            display2 = newDisplay
-                            display = display3
-                        case 3 =>
-                            display3 = newDisplay
-                            display = display4
-                        case 4 =>
-                            display4 = newDisplay
-                            display = display5
-                        case 5 =>
-                            display5 = newDisplay
-                    }
-                    i += 1
-                } while (i < oldDepth)
-            }
-        }
-
-        if (oldDepth == focusDepth)
-            initFocus(endIndex - 1, 0, endIndex, depth, 0)
-        else
-            initFocus(endIndex - 1, endIndex - 1, endIndex, 1, newRelaxedIndex & -32)
-
-        display0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
-        transient = true
-        if (RRBVector.compileAssertions) this.assertVectorInvariant()
-    }
-
-    private[immutable] def prependFrontSetupNewBlock[B](elem: B): Unit = {
-        if (RRBVector.compileAssertions) {
-            assert(display0.length == 32)
-        }
-
-        var currentDepth = focusDepth
-        if (currentDepth == 1)
-            currentDepth += 1
-        var display = currentDepth match {
-            case 1 =>
-                currentDepth = 2
-                display1
-            case 2 => display1
-            case 3 => display2
-            case 4 => display3
-            case 5 => display4
-            case 6 => display5
-        }
-        while /* the insertion depth has not been found */ (display != null && display.length == 33) {
-            currentDepth += 1
-            currentDepth match {
-                case 2 => display = display1
-                case 3 => display = display2
-                case 4 => display = display3
-                case 5 => display = display4
-                case 6 => display = display5
-                case _ => throw new IllegalStateException()
-            }
-        }
-
-        val oldDepth = depth
-        val _transient = transient
-
-        // create new node at this depth and all singleton nodes under it on left most branch
-        setupNewBlockInInitBranch(currentDepth, _transient)
-
-        // update sizes of nodes above the insertion depth
-        if /* setupNewBlockInNextBranch(...) increased the depth of the tree */ (oldDepth == depth) {
-            var i = currentDepth
-            if (i < oldDepth) {
-                val _focusDepth = focusDepth
-                var display: Array[AnyRef] = i match {
-                    case 2 => display2
-                    case 3 => display3
-                    case 4 => display4
-                    case 5 => display5
-                }
-                do {
-                    val displayLen = display.length - 1
-                    val newSizes: Array[Int] =
-                        if (i >= _focusDepth) {
-                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], 1)
-                        } else null
-
-                    val newDisplay = new Array[AnyRef](display.length)
-                    System.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
-                    if (i >= _focusDepth)
-                        newDisplay(displayLen) = newSizes
-
-                    i match {
-                        case 2 =>
-                            display2 = newDisplay
-                            display = display3
-                        case 3 =>
-                            display3 = newDisplay
-                            display = display4
-                        case 4 =>
-                            display4 = newDisplay
-                            display = display5
-                        case 5 =>
-                            display5 = newDisplay
-                    }
-                    i += 1
-                } while (i < oldDepth)
-            }
-        }
-
-        initFocus(0, 0, 1, 1, 0)
-
-        display0(0) = elem.asInstanceOf[AnyRef]
-        transient = true
-    }
-
-
     private[immutable] def concatenate[B >: A](currentSize: Int, that: RRBVector[B]): scala.Unit = {
         if (this.transient) {
-            this.stabilize(depth)
+            this.normalize(depth)
             this.transient = false
         }
 
         if (that.transient) {
-            that.stabilize(that.depth)
+            that.normalize(that.depth)
             that.transient = false
         }
 
@@ -421,7 +417,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             case 2 =>
                 var d0: Array[AnyRef] = null
                 var d1: Array[AnyRef] = null
-                if (that.focus.&(-32).==(0)) {
+                if ((that.focus & -32) == 0) {
                     d1 = that.display1
                     d0 = that.display0
                 } else {
@@ -434,7 +430,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 }
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0, isTop = false)
                 concat = rebalanced(this.display1, concat, that.display1, 2)
-                if (concat.length.==(2))
+                if (concat.length == 2)
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 2)
                 else
                     initFromRoot(withComputedSizes(concat, 3), 3)
@@ -442,7 +438,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 var d0: Array[AnyRef] = null
                 var d1: Array[AnyRef] = null
                 var d2: Array[AnyRef] = null
-                if (that.focus.&(-32).==(0)) {
+                if ((that.focus & -32) == 0) {
                     d2 = that.display2
                     d1 = that.display1
                     d0 = that.display0
@@ -479,15 +475,15 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 } else {
                     if (that.display3 != null)
                         d3 = that.display3
-                    if (d3.==(null))
+                    if (d3 == null)
                         d2 = that.display2
                     else
                         d2 = d3(0).asInstanceOf[Array[AnyRef]]
-                    if (d2.==(null))
+                    if (d2 == null)
                         d1 = that.display1
                     else
                         d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1.==(null))
+                    if (d1 == null)
                         d0 = that.display0
                     else
                         d0 = d1(0).asInstanceOf[Array[AnyRef]]
@@ -506,7 +502,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 var d2: Array[AnyRef] = null
                 var d3: Array[AnyRef] = null
                 var d4: Array[AnyRef] = null
-                if (that.focus.&(-32) == 0) {
+                if ((that.focus & -32) == 0) {
                     d4 = that.display4
                     d3 = that.display3
                     d2 = that.display2
@@ -516,19 +512,19 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 else {
                     if (that.display4 != null)
                         d4 = that.display4
-                    if (d4.==(null))
+                    if (d4 == null)
                         d3 = that.display3
                     else
                         d3 = d4(0).asInstanceOf[Array[AnyRef]]
-                    if (d3.==(null))
+                    if (d3 == null)
                         d2 = that.display2
                     else
                         d2 = d3(0).asInstanceOf[Array[AnyRef]]
-                    if (d2.==(null))
+                    if (d2 == null)
                         d1 = that.display1
                     else
                         d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1.==(null))
+                    if (d1 == null)
                         d0 = that.display0
                     else
                         d0 = d1(0).asInstanceOf[Array[AnyRef]]
@@ -560,23 +556,23 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 else {
                     if (that.display5 != null)
                         d5 = that.display5
-                    if (d5.==(null))
+                    if (d5 == null)
                         d4 = that.display4
                     else
                         d4 = d5(0).asInstanceOf[Array[AnyRef]]
-                    if (d4.==(null))
+                    if (d4 == null)
                         d3 = that.display3
                     else
                         d3 = d4(0).asInstanceOf[Array[AnyRef]]
-                    if (d3.==(null))
+                    if (d3 == null)
                         d2 = that.display2
                     else
                         d2 = d3(0).asInstanceOf[Array[AnyRef]]
-                    if (d2.==(null))
+                    if (d2 == null)
                         d1 = that.display1
                     else
                         d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1.==(null))
+                    if (d1 == null)
                         d0 = that.display0
                     else
                         d0 = d1(0).asInstanceOf[Array[AnyRef]]
@@ -587,7 +583,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 concat = rebalanced(this.display3, concat, d3, 4)
                 concat = rebalanced(this.display4, concat, d4, 5)
                 concat = rebalanced(this.display5, concat, that.display5, 6)
-                if (concat.length.==(2))
+                if (concat.length == 2)
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 6)
                 else
                     initFromRoot(withComputedSizes(concat, 7), 7)
@@ -622,7 +618,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         displayEnd = if (concat == null) leftLength else leftLength - 1
                     }
                 case 1 =>
-                    if (concat.==(null))
+                    if (concat == null)
                         displayEnd = 0
                     else {
                         currentDisplay = concat
@@ -679,7 +675,10 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     iTop += 1
                     iMid = 0
                     val remainingBranches = branching - ((iTop << 10) | (iMid << 5) | iBot)
-                    mid = if (remainingBranches > 0) new Array[AnyRef](if ((remainingBranches >> 10) == 0) (remainingBranches + 63) >> 5 else 33) else null
+                    if (remainingBranches > 0)
+                        mid = new Array[AnyRef](if ((remainingBranches >> 10) == 0) (remainingBranches + 63) >> 5 else 33)
+                    else
+                        mid = null
                 }
 
             }
@@ -731,27 +730,17 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private def computeBranching(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int) = {
-        val leftLength = if (displayLeft == null)
-            0
-        else
-            displayLeft.length - 1
-        val concatLength = if (concat.==(null))
-            0
-        else
-            concat.length - 1
-        val rightLength = if (displayRight == null)
-            0
-        else
-            displayRight.length - 1
+        val leftLength = if (displayLeft == null) 0 else displayLeft.length - 1
+        val concatLength = if (concat == null) 0 else concat.length - 1
+        val rightLength = if (displayRight == null) 0 else displayRight.length - 1
         var branching = 0
-        if (currentDepth.==(1)) {
+        if (currentDepth == 1) {
             branching = leftLength + concatLength + rightLength
             if (leftLength != 0)
                 branching -= 1
             if (rightLength != 0)
                 branching -= 1
-        }
-        else {
+        } else {
             var i = 0
             while (i < leftLength - 1) {
                 branching += displayLeft(i).asInstanceOf[Array[AnyRef]].length
@@ -771,10 +760,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 branching -= leftLength + concatLength + rightLength
                 if (leftLength != 0)
                     branching += 1
-
                 if (rightLength != 0)
                     branching += 1
-
             }
 
         }
@@ -783,16 +770,16 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     private def takeFront0(n: Int): RRBVector[A] = {
         if (transient) {
-            stabilize(depth)
+            normalize(depth)
             transient = false
         }
 
         val vec = new RRBVector[A](n)
         vec.initWithFocusFrom(this)
         if (depth > 1) {
-            vec.focusOn(n.-(1))
+            vec.focusOn(n - 1)
             val d0len = (vec.focus & 31) + 1
-            if (d0len.!=(32)) {
+            if (d0len != 32) {
                 val d0 = new Array[AnyRef](d0len)
                 System.arraycopy(vec.display0, 0, d0, 0, d0len)
                 vec.display0 = d0
@@ -813,13 +800,13 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         case 5 => vec.display4
                         case 6 => vec.display5
                     }
-                    val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
+                    val oldSizes = display(display.length - 1).asInstanceOf[Array[Int]]
                     val newLen = ((vec.focusRelax >> (5 * (i - 1))) & 31) + 1
                     val newSizes = new Array[Int](newLen)
-                    System.arraycopy(oldSizes, 0, newSizes, 0, newLen.-(1))
+                    System.arraycopy(oldSizes, 0, newSizes, 0, newLen - 1)
                     newSizes(newLen - 1) = n - offset
-                    if (newLen.>(1))
-                        offset.+=(newSizes(newLen.-(2)))
+                    if (newLen > 1)
+                        offset += newSizes(newLen - 2)
 
                     val newDisplay = new Array[AnyRef](newLen + 1)
                     System.arraycopy(display, 0, newDisplay, 0, newLen)
@@ -851,13 +838,13 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     private def dropFront0(n: Int): RRBVector[A] = {
         if (transient) {
-            stabilize(depth)
+            normalize(depth)
             transient = false
         }
 
         val vec = new RRBVector[A](this.endIndex - n)
         vec.initWithFocusFrom(this)
-        if (depth > 1) {
+        if (vec.depth > 1) {
             vec.focusOn(n)
             val cutIndex = vec.focus | vec.focusRelax
             val d0Start = cutIndex & 31
@@ -917,9 +904,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     private[immutable] def assertVectorInvariant(): Unit = {
         if (RRBVector.compileAssertions) {
             assert(0 <= depth && depth <= 6, depth)
-            assert(isEmpty == (depth == 0), scala.Tuple2(isEmpty, depth))
-            assert(isEmpty == (length == 0), scala.Tuple2(isEmpty, length))
-            assert(length == endIndex, scala.Tuple2(length, endIndex))
+            assert(isEmpty == (depth == 0), (isEmpty, depth))
+            assert(isEmpty == (length == 0), (isEmpty, length))
+            assert(length == endIndex, (length, endIndex))
             assert((depth <= 0 && display0 == null) || (depth > 0 && display0 != null))
             assert((depth <= 1 && display1 == null) || (depth > 0 && display1 != null))
             assert((depth <= 2 && display2 == null) || (depth > 0 && display2 != null))
@@ -986,31 +973,31 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             assert(0 <= focusStart && focusStart <= focusEnd && focusEnd <= endIndex, (focusStart, focusEnd, endIndex))
             assert(focusStart == focusEnd || focusEnd != 0, (focusStart, focusEnd))
             assert(0 <= focusDepth && focusDepth <= depth, scala.Tuple2(focusDepth, depth))
+
             def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = {
-                if (currentDepth.>(1)) {
+                if (currentDepth > 1) {
                     if (node != null) {
-                        val sizes = node.last.asInstanceOf[Array[Int]]
+                        val sizes = node(node.length - 1).asInstanceOf[Array[Int]]
                         if (sizes != null) {
-                            assert(node.length.==(sizes.length + 1))
+                            assert(node.length == sizes.length + 1)
                             if (!transient)
-                                assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex))
+                                assert(sizes(sizes.length - 1) == _endIndex, (sizes(sizes.length - 1), _endIndex))
 
                             var i = 0
-                            while (i < sizes.length.-(1)) {
-                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0)) 0 else sizes(i.-(1))))
+                            while (i < sizes.length - 1) {
+                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
                                 i += 1
                             }
-                            checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), if (sizes.length.>(1)) sizes.last.-(sizes(sizes.length.-(2))) else sizes.last)
-                        }
-                        else {
+                            checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, if (sizes.length > 1) sizes(sizes.length - 1) - sizes(sizes.length - 2) else sizes(sizes.length - 1))
+                        } else {
                             var i = 0
-                            while (i < node.length.-(2)) {
-                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), 1.<<(5.*(currentDepth.-(1))))
+                            while (i < node.length - 2) {
+                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, 1 << (5 * (currentDepth - 1)))
                                 i += 1
                             }
-                            val expectedLast = _endIndex - 1.<<(5.*(currentDepth.-(1))).*(node.length.-(2))
-                            assert(1 <= expectedLast && expectedLast.<=(1.<<(5.*(currentDepth))))
-                            checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), expectedLast)
+                            val expectedLast = _endIndex - (1 << (5 * (currentDepth - 1))) * (node.length - 2)
+                            assert(1 <= expectedLast && expectedLast <= (1 << (5 * currentDepth)))
+                            checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, expectedLast)
                         }
                     } else {
                         assert(transient)
@@ -1036,12 +1023,24 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     private[immutable] def debugToString: String = {
         s"""
            |RRBVector (
-           |    display0 = $display0 ${if (display0 != null) display0.mkString("[", ", ", "]") else ""}
-           |    display1 = $display1 ${if (display1 != null) display1.mkString("[", ", ", "]") else ""}
-           |    display2 = $display2 ${if (display2 != null) display2.mkString("[", ", ", "]") else ""}
-           |    display3 = $display3 ${if (display3 != null) display3.mkString("[", ", ", "]") else ""}
-           |    display4 = $display4 ${if (display4 != null) display4.mkString("[", ", ", "]") else ""}
-           |    display5 = $display5 ${if (display5 != null) display5.mkString("[", ", ", "]") else ""}
+           |    display0 = $display0 ${
+            if (display0 != null) display0.mkString("[", ", ", "]") else ""
+        }
+           |    display1 = $display1 ${
+            if (display1 != null) display1.mkString("[", ", ", "]") else ""
+        }
+           |    display2 = $display2 ${
+            if (display2 != null) display2.mkString("[", ", ", "]") else ""
+        }
+           |    display3 = $display3 ${
+            if (display3 != null) display3.mkString("[", ", ", "]") else ""
+        }
+           |    display4 = $display4 ${
+            if (display4 != null) display4.mkString("[", ", ", "]") else ""
+        }
+           |    display5 = $display5 ${
+            if (display5 != null) display5.mkString("[", ", ", "]") else ""
+        }
            |    depth = $depth
            |    endIndex = $endIndex
            |    focus = $focus
@@ -1233,7 +1232,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
             focusOn(idx)
             lastIndexOfBlock = idx
             lo = (idx - focusStart) & 31
-            endLo = math.max(startIndex.-(focusStart).-(lastIndexOfBlock), 0)
+            endLo = math.max(startIndex - focusStart - lastIndexOfBlock, 0)
         } else {
             lastIndexOfBlock = 0
             lo = 0
@@ -1254,7 +1253,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
             if (focusStart <= newBlockIndex) {
                 val _focusStart = focusStart
                 val newBlockIndexInFocus = newBlockIndex - _focusStart
-                gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus.^(lastIndexOfBlock.-(_focusStart)))
+                gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ (lastIndexOfBlock - _focusStart))
                 lastIndexOfBlock = newBlockIndex
                 lo = 31
                 endLo = math.max(startIndex - focusStart - focus, 0)
@@ -1305,6 +1304,10 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def initFromRoot(root: Array[AnyRef], depth: Int): Unit = {
+        if (RRBVector.compileAssertions) {
+            assert(root != null)
+            assert(0 < depth && depth <= 6, depth.toString)
+        }
         depth match {
             case 1 => display0 = root
             case 2 => display1 = root
@@ -1319,6 +1322,9 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def initFrom[U](that: RRBVectorPointer[U]): Unit = {
+        if (RRBVector.compileAssertions) {
+            assert(that != null)
+        }
         depth = that.depth
         that.depth match {
             case 0 => ()
@@ -1371,17 +1377,23 @@ private[immutable] trait RRBVectorPointer[A] {
         case _ => throw new IllegalStateException()
     }
 
-    private[immutable] final def focusOn(index: Int): Unit =
+    private[immutable] final def focusOn(index: Int): Unit = {
         if (focusStart <= index && index < focusEnd) {
             val indexInFocus = index - focusStart
             val xor = indexInFocus ^ focus
-            if (xor.>=(32))
+            if (xor >= 32)
                 gotoPos(indexInFocus, xor)
             focus = index
-        } else
+        } else {
             gotoPosFromRoot(index)
+        }
+    }
 
     private[immutable] final def getElementFromRoot(index: Int): A = {
+        if (RRBVector.compileAssertions) {
+            assert(0 <= index)
+            assert(1 < depth && depth <= 6, depth.toString)
+        }
         var indexInSubTree = index
         var currentDepth = depth
         var display: Array[AnyRef] = currentDepth match {
@@ -1392,7 +1404,7 @@ private[immutable] trait RRBVectorPointer[A] {
             case 6 => display5
         }
 
-        var sizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
+        var sizes = display(display.length - 1).asInstanceOf[Array[Int]]
         do {
             val sizesIdx = getIndexInSizes(sizes, indexInSubTree)
             if (sizesIdx != 0)
@@ -1416,7 +1428,11 @@ private[immutable] trait RRBVectorPointer[A] {
         }
     }
 
-    private final def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
+    @inline private final def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
+        if (RRBVector.compileAssertions) {
+            assert(0 <= indexInSubTree && indexInSubTree < sizes(sizes.length - 1))
+        }
+        // TODO Try optimization: if (index - _startIndex == 0) then is is trivially 0 and no need to access sizes
         var is = 0
         while (sizes(is) <= indexInSubTree)
             is += 1
@@ -1424,6 +1440,9 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def gotoPosFromRoot(index: Int): Unit = {
+        if (RRBVector.compileAssertions) {
+            assert(0 <= index)
+        }
         var _startIndex: Int = 0
         var _endIndex: Int = endIndex
         var currentDepth: Int = depth
@@ -1471,14 +1490,8 @@ private[immutable] trait RRBVectorPointer[A] {
         initFocus(indexInFocus, _startIndex, _endIndex, currentDepth, _focusRelax)
     }
 
-    /**
-     * Returns a new version of oldSizes where the size of the transient subtree is set to 0 and the rest
-     * of the sizes are adjusted
-     * @param oldSizes
-     * @param transientBranchIndex
-     * @return a new Array[Int] with the adjusted sizes
-     */
-    private[immutable] final def makeTransientSizes(oldSizes: Array[Int], newSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
+    private[immutable] final def makeTransientSizes(oldSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
+        val newSizes = new Array[Int](oldSizes.length)
         var delta = oldSizes(transientBranchIndex)
         if (transientBranchIndex > 0) {
             delta -= oldSizes(transientBranchIndex - 1)
@@ -1494,16 +1507,11 @@ private[immutable] trait RRBVectorPointer[A] {
         newSizes
     }
 
-    private[immutable] final def makeTransientSizes(oldSizes: Array[Int], transientBranchIndex: Int): Array[Int] = {
-        makeTransientSizes(oldSizes, new Array[Int](oldSizes.length), transientBranchIndex)
-    }
-
-
-    private final def makeNewRoot0(display: Array[AnyRef]): Array[AnyRef] = {
+    private final def makeNewRoot0(node: Array[AnyRef]): Array[AnyRef] = {
         val newRoot = new Array[AnyRef](3)
-        newRoot(0) = display
-        val dLen = display.length
-        val dSizes = display(dLen - 1)
+        newRoot(0) = node
+        val dLen = node.length
+        val dSizes = node(dLen - 1)
         if (dSizes != null) {
             val newRootSizes = new Array[Int](2)
             val dSize = dSizes.asInstanceOf[Array[Int]](dLen - 2)
@@ -1514,24 +1522,17 @@ private[immutable] trait RRBVectorPointer[A] {
         newRoot
     }
 
-    private final def makeNewRoot1(display: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
-        val dSize = treeSize(display, currentDepth - 1)
+    private final def makeNewRoot1(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+        val dSize = treeSize(node, currentDepth - 1)
         val newRootSizes = new Array[Int](2)
         /* newRootSizes(0) = 0 */
         newRootSizes(1) = dSize
         val newRoot = new Array[AnyRef](3)
-        newRoot(1) = display
+        newRoot(1) = node
         newRoot(2) = newRootSizes
         newRoot
     }
 
-
-    /**
-     * Makes a transient copy of the node
-     * @param node
-     * @param transient
-     * @return
-     */
     private final def copyAndIncRightRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
         val len = node.length
         val newRoot = copyOf(node, len - 1, len + 1)
@@ -1588,25 +1589,25 @@ private[immutable] trait RRBVectorPointer[A] {
             } else {
                 val newRoot = copyAndIncRightRoot(display1, transient, 1)
                 if (transient) {
-                    val transientBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 2, transientBranch)
-                    newRoot(transientBranch) = display0
+                    val oldTransientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 2, oldTransientBranch)
+                    newRoot(oldTransientBranch) = display0
                 }
                 display1 = newRoot
             }
             display0 = new Array(1)
         } else if (xor < 32768) {
             if (transient)
-                stabilize(2)
+                normalize(2)
             if (depth == 2) {
                 depth = 3
                 display2 = makeNewRoot0(display1)
             } else {
                 val newRoot = copyAndIncRightRoot(display2, transient, 2)
                 if (transient) {
-                    val transientBranch = newRoot.length - 3
-                    withRecomputeSizes(newRoot, 3, transientBranch)
-                    newRoot(transientBranch) = display1
+                    val oldTransientBranch = newRoot.length - 3
+                    withRecomputeSizes(newRoot, 3, oldTransientBranch)
+                    newRoot(oldTransientBranch) = display1
                 }
                 display2 = newRoot
             }
@@ -1614,7 +1615,7 @@ private[immutable] trait RRBVectorPointer[A] {
             display1 = RRBVector.emptyTransientBlock
         } else if (xor < 1048576) {
             if (transient)
-                stabilize(3)
+                normalize(3)
             if (depth == 3) {
                 depth = 4
                 display3 = makeNewRoot0(display2)
@@ -1633,7 +1634,7 @@ private[immutable] trait RRBVectorPointer[A] {
             display2 = _emptyTransientBlock // new Array(2)
         } else if (xor < 33554432) {
             if (transient)
-                stabilize(4)
+                normalize(4)
             if (depth == 4) {
                 depth = 5
                 display4 = makeNewRoot0(display3)
@@ -1653,7 +1654,8 @@ private[immutable] trait RRBVectorPointer[A] {
             display2 = _emptyTransientBlock // new Array(2)
             display3 = _emptyTransientBlock // new Array(2)
         } else if (xor < 1073741824) {
-            stabilize(5)
+            if (transient)
+                normalize(5)
             if (depth == 5) {
                 depth = 6
                 display5 = makeNewRoot0(display4)
@@ -1699,7 +1701,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 display0 = new Array[AnyRef](1)
             case 3 =>
                 if (transient)
-                    stabilize(2)
+                    normalize(2)
                 if (depth == 2) {
                     depth = 3
                     display2 = makeNewRoot1(display1, 3)
@@ -1716,7 +1718,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 display0 = new Array[AnyRef](1)
             case 4 =>
                 if (transient)
-                    stabilize(3)
+                    normalize(3)
                 if (depth == 3) {
                     depth = 4
                     display3 = makeNewRoot1(display2, 4)
@@ -1734,7 +1736,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 display0 = new Array[AnyRef](1)
             case 5 =>
                 if (transient)
-                    stabilize(4)
+                    normalize(4)
                 if (depth == 4) {
                     depth = 5
                     display4 = makeNewRoot1(display3, 5)
@@ -1753,7 +1755,7 @@ private[immutable] trait RRBVectorPointer[A] {
                 display0 = new Array[AnyRef](1)
             case 6 =>
                 if (transient)
-                    stabilize(5)
+                    normalize(5)
                 if (depth == 5) {
                     depth = 6
                     display5 = makeNewRoot1(display4, 6)
@@ -1804,69 +1806,69 @@ private[immutable] trait RRBVectorPointer[A] {
         display((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[Array[AnyRef]](index & 31).asInstanceOf[A]
 
     private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
-        if (xor >= 32) {
-            if (xor < 1024) gotoPos0(display1, index, xor)
-            else if (xor < 32768) gotoPos1(display2, index, xor)
-            else if (xor < 1048576) gotoPos2(display3, index, xor)
-            else if (xor < 33554432) gotoPos3(display4, index, xor)
-            else if (xor < 1073741824) gotoPos4(display5, index, xor)
-            else throw new IllegalArgumentException()
-        }
-
-        //        if (xor.<(32))
-        //            ()
-        //        else if (xor < 1024)
-        //            display0 = display1(((index >> 5) & 31)).asInstanceOf[Array[AnyRef]]
-        //        else if (xor < 32768) {
-        //            display1 = display2(((index >> 10) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display0 = display1(((index >> 5) & 31)).asInstanceOf[Array[AnyRef]]
-        //        } else if (xor < 1048576) {
-        //            display2 = display3(((index >> 15) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display1 = display2(((index >> 10) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display0 = display1(((index >> 5) & 31)).asInstanceOf[Array[AnyRef]]
-        //        } else if (xor < 33554432) {
-        //            display3 = display4(((index >> 20) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display2 = display3(((index >> 15) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display1 = display2(((index >> 10) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display0 = display1(((index >> 5) & 31)).asInstanceOf[Array[AnyRef]]
-        //        } else if (xor<1073741824) {
-        //            display4 = display5(((index >> 25) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display3 = display4(((index >> 20) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display2 = display3(((index >> 15) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display1 = display2(((index >> 10) & 31)).asInstanceOf[Array[AnyRef]]
-        //            display0 = display1(((index >> 5) & 31)).asInstanceOf[Array[AnyRef]]
+        //        if (xor >= 32) {
+        //            if (xor < 1024) gotoPos0(display1, index, xor)
+        //            else if (xor < 32768) gotoPos1(display2, index, xor)
+        //            else if (xor < 1048576) gotoPos2(display3, index, xor)
+        //            else if (xor < 33554432) gotoPos3(display4, index, xor)
+        //            else if (xor < 1073741824) gotoPos4(display5, index, xor)
+        //            else throw new IllegalArgumentException()
         //        }
-        //        else
-        //            throw new IllegalArgumentException()
+
+        if (xor < 32)
+            ()
+        else if (xor < 1024)
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        else if (xor < 32768) {
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < 1048576) {
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < 33554432) {
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        } else if (xor < 1073741824) {
+            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+        }
+        else
+            throw new IllegalArgumentException()
     }
 
-    private final def gotoPos4(d5: Array[AnyRef], index: Int, xor: Int): Unit = {
-        val _d4 = d5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
-        display4 = _d4
-        gotoPos3(_d4, index, xor)
-    }
-
-    private final def gotoPos3(d4: Array[AnyRef], index: Int, xor: Int): Unit = {
-        val _d3 = d4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display3 = _d3
-        gotoPos2(_d3, index, xor)
-    }
-
-    private final def gotoPos2(d3: Array[AnyRef], index: Int, xor: Int): Unit = {
-        val _d2 = d3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = _d2
-        gotoPos1(_d2, index, xor)
-    }
-
-    private final def gotoPos1(d2: Array[AnyRef], index: Int, xor: Int): Unit = {
-        val _d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = _d1
-        gotoPos0(_d1, index, xor)
-    }
-
-    private final def gotoPos0(d1: Array[AnyRef], index: Int, xor: Int): Unit = {
-        display0 = d1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
-    }
+    //    private final def gotoPos4(d5: Array[AnyRef], index: Int, xor: Int): Unit = {
+    //        val _d4 = d5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+    //        display4 = _d4
+    //        gotoPos3(_d4, index, xor)
+    //    }
+    //
+    //    private final def gotoPos3(d4: Array[AnyRef], index: Int, xor: Int): Unit = {
+    //        val _d3 = d4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+    //        display3 = _d3
+    //        gotoPos2(_d3, index, xor)
+    //    }
+    //
+    //    private final def gotoPos2(d3: Array[AnyRef], index: Int, xor: Int): Unit = {
+    //        val _d2 = d3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+    //        display2 = _d2
+    //        gotoPos1(_d2, index, xor)
+    //    }
+    //
+    //    private final def gotoPos1(d2: Array[AnyRef], index: Int, xor: Int): Unit = {
+    //        val _d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+    //        display1 = _d1
+    //        gotoPos0(_d1, index, xor)
+    //    }
+    //
+    //    private final def gotoPos0(d1: Array[AnyRef], index: Int, xor: Int): Unit = {
+    //        display0 = d1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+    //    }
 
 
     private[immutable] final def gotoNextBlockStart(index: Int, xor: Int): Unit = {
@@ -1984,7 +1986,7 @@ private[immutable] trait RRBVectorPointer[A] {
             throw new IllegalArgumentException()
     }
 
-    private[immutable] final def stabilize(_depth: Int): Unit = {
+    private[immutable] final def normalize(_depth: Int): Unit = {
         if (RRBVector.compileAssertions) {
             assert(_depth > 1)
         }
@@ -2136,7 +2138,7 @@ private[immutable] trait RRBVectorPointer[A] {
 
     private[immutable] final def copyDisplaysTop(currentDepth: Int, _focusRelax: Int): Unit = {
         var _currentDepth = currentDepth
-        while (_currentDepth.<(this.depth)) {
+        while (_currentDepth < this.depth) {
             _currentDepth match {
                 case 2 =>
                     val cutIndex = (_focusRelax >> 5) & 31
@@ -2160,7 +2162,6 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def stabilizeDisplayPath(_depth: Int, _focus: Int): Unit = {
-
         if (_depth > 1) {
             val d1 = display1
             d1((_focus >> 5) & 31) = display0
@@ -2351,20 +2352,21 @@ private[immutable] trait RRBVectorPointer[A] {
                 this.depth = 6
     }
 
-    private[immutable] final def copyOfRight(array: Array[AnyRef], from: Int) = {
-        val newLen = array.length - from
-        val newArray = new Array[AnyRef](newLen)
-        System.arraycopy(array, from, newArray, 0, newLen)
-        newArray
-    }
-
     private[immutable] final def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
+        if (RRBVector.compileAssertions) {
+            assert(array != null)
+            assert(0 <= numElements && numElements <= newSize && newSize <= array.length, (numElements, newSize, array.length))
+        }
         val newArray = new Array[AnyRef](newSize)
         System.arraycopy(array, 0, newArray, 0, numElements)
         newArray
     }
 
     private[immutable] final def copyOfAndNull(array: Array[AnyRef], nullIndex: Int) = {
+        if (RRBVector.compileAssertions) {
+            assert(array != null)
+            assert(0 <= nullIndex && nullIndex < array.length, (nullIndex, array.length))
+        }
         val len = array.length
         val newArray = new Array[AnyRef](len)
         System.arraycopy(array, 0, newArray, 0, len - 1)
@@ -2377,6 +2379,9 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def copyOf(array: Array[AnyRef]) = {
+        if (RRBVector.compileAssertions) {
+            assert(array != null)
+        }
         val len = array.length
         val newArray = new Array[AnyRef](len)
         System.arraycopy(array, 0, newArray, 0, len)
@@ -2411,7 +2416,6 @@ private[immutable] trait RRBVectorPointer[A] {
         if (RRBVector.compileAssertions) {
             assert(currentDepth >= 2)
         }
-
         var i = 0
         var acc = 0
         val end = node.length - 1
@@ -2457,7 +2461,7 @@ private[immutable] trait RRBVectorPointer[A] {
         node
     }
 
-    private final def notBalanced(node: Array[AnyRef], sizes: Array[Int], currentDepth: Int, end: Int): Boolean = {
+    @inline private final def notBalanced(node: Array[AnyRef], sizes: Array[Int], currentDepth: Int, end: Int): Boolean = {
         if (RRBVector.compileAssertions) {
             assert(end > 1)
         }
@@ -2469,17 +2473,20 @@ private[immutable] trait RRBVectorPointer[A] {
           )
     }
 
-    private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = {
-        if (currentDepth == 1)
-            tree.length
-        else {
-            val treeSizes = tree(tree.length - 1).asInstanceOf[Array[Int]]
-            if (treeSizes != null)
-                treeSizes(treeSizes.length - 1)
+    private def treeSize(node: Array[AnyRef], currentDepth: Int): Int = {
+        def treeSizeRec(node: Array[AnyRef], currentDepth: Int, acc: Int): Int = {
+            if (currentDepth == 1)
+                acc + node.length
             else {
-                val len = tree.length
-                (len - 2) * (1 << (5 * (currentDepth - 1))) + treeSize(tree(len - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1)
+                val treeSizes = node(node.length - 1).asInstanceOf[Array[Int]]
+                if (treeSizes != null)
+                    acc + treeSizes(treeSizes.length - 1)
+                else {
+                    val len = node.length
+                    treeSizeRec(node(len - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, acc + (len - 2) * (1 << (5 * (currentDepth - 1))))
+                }
             }
         }
+        treeSizeRec(node, currentDepth, 0)
     }
 }
