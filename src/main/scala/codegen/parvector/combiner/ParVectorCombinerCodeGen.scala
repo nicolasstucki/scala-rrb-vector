@@ -31,12 +31,21 @@ trait ParVectorCombinerCodeGen {
     }
 
     protected def combineCode(other: TermName) = {
+//        q"""
+//            if ($other eq this) this
+//            else {
+//                val that = $other.asInstanceOf[$parVectorCombinerClassName[$B]]
+//                $comb_builder ++= that.$comb_builder.result()
+//                this
+//            }
+//         """
         q"""
             if ($other eq this) this
             else {
-                val that = $other.asInstanceOf[$parVectorCombinerClassName[$B]]
-                $comb_builder ++= that.$comb_builder.result()
-                this
+                 val newCombiner = new $parVectorCombinerClassName[$A]
+                newCombiner ++= this.builder.result()
+                newCombiner ++= $other.asInstanceOf[$parVectorCombinerClassName[$A]].builder.result()
+                newCombiner
             }
          """
     }

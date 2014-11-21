@@ -30,15 +30,19 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
 
     def mapBenchFun(x: A): A
 
+    override val maxHeight: Int = 4
+
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
 
         var sideeffect = 0
-        val times = 100
+
         measure method "map" config(
           Key.exec.minWarmupRuns -> 300,
           Key.exec.maxWarmupRuns -> 800
           ) in {
+            val times = 100
+
             performance of s"map into self (x=>x) $times times" in {
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
@@ -69,34 +73,27 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
             }
 
         }
-        measure method "map" config(
-          Key.exec.minWarmupRuns -> 100,
-          Key.exec.maxWarmupRuns -> 200
-          ) in {
 
-            performance of s"map into mapBencFun $times times" in {
+        val minWarmupRuns = if (height >= 3) 30 else 100
+        measure method "map" config(
+          Key.exec.minWarmupRuns -> minWarmupRuns,
+          Key.exec.maxWarmupRuns -> 150
+          ) in {
+            performance of s"map into mapBencFun" in {
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        var i = 0
-                        while (i < times) {
-                            sideeffect = (vec map mapBenchFun).length
-                            i += 1
-                        }
+                        sideeffect = (vec map mapBenchFun).length
                     }
                 }
             }
             for (threadPoolSize <- Seq(1, 2, 4, 8, 16)) {
-                performance of s"par.map into mapBencFun $times times" in {
+                performance of s"par.map into mapBencFun" in {
                     performance of s"$threadPoolSize threads in pool" in {
                         performance of s"Height $height" in {
                             using(generateVectors(from, to, by)) curve vectorName in { vec =>
                                 val parvec = vec.par
                                 parvec.tasksupport = ParSupport.getTaskSupport(threadPoolSize)
-                                var i = 0
-                                while (i < times) {
-                                    sideeffect = (parvec map mapBenchFun).length
-                                    i += 1
-                                }
+                                sideeffect = (parvec map mapBenchFun).length
                             }
                         }
                     }

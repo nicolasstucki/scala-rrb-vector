@@ -625,7 +625,6 @@ trait VectorCodeGen {
     }
 
     protected def rebalancedCode(displayLeft: Tree, concat: Tree, displayRight: Tree, currentDepth: Tree) = {
-        // TODO Check: has changes
         val leftLength = TermName("leftLength")
         val concatLength = TermName("concatLength")
         val rightLength = TermName("rightLength")
@@ -1015,7 +1014,6 @@ trait VectorCodeGen {
     }
 
     protected def debugToStringCode() = {
-        // TODO Check
         q"""
             val sb = new StringBuilder
             sb append "RRBVector ("

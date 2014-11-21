@@ -2450,14 +2450,14 @@ package scala {
               newRoot.update(2, newRootSizes);
               newRoot
             };
-            final private[immutable] def makeTransientSizes(oldSizesParam: Array[Int], transientBranchIndex: Int) = {
-              val newSizes = new Array[Int](oldSizesParam.length);
-              var delta = oldSizesParam(transientBranchIndex);
+            final private[immutable] def makeTransientSizes(oldSizes: Array[Int], transientBranchIndex: Int) = {
+              val newSizes = new Array[Int](oldSizes.length);
+              var delta = oldSizes(transientBranchIndex);
               if (transientBranchIndex.>(0))
                 {
-                  delta.-=(oldSizesParam(transientBranchIndex.-(1)));
-                  if (oldSizesParam.eq(newSizes).`unary_!`)
-                    System.arraycopy(oldSizesParam, 0, newSizes, 0, transientBranchIndex)
+                  delta.-=(oldSizes(transientBranchIndex.-(1)));
+                  if (oldSizes.eq(newSizes).`unary_!`)
+                    System.arraycopy(oldSizes, 0, newSizes, 0, transientBranchIndex)
                   else
                     ()
                 }
@@ -2467,7 +2467,7 @@ package scala {
               val len = newSizes.length;
               while (i.<(len)) 
                 {
-                  newSizes.update(i, oldSizesParam(i).-(delta));
+                  newSizes.update(i, oldSizes(i).-(delta));
                   i.+=(1)
                 }
               ;
@@ -2702,18 +2702,31 @@ package scala {
                   val rem = remaining;
                   if (rem.>=(2))
                     {
-                      val splitSize = (1).<<((5).*((31).-(java.lang.Integer.numberOfLeadingZeros(rem))./(6).-(1)));
-                      val splitted = new ArrayBuffer[ParRRBVectorIterator_c_64]();
-                      var currentPos = _end.-(remaining);
-                      while (currentPos.<(rem)) 
-                        {
-                          val pit = new ParRRBVectorIterator_c_64(currentPos, math.min(currentPos.+(splitSize), _end));
-                          pit.initIteratorFrom(this);
-                          splitted.+=(pit);
-                          currentPos.+=(splitSize)
-                        }
-                      ;
-                      splitted
+                      val _half = rem./(2);
+                      val _splitModulo = if (rem.<=(64))
+                        1
+                      else
+                        if (rem.<=(4096))
+                          64
+                        else
+                          if (rem.<=(262144))
+                            4096
+                          else
+                            if (rem.<=(16777216))
+                              262144
+                            else
+                              if (rem.<=(1073741824))
+                                16777216
+                              else
+                                1073741824;
+                      val _halfAdjusted = if (_half.>(_splitModulo))
+                        _half.-(_half.%(_splitModulo))
+                      else
+                        if (_splitModulo.<(_end))
+                          _splitModulo
+                        else
+                          _half;
+                      psplit(_halfAdjusted, rem.-(_halfAdjusted))
                     }
                   else
                     Seq(this)
@@ -2755,9 +2768,10 @@ package scala {
                 this
               else
                 {
-                  val that = other.asInstanceOf[ParRRBVectorCombinator_c_64[B]];
-                  builder.++=(that.builder.result());
-                  this
+                  val newCombiner = new ParRRBVectorCombinator_c_64[A]();
+                  newCombiner.++=(this.builder.result());
+                  newCombiner.++=(other.asInstanceOf[ParRRBVectorCombinator_c_64[A]].builder.result());
+                  newCombiner
                 }
             }
           }

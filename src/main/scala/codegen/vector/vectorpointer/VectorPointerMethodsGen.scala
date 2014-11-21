@@ -250,7 +250,7 @@ trait VectorPointerMethodsGen {
     }
 
     private[vectorpointer] def makeTransientSizesDef = {
-        val oldSizesParam = TermName("oldSizesParam")
+        val oldSizesParam = TermName("oldSizes")
         val transientBranchIndexParam = TermName("transientBranchIndex")
         val code = makeTransientSizesCode(oldSizesParam, transientBranchIndexParam)
         q"private[immutable] final def $makeTransientSizes($oldSizesParam: Array[Int], $transientBranchIndexParam: Int) = $code"
