@@ -128,22 +128,26 @@ trait VectorBenchmarksGen {
                     class ${vectorBenchmarkClassName("BuilderString")} extends ${vectorBenchmarkClassName("Builder")}[String] with VectorGeneratorType.StringGenerator
 
 
-                    abstract class ${vectorBenchmarkClassName("Concatenation")}[A] extends ConcatenationBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("Concatenation")}[A] extends ConcatenationBenchmarks[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("ConcatenationInt")} extends ${vectorBenchmarkClassName("Concatenation")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("ConcatenationString")} extends ${vectorBenchmarkClassName("Concatenation")}[String] with VectorGeneratorType.StringGenerator
 
 
-                    abstract class ${vectorBenchmarkClassName("Iteration")}[A] extends IterationBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("Iteration")}[A] extends IterationBenchmarks[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("IterationInt")} extends ${vectorBenchmarkClassName("Iteration")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("IterationString")} extends ${vectorBenchmarkClassName("Iteration")}[String] with VectorGeneratorType.StringGenerator
 
-                    abstract class ${vectorBenchmarkClassName("MemoryAllocation")}[A] extends MemoryAllocation[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("MemoryAllocation")}[A] extends MemoryAllocation[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("IntMemoryAllocation")} extends ${vectorBenchmarkClassName("MemoryAllocation")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("StringMemoryAllocation")} extends ${vectorBenchmarkClassName("MemoryAllocation")}[String] with VectorGeneratorType.StringGenerator
 
-                    abstract class ${vectorBenchmarkClassName("Split")}[A] extends SplitBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("Split")}[A] extends SplitBenchmarks[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("SplitInt")} extends ${vectorBenchmarkClassName("Split")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("SplitString")} extends ${vectorBenchmarkClassName("Split")}[String] with VectorGeneratorType.StringGenerator
+
+                    abstract class ${vectorBenchmarkClassName("ParMap")}[A] extends ParMapBenchmarks[$A] with $vectorBaseBenchmarkClassName[$A]
+                    class ${vectorBenchmarkClassName("IntParMap")} extends ${vectorBenchmarkClassName("ParMap")}[Int] with VectorGeneratorType.IntGenerator
+                    class ${vectorBenchmarkClassName("StringParMap")} extends ${vectorBenchmarkClassName("ParMap")}[String] with VectorGeneratorType.StringGenerator
                 }
              """
         }

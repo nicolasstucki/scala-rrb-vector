@@ -78,8 +78,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$23 = 0;
-                            vec.+:(x$23)
+                            val x$24 = 0;
+                            vec.+:(x$24)
                           };
                           j.+=(1)
                         }
@@ -104,8 +104,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$24 = ref;
-                            vec.+:(x$24)
+                            val x$23 = ref;
+                            vec.+:(x$23)
                           };
                           j.+=(1)
                         }
@@ -176,6 +176,12 @@ package scala {
               class RRBVector_c_32_SplitInt_Benchmark extends RRBVector_c_32_Split_Benchmark[Int] with VectorGeneratorType.IntGenerator
 
               class RRBVector_c_32_SplitString_Benchmark extends RRBVector_c_32_Split_Benchmark[String] with VectorGeneratorType.StringGenerator
+
+              abstract class RRBVector_c_32_ParMap_Benchmark[A] extends ParMapBenchmarks[A] with RRBVector_c_32_Benchmark[A]
+
+              class RRBVector_c_32_IntParMap_Benchmark extends RRBVector_c_32_ParMap_Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+              class RRBVector_c_32_StringParMap_Benchmark extends RRBVector_c_32_ParMap_Benchmark[String] with VectorGeneratorType.StringGenerator
             }
 
             package xunbalanced {
@@ -252,8 +258,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$25 = 0;
-                            vec.+:(x$25)
+                            val x$26 = 0;
+                            vec.+:(x$26)
                           };
                           j.+=(1)
                         }
@@ -278,8 +284,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$26 = ref;
-                            vec.+:(x$26)
+                            val x$25 = ref;
+                            vec.+:(x$25)
                           };
                           j.+=(1)
                         }
@@ -350,6 +356,12 @@ package scala {
               class RRBVector_c_32_SplitInt_Benchmark extends RRBVector_c_32_Split_Benchmark[Int] with VectorGeneratorType.IntGenerator
 
               class RRBVector_c_32_SplitString_Benchmark extends RRBVector_c_32_Split_Benchmark[String] with VectorGeneratorType.StringGenerator
+
+              abstract class RRBVector_c_32_ParMap_Benchmark[A] extends ParMapBenchmarks[A] with RRBVector_c_32_Benchmark[A]
+
+              class RRBVector_c_32_IntParMap_Benchmark extends RRBVector_c_32_ParMap_Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+              class RRBVector_c_32_StringParMap_Benchmark extends RRBVector_c_32_ParMap_Benchmark[String] with VectorGeneratorType.StringGenerator
             }
           }
         }
