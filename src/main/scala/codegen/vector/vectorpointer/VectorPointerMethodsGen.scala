@@ -25,7 +25,7 @@ trait VectorPointerMethodsGen {
                 copyDisplaysTopDef, stabilizeDisplayPathDef, cleanTopTakeDef, cleanTopDropDef, copyOf1Def, copyOf3Def,
                 copyOfAndNullDef, makeNewRoot0Def, makeNewRoot1Def, makeTransientSizesDef, copyAndIncRightRootDef,
                 copyAndIncLeftRootDef, withComputedSizes1Def, withComputedSizesDef, withRecomputedSizesDef, notBalancedDef, treeSizeDef, getElementDef) ++
-              ((0 to maxTreeLevel) map getElementIDef)
+              ((0 to maxTreeLevel) map getElementIDef) :+ debugToStringDef
 
         displays ++ fields ++ methods
     }
@@ -310,6 +310,9 @@ trait VectorPointerMethodsGen {
         q"private final def $treeSize($treeParam: Array[AnyRef], $currentDepthParam: Int) = $code"
     }
 
-
+    private def debugToStringDef = {
+        val code = debugToStringCode()
+        q"private[immutable] def $debugToString(): String = $code"
+    }
 }
 

@@ -76,6 +76,8 @@ trait VectorPointerCodeGen {
 
     val treeSize = TermName("treeSize")
 
+    val debugToString = TermName("debugToSting")
+
     // Method definitions
 
     protected def initWithFocusFromCode(thatParam: TermName): Tree = {
@@ -168,7 +170,7 @@ trait VectorPointerCodeGen {
                     sizes = null
                 currentDepth -= 1
             } while (sizes != null)
-            ${matchOnInt(q"currentDepth", 2 to maxTreeDepth, d => q"${getElementI(d - 1)}(display, indexInSubTree)", Some(q"throw new IllegalStateException"))}
+            ${matchOnInt(q"currentDepth", 1 to maxTreeDepth, d => q"${getElementI(d - 1)}(display, indexInSubTree)", Some(q"throw new IllegalStateException"))}
          """
     }
 
@@ -500,7 +502,7 @@ trait VectorPointerCodeGen {
             if (level == 0) q"$display($idx).asInstanceOf[$A]"
             else getElemFromDisplay(q"$display($idx).asInstanceOf[Array[AnyRef]]", level - 1)
         }
-        getElemFromDisplay(displayAt(i), i)
+        getElemFromDisplay(q"$block", i)
     }
 
     def gotoPosCode(index: TermName, xor: TermName) = {
@@ -718,6 +720,24 @@ trait VectorPointerCodeGen {
         """
     }
 
+
+    protected def debugToStringCode(others: Tree*) = {
+        q"""
+            val sb = new StringBuilder
+            sb append "RRBVector (\n"
+            ..${0 to maxTreeLevel map (lvl => q"""sb append ("\t" + ${"display" + lvl} + " = " + ${displayAt(lvl)} + " " + (if(${displayAt(lvl)} != null) ${displayAt(lvl)}.mkString("[", ", ", "]") else "") + "\n")""")}
+            sb append ("\tdepth = " + $depth + "\n")
+            sb append ("\tendIndex = " + $endIndex + "\n")
+            sb append ("\tfocus = " + $focus + "\n")
+            sb append ("\tfocusStart = " + $focusStart + "\n")
+            sb append ("\tfocusEnd = " + $focusEnd + "\n")
+            sb append ("\tfocusRelax = " + $focusRelax + "\n")
+            ..${others map (other => q"sb append ($other)")}
+            sb append ")"
+            sb.toString
+         """
+    }
+
     // Helper code
 
     protected def displayAt(level: Int) = q"${displayNameAt(level)}"
@@ -789,4 +809,6 @@ trait VectorPointerCodeGen {
             q"if (${indexIsInLevel(xor, q"$currentLevel")}) $ifClause else $elseClause"
         }
     }
+
+
 }

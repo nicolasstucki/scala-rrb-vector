@@ -78,8 +78,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$32 = 0;
-                            vec.+:(x$32)
+                            val x$31 = 0;
+                            vec.+:(x$31)
                           };
                           j.+=(1)
                         }
@@ -104,8 +104,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$31 = ref;
-                            vec.+:(x$31)
+                            val x$32 = ref;
+                            vec.+:(x$32)
                           };
                           j.+=(1)
                         }
@@ -258,8 +258,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$34 = 0;
-                            vec.+:(x$34)
+                            val x$33 = 0;
+                            vec.+:(x$33)
                           };
                           j.+=(1)
                         }
@@ -284,8 +284,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$33 = ref;
-                            vec.+:(x$33)
+                            val x$34 = ref;
+                            vec.+:(x$34)
                           };
                           j.+=(1)
                         }

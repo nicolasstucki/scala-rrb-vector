@@ -1540,6 +1540,7 @@ else
                 }
                while (sizes.!=(null)) ;
               currentDepth match {
+                case 1 => getElem0(display, indexInSubTree)
                 case 2 => getElem1(display, indexInSubTree)
                 case 3 => getElem2(display, indexInSubTree)
                 case 4 => getElem3(display, indexInSubTree)
@@ -3021,13 +3022,53 @@ else
                           getElem6(display6, index)
                         else
                           throw new IllegalArgumentException();
-            final private def getElem0(block: Array[AnyRef], index: Int): A = display0(index.&(31)).asInstanceOf[A];
-            final private def getElem1(block: Array[AnyRef], index: Int): A = display1(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
-            final private def getElem2(block: Array[AnyRef], index: Int): A = display2(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
-            final private def getElem3(block: Array[AnyRef], index: Int): A = display3(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
-            final private def getElem4(block: Array[AnyRef], index: Int): A = display4(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
-            final private def getElem5(block: Array[AnyRef], index: Int): A = display5(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
-            final private def getElem6(block: Array[AnyRef], index: Int): A = display6(index.>>(30).&(31)).asInstanceOf[Array[AnyRef]](index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A]
+            final private def getElem0(block: Array[AnyRef], index: Int): A = block(index.&(31)).asInstanceOf[A];
+            final private def getElem1(block: Array[AnyRef], index: Int): A = block(index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem2(block: Array[AnyRef], index: Int): A = block(index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem3(block: Array[AnyRef], index: Int): A = block(index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem4(block: Array[AnyRef], index: Int): A = block(index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem5(block: Array[AnyRef], index: Int): A = block(index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            final private def getElem6(block: Array[AnyRef], index: Int): A = block(index.>>(30).&(31)).asInstanceOf[Array[AnyRef]](index.>>(25).&(31)).asInstanceOf[Array[AnyRef]](index.>>(20).&(31)).asInstanceOf[Array[AnyRef]](index.>>(15).&(31)).asInstanceOf[Array[AnyRef]](index.>>(10).&(31)).asInstanceOf[Array[AnyRef]](index.>>(5).&(31)).asInstanceOf[Array[AnyRef]](index.&(31)).asInstanceOf[A];
+            private[immutable] def debugToSting(): String = {
+              val sb = new StringBuilder();
+              sb.append("RRBVector (\n");
+              sb.append("\t".+("display0").+(" = ").+(display0).+(" ").+(if (display0.!=(null))
+  display0.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display1").+(" = ").+(display1).+(" ").+(if (display1.!=(null))
+  display1.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display2").+(" = ").+(display2).+(" ").+(if (display2.!=(null))
+  display2.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display3").+(" = ").+(display3).+(" ").+(if (display3.!=(null))
+  display3.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display4").+(" = ").+(display4).+(" ").+(if (display4.!=(null))
+  display4.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display5").+(" = ").+(display5).+(" ").+(if (display5.!=(null))
+  display5.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display6").+(" = ").+(display6).+(" ").+(if (display6.!=(null))
+  display6.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\tdepth = ".+(depth).+("\n"));
+              sb.append("\tendIndex = ".+(endIndex).+("\n"));
+              sb.append("\tfocus = ".+(focus).+("\n"));
+              sb.append("\tfocusStart = ".+(focusStart).+("\n"));
+              sb.append("\tfocusEnd = ".+(focusEnd).+("\n"));
+              sb.append("\tfocusRelax = ".+(focusRelax).+("\n"));
+              sb.append(")");
+              sb.toString
+            }
           }
         }
       }

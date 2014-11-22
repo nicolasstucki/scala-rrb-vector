@@ -71,7 +71,6 @@ trait VectorCodeGen {
 
     // Debug
     val v_assertVectorInvariant = TermName("assertVectorInvariant")
-    val v_debugToString = TermName("debugToString")
 
     //
     // Method definitions
@@ -1011,23 +1010,6 @@ trait VectorCodeGen {
                 }
             }
         """
-    }
-
-    protected def debugToStringCode() = {
-        q"""
-            val sb = new StringBuilder
-            sb append "RRBVector ("
-            ..${0 to maxTreeLevel map (lvl=> q"""sb append ("\t" + ${"display"+lvl} + " = " + ${displayAt(lvl)} + (if(${displayAt(lvl)} != null) ${displayAt(lvl)}.mkString("[", ", ", "]") else "") + "\n")""")}
-            sb append ("\tdepth = " + $depth + "\n")
-            sb append ("\tendIndex = " + $endIndex + "\n")
-            sb append ("\tfocus = " + $focus + "\n")
-            sb append ("\tfocusStart = " + $focusStart + "\n")
-            sb append ("\tfocusEnd = " + $focusEnd + "\n")
-            sb append ("\tfocusRelax = " + $focusRelax + "\n")
-            sb append ("\ttransient = " + $v_transient + "\n")
-            sb append ")"
-            sb.toString
-         """
     }
 
 }

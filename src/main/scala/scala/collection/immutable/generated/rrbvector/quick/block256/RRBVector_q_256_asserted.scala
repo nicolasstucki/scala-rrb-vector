@@ -1084,35 +1084,6 @@ else
                 case _ => ()
               };
               true
-            };
-            private[immutable] def debugToString(): String = {
-              val sb = new StringBuilder();
-              sb.append("RRBVector (");
-              sb.append("\t".+("display0").+(" = ").+(display0).+(if (display0.!=(null))
-  display0.mkString("[", ", ", "]")
-else
-  "").+("\n"));
-              sb.append("\t".+("display1").+(" = ").+(display1).+(if (display1.!=(null))
-  display1.mkString("[", ", ", "]")
-else
-  "").+("\n"));
-              sb.append("\t".+("display2").+(" = ").+(display2).+(if (display2.!=(null))
-  display2.mkString("[", ", ", "]")
-else
-  "").+("\n"));
-              sb.append("\t".+("display3").+(" = ").+(display3).+(if (display3.!=(null))
-  display3.mkString("[", ", ", "]")
-else
-  "").+("\n"));
-              sb.append("\tdepth = ".+(depth).+("\n"));
-              sb.append("\tendIndex = ".+(endIndex).+("\n"));
-              sb.append("\tfocus = ".+(focus).+("\n"));
-              sb.append("\tfocusStart = ".+(focusStart).+("\n"));
-              sb.append("\tfocusEnd = ".+(focusEnd).+("\n"));
-              sb.append("\tfocusRelax = ".+(focusRelax).+("\n"));
-              sb.append("\ttransient = ".+(transient).+("\n"));
-              sb.append(")");
-              sb.toString
             }
           }
 
@@ -1477,6 +1448,7 @@ else
                 }
                while (sizes.!=(null)) ;
               currentDepth match {
+                case 1 => getElem0(display, indexInSubTree)
                 case 2 => getElem1(display, indexInSubTree)
                 case 3 => getElem2(display, indexInSubTree)
                 case 4 => getElem3(display, indexInSubTree)
@@ -2308,10 +2280,38 @@ else
                     getElem3(display3, index)
                   else
                     throw new IllegalArgumentException();
-            final private def getElem0(block: Array[AnyRef], index: Int): A = display0(index.&(255)).asInstanceOf[A];
-            final private def getElem1(block: Array[AnyRef], index: Int): A = display1(index.>>(8).&(255)).asInstanceOf[Array[AnyRef]](index.&(255)).asInstanceOf[A];
-            final private def getElem2(block: Array[AnyRef], index: Int): A = display2(index.>>(16).&(255)).asInstanceOf[Array[AnyRef]](index.>>(8).&(255)).asInstanceOf[Array[AnyRef]](index.&(255)).asInstanceOf[A];
-            final private def getElem3(block: Array[AnyRef], index: Int): A = display3(index.>>(24).&(255)).asInstanceOf[Array[AnyRef]](index.>>(16).&(255)).asInstanceOf[Array[AnyRef]](index.>>(8).&(255)).asInstanceOf[Array[AnyRef]](index.&(255)).asInstanceOf[A]
+            final private def getElem0(block: Array[AnyRef], index: Int): A = block(index.&(255)).asInstanceOf[A];
+            final private def getElem1(block: Array[AnyRef], index: Int): A = block(index.>>(8).&(255)).asInstanceOf[Array[AnyRef]](index.&(255)).asInstanceOf[A];
+            final private def getElem2(block: Array[AnyRef], index: Int): A = block(index.>>(16).&(255)).asInstanceOf[Array[AnyRef]](index.>>(8).&(255)).asInstanceOf[Array[AnyRef]](index.&(255)).asInstanceOf[A];
+            final private def getElem3(block: Array[AnyRef], index: Int): A = block(index.>>(24).&(255)).asInstanceOf[Array[AnyRef]](index.>>(16).&(255)).asInstanceOf[Array[AnyRef]](index.>>(8).&(255)).asInstanceOf[Array[AnyRef]](index.&(255)).asInstanceOf[A];
+            private[immutable] def debugToSting(): String = {
+              val sb = new StringBuilder();
+              sb.append("RRBVector (\n");
+              sb.append("\t".+("display0").+(" = ").+(display0).+(" ").+(if (display0.!=(null))
+  display0.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display1").+(" = ").+(display1).+(" ").+(if (display1.!=(null))
+  display1.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display2").+(" = ").+(display2).+(" ").+(if (display2.!=(null))
+  display2.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display3").+(" = ").+(display3).+(" ").+(if (display3.!=(null))
+  display3.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\tdepth = ".+(depth).+("\n"));
+              sb.append("\tendIndex = ".+(endIndex).+("\n"));
+              sb.append("\tfocus = ".+(focus).+("\n"));
+              sb.append("\tfocusStart = ".+(focusStart).+("\n"));
+              sb.append("\tfocusEnd = ".+(focusEnd).+("\n"));
+              sb.append("\tfocusRelax = ".+(focusRelax).+("\n"));
+              sb.append(")");
+              sb.toString
+            }
           }
         }
       }

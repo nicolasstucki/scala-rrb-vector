@@ -56,7 +56,7 @@ trait VectorMethodsGen {
                 dropFront0Def
             )
 
-        if (useAssertions) methods :+ assertVectorInvariantDef :+ debugToStringDef
+        if (useAssertions) methods :+ assertVectorInvariantDef
         else methods
 
     }
@@ -316,9 +316,9 @@ trait VectorMethodsGen {
         q"private[immutable] def $v_assertVectorInvariant(): Boolean = $code"
     }
 
-    protected def debugToStringDef = {
-        val code = debugToStringCode()
-        q"private[immutable] def $v_debugToString(): String = $code"
+    private def debugToStringDef = {
+        val code = debugToStringCode(q""""\ttransient = " + $v_transient + "\n"""")
+        q"override private[immutable] def $debugToString(): String = $code"
     }
 
 }

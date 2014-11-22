@@ -144,6 +144,19 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                 }
                 i = (1.2 * i).toInt
             }
+
+            val seed = 111
+            for(n <- Seq(1025, 2304, 5366, 7665, 9455, 20435, 32768, 32769)) {
+                s"vector of size $n (rnd $seed)" should {
+                    val vector = randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
+                    testNonEmptyVectorProperties(vector, n)
+                    s"return the i-th element of Vector.tabulate($n)(i => element(i)) should be i when apply is invoked" in {
+                        for (i <- 0 until n) assertResult(element(i))(vector(i))
+                    }
+                }
+            }
+
+
         }
 
     }
