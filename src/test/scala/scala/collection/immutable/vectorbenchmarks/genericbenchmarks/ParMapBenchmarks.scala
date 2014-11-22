@@ -11,8 +11,6 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
 
     def mapBenchFun(x: A): A
 
-    override val maxHeight: Int = 4
-
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
 
