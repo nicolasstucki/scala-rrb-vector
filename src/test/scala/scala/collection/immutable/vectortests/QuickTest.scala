@@ -7,9 +7,15 @@ import scala.collection.immutable.vectorutils.generated.rrbvector._
 
 object QuickTest extends App {
 
-        val n = 32769
-        val seed = 111
-        val vector = (new BaseVectorGenerator.RRBVectorGenerator[Int] with VectorGeneratorType.IntGenerator).randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(seed))
-        println(vector)
+    val n = 32768
+    val seed = 111
+
+    def f(x: Int) = -x
+
+    val vector = (new BaseVectorGenerator.RRBVectorGenerator[Int] with VectorGeneratorType.IntGenerator).randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(seed))
+    val parVec = vector.par map f
+
+    println(vector)
+    println(parVec)
 
 }
