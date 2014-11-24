@@ -14,9 +14,11 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
+        val minWarmupRuns = if (height == 1) 2000 else 500
+        val maxWarmupRuns = if (height == 1) 5000 else 2000
         performance of "concatenation" config(
-          Key.exec.minWarmupRuns -> 500,
-          Key.exec.maxWarmupRuns -> 2000
+          Key.exec.minWarmupRuns -> minWarmupRuns,
+          Key.exec.maxWarmupRuns -> maxWarmupRuns
           ) in {
             val times = 1000
             performance of s"concat vector $times times" in {
