@@ -108,6 +108,13 @@ package scala {
                 takeFront0(n)
               else
                 this;
+            override def drop(n: Int): RRBVector_c_32[A] = if (n.<=(0))
+              this
+            else
+              if (n.<(endIndex))
+                dropFront0(n)
+              else
+                RRBVector_c_32.empty;
             override def dropRight(n: Int): RRBVector_c_32[A] = if (n.<=(0))
               this
             else
@@ -115,6 +122,13 @@ package scala {
                 takeFront0(endIndex.-(n))
               else
                 RRBVector_c_32.empty;
+            override def takeRight(n: Int): RRBVector_c_32[A] = if (n.<=(0))
+              RRBVector_c_32.empty
+            else
+              if (n.<(endIndex))
+                dropFront0(endIndex.-(n))
+              else
+                this;
             override def slice(from: Int, until: Int): RRBVector_c_32[A] = take(until).drop(from);
             override def splitAt(n: Int): scala.Tuple2[RRBVector_c_32[A], RRBVector_c_32[A]] = scala.Tuple2(take(n), drop(n));
             override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[RRBVector_c_32[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
