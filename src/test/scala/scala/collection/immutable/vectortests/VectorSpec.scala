@@ -146,7 +146,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
             }
 
             val seed = 111
-            for(n <- Seq(1025, 2304, 5366, 7665, 9455, 20435, 32768, 32769)) {
+            for (n <- Seq(1025, 2304, 5366, 7665, 9455, 20435, 32768, 32769)) {
                 s"vector of size $n (rnd $seed)" should {
                     val vector = randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
                     testNonEmptyVectorProperties(vector, n)
@@ -330,7 +330,31 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                 }
             }
         }
-
     }
+
+    "A ParVector" should {
+        for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+            s"when size is $n" when {
+                for (balanced <- Seq(true, false)) {
+                    val balancedString = if (balanced) "balanced" else "unbalanced balanced"
+                    balancedString should {
+                        val vec =
+                            if (balanced) tabulatedVector(n)
+                            else randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
+                        val parvec = vec.par
+                        "return the same result as a Vector" when {
+                            "map is invoked" in {
+                                assertResult(vec map mapFun1)(parvec map mapFun1)
+                                assertResult(vec map mapFun2)(parvec map mapFun2)
+                                assertResult(vec map mapFun3)(parvec map mapFun3)
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
 }
 

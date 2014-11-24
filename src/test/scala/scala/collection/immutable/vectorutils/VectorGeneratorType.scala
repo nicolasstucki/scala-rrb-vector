@@ -23,6 +23,12 @@ object VectorGeneratorType {
             mapBenchFunCompute(1)
         }
 
+        final def mapFun1(x: Int): Int = x % 3
+
+        final def mapFun2(x: Int): Int = (x + 1) % 534564634
+
+        final def mapFun3(x: Int): Int = (x * x) % 534564634
+
 
         final def vectorTypeName: String = "Int"
     }
@@ -36,6 +42,15 @@ object VectorGeneratorType {
         final def mapBenchFun(x: String) = {
             mapBenchFunCompute(1).toString
         }
+
+        final def mapFun1(x: String): String = {
+            val split = x splitAt (x.length / 2)
+            split._1 + split._2
+        }
+
+        final def mapFun2(x: String): String = s"${x.length + 10}"
+
+        final def mapFun3(x: String): String = s"${x.hashCode}"
 
         final def vectorTypeName: String = "String"
     }

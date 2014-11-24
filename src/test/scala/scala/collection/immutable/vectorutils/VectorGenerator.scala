@@ -14,6 +14,12 @@ trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
     def tabulatedVector(n: Int): Vec
 
+    def mapFun1(n: A): A
+
+    def mapFun2(n: A): A
+
+    def mapFun3(n: A): A
+
     def rangedVector(start: Int, end: Int): Vec
 
     def iterator(vec: Vec, start: Int, end: Int): Iterator[A]
