@@ -21,44 +21,43 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
           ) in {
             val times = 10000
 
-            performance of s"append 1 element, $times times" in {
+//            performance of s"append 1 element, $times times" in {
+//
+//                performance of s"Height $height" in {
+//                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+//                        sideeffect = append(vec, 1, times)
+//                    }
+//                }
+//            }
+
+//            performance of s"append 8 element, $times times" in {
+//
+//                performance of s"Height $height" in {
+//                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+//                        sideeffect = append(vec, 1, times)
+//                    }
+//                }
+//            }
+//
+//            performance of s"append 32 elements, $times times" in {
+//
+//                performance of s"Height $height" in {
+//                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+//                        sideeffect = append(vec, 32, times)
+//                    }
+//                }
+//            }
+
+            performance of s"append 256 elements, ${times/10} times" in {
 
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 1, times)
-                    }
-                }
-            }
-
-            performance of s"append 8 element, $times times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 1, times)
-                    }
-                }
-            }
-
-            performance of s"append 32 elements, $times times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 32, times)
-                    }
-                }
-            }
-
-            performance of s"append 100 elements, ${times/10} times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 100, times/10)
+                        sideeffect = append(vec, 256, times/10)
                     }
                 }
             }
         }
 
     }
-
 
 }
