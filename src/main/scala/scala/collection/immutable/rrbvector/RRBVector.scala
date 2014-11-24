@@ -12,13 +12,13 @@ import scala.collection.generic._
 object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     def newBuilder[A]: mutable.Builder[A, RRBVector[A]] = new RRBVectorBuilder[A]()
 
+    @inline private[immutable] final val compileAssertions = true
+
     implicit def canBuildFrom[A]: scala.collection.generic.CanBuildFrom[Coll, A, RRBVector[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
     lazy private val EMPTY_VECTOR = new RRBVector[Nothing](0)
 
     override def empty[A]: RRBVector[A] = EMPTY_VECTOR
-
-    @inline private[immutable] final val compileAssertions = false
 
     private[immutable] final val emptyTransientBlock = new Array[AnyRef](2)
 }
@@ -1383,7 +1383,7 @@ private[immutable] trait RRBVectorPointer[A] {
             val xor = indexInFocus ^ focus
             if (xor >= 32)
                 gotoPos(indexInFocus, xor)
-            focus = index
+            focus = indexInFocus
         } else {
             gotoPosFromRoot(index)
         }
@@ -2355,7 +2355,7 @@ private[immutable] trait RRBVectorPointer[A] {
     private[immutable] final def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
         if (RRBVector.compileAssertions) {
             assert(array != null)
-            assert(0 <= numElements && numElements <= newSize && newSize <= array.length, (numElements, newSize, array.length))
+            assert(0 <= numElements && numElements <= newSize && numElements <= array.length, (numElements, newSize, array.length))
         }
         val newArray = new Array[AnyRef](newSize)
         System.arraycopy(array, 0, newArray, 0, numElements)
