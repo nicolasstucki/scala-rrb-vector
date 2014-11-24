@@ -1292,7 +1292,7 @@ package scala {
                   gotoPos(indexInFocus, xor)
                 else
                   ();
-                focus = index
+                focus = indexInFocus
               }
             else
               gotoPosFromRoot(index);

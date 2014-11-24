@@ -145,7 +145,7 @@ trait VectorPointerCodeGen {
                 if (xor >= $blockWidth) {
                     $gotoPos(indexInFocus, xor)
                 }
-                $focus = $indexParam
+                $focus = indexInFocus
             } else {
                 $gotoPosFromRoot($indexParam)
             }
