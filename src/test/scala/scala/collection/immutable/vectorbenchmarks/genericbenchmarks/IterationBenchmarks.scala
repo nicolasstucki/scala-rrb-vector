@@ -19,7 +19,7 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         performance of "iteration" config(
           Key.exec.minWarmupRuns -> 500,
-          Key.exec.maxWarmupRuns -> 1200
+          Key.exec.maxWarmupRuns -> 2000
           ) in {
 
             performance of "iterator: iterate through all elements" in {
