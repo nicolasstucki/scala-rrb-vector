@@ -13,10 +13,10 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     val minHeight = 1
     val maxHeight = 3
-    val points = 16
-    val benchRuns = 64
-    val independentSamples = 2
-
+    val points = 8
+    val benchRuns = 8
+    val independentSamples = 1
+    val memoryInHeapSeq = Seq("512m", "16g")
 
     /* data */
 
@@ -35,13 +35,15 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
       )
 
     def performanceOfVectors(benchmarks: Int => Unit): Unit = {
-        performance of "vector benchmarks" config(
-          Key.exec.benchRuns -> benchRuns,
-          Key.exec.independentSamples -> independentSamples,
-          Key.exec.jvmflags -> "-Xms16g -Xmx16g" // "-XX:+PrintCompilation"
-          ) in {
-            for (height <- minHeight to maxHeight) {
-                benchmarks(height)
+        for (memoryInHeap <- memoryInHeapSeq) {
+            performance of s"vector benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
+              Key.exec.benchRuns -> benchRuns,
+              Key.exec.independentSamples -> independentSamples,
+              Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+PrintCompilation"
+              ) in {
+                for (height <- minHeight to maxHeight) {
+                    benchmarks(height)
+                }
             }
         }
     }
