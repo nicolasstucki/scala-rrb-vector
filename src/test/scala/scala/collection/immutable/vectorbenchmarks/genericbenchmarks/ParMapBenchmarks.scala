@@ -17,8 +17,8 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val minWarmupRuns0 = if (height >= 4) 15 else if (height >= 3) 30 else 300
-        val maxWarmupRuns0 = if (height >= 4) 40 else if (height >= 3) 80 else 800
+        val minWarmupRuns0 = if (height >= 4) 30 else if (height >= 3) 60 else 300
+        val maxWarmupRuns0 = if (height >= 4) 80 else if (height >= 3) 150 else 800
         measure method "map" config(
           Key.exec.minWarmupRuns -> minWarmupRuns0,
           Key.exec.maxWarmupRuns -> maxWarmupRuns0
@@ -56,8 +56,8 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         }
 
-        val minWarmupRuns1 = if (height >= 4) 10 else if (height >= 3) 30 else 100
-        val maxWarmupRuns1 = if (height >= 4) 25 else if (height >= 3) 60 else 150
+        val minWarmupRuns1 = if (height >= 4) 20 else if (height >= 3) 50 else 120
+        val maxWarmupRuns1 = if (height >= 4) 50 else if (height >= 3) 90 else 200
         measure method "map" config(
           Key.exec.minWarmupRuns -> minWarmupRuns1,
           Key.exec.maxWarmupRuns -> maxWarmupRuns1
@@ -84,8 +84,8 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
             }
         }
 
-        val minWarmupRuns2 = if (height >= 3) 30 else 150
-        val maxWarmupRuns2 = if (height >= 3) 150 else 200
+        val minWarmupRuns2 = if (height >= 3) 60 else 200
+        val maxWarmupRuns2 = if (height >= 3) 200 else 300
         if (height <= 3) {
             measure method "map" config(
               Key.exec.minWarmupRuns -> minWarmupRuns2,
