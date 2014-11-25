@@ -36,7 +36,7 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
                     }
                 }
             }
-            for (threadPoolSize <- Seq(1, 2, 4, 8, 16)) {
+            for (threadPoolSize <- Seq(1, 2, 4, 8)) {
                 performance of s"par.map into self (x=>x) $times times" in {
                     performance of s"$threadPoolSize threads in pool" in {
                         performance of s"Height $height" in {
@@ -69,7 +69,7 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
                     }
                 }
             }
-            for (threadPoolSize <- Seq(1, 2, 4, 8, 16)) {
+            for (threadPoolSize <- Seq(1, 2, 4, 8)) {
                 performance of s"par.map into mapBencFun" in {
                     performance of s"$threadPoolSize threads in pool" in {
                         performance of s"Height $height" in {
@@ -98,7 +98,7 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
                         }
                     }
                 }
-                for (threadPoolSize <- Seq(1, 2, 4, 8, 16)) {
+                for (threadPoolSize <- Seq(1, 2, 4, 8)) {
                     performance of s"par.map into mapBencFun2" in {
                         performance of s"$threadPoolSize threads in pool" in {
                             performance of s"Height $height" in {
