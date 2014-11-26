@@ -2,7 +2,6 @@ package scala.collection.immutable
 package vectorutils
 
 
-import scala.collection.immutable.IndexedSeq
 import scala.util.Random
 import rrbvector._
 
@@ -26,17 +25,17 @@ trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
     final def defaultVectorConfig(seed: Int) = BaseVectorGenerator.defaultVectorConfig(seed)
 
-    final def randomVectorOfSize[A](n: Int)(implicit config: BaseVectorGenerator.Config): Vec = {
+    final def randomVectorOfSize(n: Int)(implicit config: BaseVectorGenerator.Config): Vec = {
 
         def randomVectorFromRange(start: Int, end: Int): Vec = end - start match {
             case 0 => emptyVector
-            case n if n > 0 && config.maxSplitSize < n =>
-                val mid = start + config.rnd.nextInt(n) + 1
+            case m if m > 0 && config.maxSplitSize < m =>
+                val mid = start + config.rnd.nextInt(m) + 1
                 val v1 = randomVectorFromRange(start, mid)
                 val v2 = randomVectorFromRange(mid, end)
                 val v3 = plusPlus(v1, v2)
                 v3
-            case n if n > 0 && config.maxSplitSize >= n => rangedVector(start, end)
+            case m if m > 0 && config.maxSplitSize >= m => rangedVector(start, end)
             case _ => throw new IllegalArgumentException()
         }
 
