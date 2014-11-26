@@ -154,9 +154,10 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                 }
                 do {
                     val displayLen = display.length - 1
+                    val oldSizes = display(displayLen)
                     val newSizes: Array[Int] =
-                        if (i >= _focusDepth) {
-                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], displayLen - 1)
+                        if (i >= _focusDepth && oldSizes != null) {
+                            makeTransientSizes(oldSizes.asInstanceOf[Array[Int]], displayLen - 1)
                         } else null
 
                     val newDisplay = new Array[AnyRef](display.length)
