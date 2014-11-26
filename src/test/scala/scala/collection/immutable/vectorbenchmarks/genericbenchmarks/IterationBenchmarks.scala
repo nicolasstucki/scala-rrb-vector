@@ -14,7 +14,11 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        performance of "iteration" in {
+        val warmups = if (height == 1) 50 else if (height == 2) 30 else 15
+        performance of "iteration" config(
+          Key.exec.minWarmupRuns -> warmups,
+          Key.exec.minWarmupRuns -> warmups
+          ) in {
 
             performance of "iterator: iterate through all elements" in {
                 performance of s"Height $height" in {
