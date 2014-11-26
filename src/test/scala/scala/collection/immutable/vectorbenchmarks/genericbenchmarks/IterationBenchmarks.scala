@@ -15,11 +15,7 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-
-        performance of "iteration" config(
-          Key.exec.minWarmupRuns -> 500,
-          Key.exec.maxWarmupRuns -> 5000
-          ) in {
+        performance of "iteration" in {
 
             performance of "iterator: iterate through all elements" in {
                 performance of s"Height $height" in {

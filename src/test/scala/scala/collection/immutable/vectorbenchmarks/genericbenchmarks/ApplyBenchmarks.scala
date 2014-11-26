@@ -12,10 +12,7 @@ abstract class ApplyBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        measure method "apply" config(
-          Key.exec.minWarmupRuns -> 100,
-          Key.exec.maxWarmupRuns -> 500
-          ) in {
+        measure method "apply" in {
 
             performance of "1k iteration" in {
                 performance of s"Height $height" in {
@@ -33,27 +30,27 @@ abstract class ApplyBenchmarks[A] extends BaseVectorBenchmark[A] {
                 }
             }
 
-            performance of "1k reverse iteration" in {
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        var i = 1000000
-                        var sum = vec(0)
-                        val len = vec.length
-                        while (i > 0) {
-                            i -= 1
-                            sum = vec.apply(i % len)
-                        }
-                        sideeffect = sum.hashCode()
-                    }
-                }
-            }
+//            performance of "1k reverse iteration" in {
+//                performance of s"Height $height" in {
+//                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+//                        var i = 1000
+//                        var sum = vec(0)
+//                        val len = vec.length
+//                        while (i > 0) {
+//                            i -= 1
+//                            sum = vec.apply(i % len)
+//                        }
+//                        sideeffect = sum.hashCode()
+//                    }
+//                }
+//            }
 
             def benchmarkFunctionPseudoRandom[Vec <: IndexedSeq[A]](vec: Vec, seed: Int) = {
                 val rnd = new scala.util.Random(seed)
                 var i = 0
                 var sum = vec(0)
                 val len = vec.length
-                while (i < 1000000) {
+                while (i < 1000) {
                     sum = vec.apply(rnd.nextInt(len))
                     i += 1
                 }
@@ -66,17 +63,17 @@ abstract class ApplyBenchmarks[A] extends BaseVectorBenchmark[A] {
                 }
             }
 
-            performance of "1k pseudo-random indices (seed=274181)" in {
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in (benchmarkFunctionPseudoRandom(_, 274181))
-                }
-            }
+//            performance of "1k pseudo-random indices (seed=274181)" in {
+//                performance of s"Height $height" in {
+//                    using(generateVectors(from, to, by)) curve vectorName in (benchmarkFunctionPseudoRandom(_, 274181))
+//                }
+//            }
 
-            performance of "1k pseudo-random indices (seed=53426)" in {
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in (benchmarkFunctionPseudoRandom(_, 53426))
-                }
-            }
+//            performance of "1k pseudo-random indices (seed=53426)" in {
+//                performance of s"Height $height" in {
+//                    using(generateVectors(from, to, by)) curve vectorName in (benchmarkFunctionPseudoRandom(_, 53426))
+//                }
+//            }
         }
     }
 }
