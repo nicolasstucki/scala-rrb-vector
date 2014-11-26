@@ -7,10 +7,8 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
-    override val minHeight: Int = 2
+    override val minHeight: Int = 1
     override val maxHeight: Int = 4
-    override val independentSamples = 32
-    override val benchRunsPerSample = 32
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
@@ -20,17 +18,18 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         performance of "iteration" config(
           Key.exec.minWarmupRuns -> 500,
-          Key.exec.maxWarmupRuns -> 2000
+          Key.exec.maxWarmupRuns -> 5000
           ) in {
 
             performance of "iterator: iterate through all elements" in {
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
                         val it = vec.iterator
+                        var seff = 0
                         while (it.hasNext) {
-                            it.next()
+                            seff ^= it.next().hashCode()
                         }
-                        sideeffect = it.hashCode()
+                        sideeffect = seff
                     }
                 }
             }
@@ -39,10 +38,11 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName in { vec =>
                         val it = vec.reverseIterator
+                        var seff = 0
                         while (it.hasNext) {
-                            it.next()
+                            seff ^= it.next().hashCode()
                         }
-                        sideeffect = it.hashCode()
+                        sideeffect = seff
                     }
                 }
             }
