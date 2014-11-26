@@ -15,17 +15,13 @@ abstract class PrependBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        measure method "prepend" config(
-          Key.exec.minWarmupRuns -> 2000,
-          Key.exec.maxWarmupRuns -> 5000
-          ) in {
-            val times = 500
-
-            performance of s"prepend 256 elements, ${times} times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = prepend(vec, 256, times)
+        measure method "prepend" in {
+            for (elems <- Seq(8, 256)) {
+                performance of s"prepend $elems elements" in {
+                    performance of s"Height $height" in {
+                        using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                            sideeffect = prepend(vec, elems, 1)
+                        }
                     }
                 }
             }

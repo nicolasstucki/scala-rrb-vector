@@ -23,7 +23,7 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
                         val it = vec.iterator
                         var seff = 0
                         while (it.hasNext) {
-                            seff ^= it.next().hashCode()
+                            seff = it.next().hashCode()
                         }
                         sideeffect = seff
                     }
@@ -36,7 +36,7 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
                         val it = vec.reverseIterator
                         var seff = 0
                         while (it.hasNext) {
-                            seff ^= it.next().hashCode()
+                            seff = it.next().hashCode()
                         }
                         sideeffect = seff
                     }
