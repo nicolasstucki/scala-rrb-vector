@@ -21,47 +21,31 @@ package scala {
               abstract class RRBVector_c_64_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_c_64_Benchmark[A]
 
               class RRBVector_c_64_AppendInt_Benchmark extends RRBVector_c_64_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def append(vec: RRBVector_c_64[Int], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_64[Int], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(0);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(0);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
               class RRBVector_c_64_AppendString_Benchmark extends RRBVector_c_64_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def append(vec: RRBVector_c_64[String], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_64[String], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(ref);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(ref);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
@@ -78,8 +62,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$27 = 0;
-                            vec.+:(x$27)
+                            val x$28 = 0;
+                            vec.+:(x$28)
                           };
                           j.+=(1)
                         }
@@ -104,8 +88,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$28 = ref;
-                            vec.+:(x$28)
+                            val x$27 = ref;
+                            vec.+:(x$27)
                           };
                           j.+=(1)
                         }
@@ -125,27 +109,17 @@ package scala {
               class RRBVector_c_64_ApplyString_Benchmark extends RRBVector_c_64_Apply_Benchmark[String] with VectorGeneratorType.StringGenerator
 
               abstract class RRBVector_c_64_Builder_Benchmark[A] extends BuilderBenchmarks[A] with RRBVector_c_64_Benchmark[A] {
-                def buildVector(n: Int, elems: Int): Int = {
+                def buildVector(n: Int): Int = {
                   var i = 0;
-                  var sum = 0;
                   var b = RRBVector_c_64.newBuilder[A];
                   val e = element(0);
-                  while (i.<(elems)) 
+                  while (i.<(n)) 
                     {
-                      val m = math.min(n, elems.-(i));
-                      var j = 0;
-                      while (j.<(m)) 
-                        {
-                          b.+=(e);
-                          i.+=(1);
-                          j.+=(1)
-                        }
-                      ;
-                      sum = b.result().length;
-                      b.clear()
+                      b.+=(e);
+                      i.+=(1)
                     }
                   ;
-                  sum
+                  b.result().length
                 }
               }
 
@@ -201,47 +175,31 @@ package scala {
               abstract class RRBVector_c_64_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_c_64_Benchmark[A]
 
               class RRBVector_c_64_AppendInt_Benchmark extends RRBVector_c_64_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def append(vec: RRBVector_c_64[Int], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_64[Int], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(0);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(0);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
               class RRBVector_c_64_AppendString_Benchmark extends RRBVector_c_64_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def append(vec: RRBVector_c_64[String], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_64[String], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(ref);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(ref);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
@@ -258,8 +216,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$29 = 0;
-                            vec.+:(x$29)
+                            val x$30 = 0;
+                            vec.+:(x$30)
                           };
                           j.+=(1)
                         }
@@ -284,8 +242,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$30 = ref;
-                            vec.+:(x$30)
+                            val x$29 = ref;
+                            vec.+:(x$29)
                           };
                           j.+=(1)
                         }
@@ -305,27 +263,17 @@ package scala {
               class RRBVector_c_64_ApplyString_Benchmark extends RRBVector_c_64_Apply_Benchmark[String] with VectorGeneratorType.StringGenerator
 
               abstract class RRBVector_c_64_Builder_Benchmark[A] extends BuilderBenchmarks[A] with RRBVector_c_64_Benchmark[A] {
-                def buildVector(n: Int, elems: Int): Int = {
+                def buildVector(n: Int): Int = {
                   var i = 0;
-                  var sum = 0;
                   var b = RRBVector_c_64.newBuilder[A];
                   val e = element(0);
-                  while (i.<(elems)) 
+                  while (i.<(n)) 
                     {
-                      val m = math.min(n, elems.-(i));
-                      var j = 0;
-                      while (j.<(m)) 
-                        {
-                          b.+=(e);
-                          i.+=(1);
-                          j.+=(1)
-                        }
-                      ;
-                      sum = b.result().length;
-                      b.clear()
+                      b.+=(e);
+                      i.+=(1)
                     }
                   ;
-                  sum
+                  b.result().length
                 }
               }
 

@@ -9,20 +9,14 @@ abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] w
 
 class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
-    def append(vec: RRBVector[Int], n: Int, times: Int): Int = {
+    def append(vec: RRBVector[Int], n: Int): Int = {
         var i = 0
-        var sum = 0
-        while (i < times) {
-            var v = vec
-            var j = 0
-            while (j<n) {
-                v = vec :+ 0
-                j += 1
-            }
-            sum += v.length
+        var v = vec
+        while (i < n) {
+            v = vec :+ 0
             i += 1
         }
-        sum
+        v.length
     }
 
 }
@@ -30,19 +24,13 @@ class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] 
 class RRBVectorAppendStringBenchmark extends RRBVectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
 
-    def append(vec: RRBVector[String], n: Int, times: Int): Int = {
+    def append(vec: RRBVector[String], n: Int): Int = {
+        var v = vec
         var i = 0
-        var sum = 0
-        while (i < times) {
-            var v = vec
-            var j = 0
-            while (j<n) {
-                v = vec :+ ref
-                j += 1
-            }
-            sum += v.length
+        while (i < n) {
+            v = vec :+ ref
             i += 1
         }
-        sum
+        v.length
     }
 }

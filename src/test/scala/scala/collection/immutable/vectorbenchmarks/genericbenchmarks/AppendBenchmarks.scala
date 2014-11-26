@@ -8,8 +8,10 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
-    // TODO remove 'times' parameter
-    def append(vec: Vec, n: Int, times: Int): Int
+
+    override def maxHeight = 1
+
+    def append(vec: Vec, n: Int): Int
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
@@ -22,7 +24,7 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
                     performance of s"Height $height" in {
                         using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
-                            sideeffect = append(vec, elems, 1)
+                            sideeffect = append(vec, elems)
                         }
                     }
                 }
