@@ -8,9 +8,6 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
-
-    override def maxHeight = 1
-
     def append(vec: Vec, n: Int): Int
 
     performanceOfVectors { height =>
@@ -19,8 +16,8 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         measure method "append" in {
-            for (elems <- Seq(8, 256)) {
-                val warmups = if (height == 1) (100 * 256) / elems else if (height == 2) (30 * 256) / elems  else 10
+            for (elems <- Seq(256)) {
+                val warmups = if (height == 1) (256 * 256) / elems else if (height == 2) (50 * 256) / elems else 10
                 performance of s"append $elems elements" config(
                   Key.exec.minWarmupRuns -> warmups,
                   Key.exec.maxWarmupRuns -> warmups
