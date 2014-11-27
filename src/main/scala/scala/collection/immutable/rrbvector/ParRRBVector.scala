@@ -57,9 +57,9 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
                     else if (rem <= (1 << 25)) 1 << 20
                     else 1 << 25
                 val _halfAdjusted = if (_half > _splitModulo) _half - _half % _splitModulo else if (_splitModulo < _end) _splitModulo else _half
-                psplit(_halfAdjusted, rem - _halfAdjusted)
+                return psplit(_halfAdjusted, rem - _halfAdjusted)
             } else {
-                Seq(this)
+                return Seq(this)
             }
         }
 
@@ -87,7 +87,6 @@ object ParRRBVector extends ParFactory[ParRRBVector] {
 
     def newCombiner[T]: Combiner[T, ParRRBVector[T]] = new ParRRBVectorCombiner[T]
 
-    //        def newCombiner[T]: Combiner[T, ParRRBVector[T]] = new LazyParRRBVectorCombiner[T]
 }
 
 private[immutable] class ParRRBVectorCombiner[T] extends Combiner[T, ParRRBVector[T]] {
@@ -110,51 +109,16 @@ private[immutable] class ParRRBVectorCombiner[T] extends Combiner[T, ParRRBVecto
         this
     }
 
-    def combine[U <: T, NewTo >: ParRRBVector[T]](other: Combiner[U, NewTo]) = {
-        if (this eq other) this
+    def combine[U <: T, NewTo >: ParRRBVector[T]](other: Combiner[U, NewTo]): Combiner[U, NewTo] = {
+        if (this eq other)
+            return this
         else {
             val newCombiner = new ParRRBVectorCombiner[T]
             newCombiner ++= this.builder.result()
             newCombiner ++= other.asInstanceOf[ParRRBVectorCombiner[T]].builder.result()
-            newCombiner
+            return newCombiner
             // builder ++= other.asInstanceOf[ParRRBVectorCombiner[T]].builder.result()
             // this
         }
-    }
-}
-
-
-private[immutable] class LazyParRRBVectorCombiner[T] extends Combiner[T, ParRRBVector[T]] {
-    var sz = 0
-    val vectors = new ArrayBuffer[RRBVectorBuilder[T]] += new RRBVectorBuilder[T]
-
-    def size: Int = sz
-
-    def +=(elem: T): this.type = {
-        vectors.last += elem
-        sz += 1
-        this
-    }
-
-    def clear() = {
-        vectors.clear()
-        vectors += new RRBVectorBuilder[T]
-        sz = 0
-    }
-
-    def result(): ParRRBVector[T] = {
-        val rvb = new RRBVectorBuilder[T]
-        for (vb <- vectors) {
-            rvb ++= vb.result
-        }
-        new ParRRBVector(rvb.result())
-    }
-
-    def combine[U <: T, NewTo >: ParRRBVector[T]](other: Combiner[U, NewTo]) = if (other eq this) this
-    else {
-        val that = other.asInstanceOf[LazyParRRBVectorCombiner[T]]
-        sz += that.sz
-        vectors ++= that.vectors
-        this
     }
 }
