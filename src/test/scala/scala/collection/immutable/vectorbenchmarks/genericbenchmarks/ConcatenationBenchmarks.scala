@@ -14,13 +14,13 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val warmups = 50
+        val warmups = 1000
 
         performance of "concatenation" config(
           Key.exec.minWarmupRuns -> warmups,
           Key.exec.maxWarmupRuns -> warmups
           ) in {
-            for (otherSize <- Seq(8, 16, 32, 64, 512, 1000, 1024)) {
+            for (otherSize <- Seq(10000, 100)) {
                 val otherVector = tabulatedVector(otherSize)
                 performance of s"Vector_$otherSize ++ vector" in {
                     performance of s"Height $height" in {
