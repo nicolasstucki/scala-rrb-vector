@@ -210,9 +210,10 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That =
-        if (bf.eq(IndexedSeq.ReusableCBF))
-            if (this.endIndex != 0) {
-                val resultVector = new RRBVector[B](this.endIndex + 1)
+        if (bf.eq(IndexedSeq.ReusableCBF)) {
+            val _endIndex = this.endIndex
+            if (_endIndex != 0) {
+                val resultVector = new RRBVector[B](_endIndex + 1)
                 resultVector.transient = this.transient
                 resultVector.initWithFocusFrom(this)
                 resultVector.prepend(elem)
@@ -221,7 +222,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             } else {
                 return createSingletonVector(elem).asInstanceOf[That]
             }
-        else
+        } else
             return super.:+(elem)(bf)
 
     private[immutable] def prepend[B](elem: B): Unit = {
@@ -1110,16 +1111,19 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
     }
 
     def +=(elem: A): this.type = {
-        if (lo >= 32) {
-            val _blockIndex = blockIndex
-            val newBlockIndex = _blockIndex + 32
-            blockIndex = newBlockIndex
-            gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ _blockIndex)
-            lo = 0
-        }
+        if (lo >= 32)
+            gotoNextBlock()
         display0(lo) = elem.asInstanceOf[AnyRef]
         lo += 1
         this
+    }
+
+    private def gotoNextBlock(): Unit = {
+        val _blockIndex = blockIndex
+        val newBlockIndex = _blockIndex + 32
+        blockIndex = newBlockIndex
+        gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ _blockIndex)
+        lo = 0
     }
 
     override def ++=(xs: TraversableOnce[A]): this.type = {
@@ -1224,12 +1228,9 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
         val res: A = display0(_lo).asInstanceOf[A]
         _lo += 1
         lo = _lo
-        if (_lo != endLo) {
-            return res
-        } else {
+        if (_lo == endLo)
             gotoNextBlock()
-            return res
-        }
+        res
     }
 
     private[immutable] final def gotoNextBlock(): Unit = {
@@ -1255,6 +1256,7 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
             endLo = 1
             if (_hasNext) {
                 _hasNext = false
+                // return to avoid the resetting of endLo
                 return
             }
             else throw new NoSuchElementException("reached iterator end")
@@ -1292,35 +1294,41 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
 
     final def hasNext = _hasNext
 
-    def next(): A = if (_hasNext) {
-        val res = display0(lo).asInstanceOf[A]
-        lo -= 1
-        if (lo >= endLo)
-            return res
-        else {
-            val newBlockIndex = lastIndexOfBlock - 32
-            if (focusStart <= newBlockIndex) {
-                val _focusStart = focusStart
-                val newBlockIndexInFocus = newBlockIndex - _focusStart
-                gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ (lastIndexOfBlock - _focusStart))
-                lastIndexOfBlock = newBlockIndex
-                lo = 31
-                endLo = math.max(startIndex - focusStart - focus, 0)
-                return res
-            } else if (startIndex < focusStart) {
-                val newIndex = focusStart - 1
-                focusOn(newIndex)
-                lastIndexOfBlock = newIndex
-                lo = (newIndex - focusStart) & 31
-                endLo = math.max(startIndex - focusStart - lastIndexOfBlock, 0)
-                return res
-            } else {
-                _hasNext = false
-                return res
-            }
+    def next(): A = {
+        // TODO push the check of _hasNext and the throwing of the NoSuchElementException into gotoPrevBlock() like in the normal RRBVectorIterator
+        if (_hasNext) {
+            var _lo = lo
+            val res = display0(_lo).asInstanceOf[A]
+            _lo -= 1
+            lo = _lo
+            if (_lo < endLo)
+                gotoPrevBlock()
+            res
+        } else
+            throw new NoSuchElementException("reached iterator end")
+    }
+
+    private[immutable] final def gotoPrevBlock(): Unit = {
+        val newBlockIndex = lastIndexOfBlock - 32
+        if (focusStart <= newBlockIndex) {
+            val _focusStart = focusStart
+            val newBlockIndexInFocus = newBlockIndex - _focusStart
+            gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ (lastIndexOfBlock - _focusStart))
+            lastIndexOfBlock = newBlockIndex
+            lo = 31
+            endLo = math.max(startIndex - focusStart - focus, 0)
+            return
+        } else if (startIndex < focusStart) {
+            val newIndex = focusStart - 1
+            focusOn(newIndex)
+            lastIndexOfBlock = newIndex
+            lo = (newIndex - focusStart) & 31
+            endLo = math.max(startIndex - focusStart - lastIndexOfBlock, 0)
+            return
+        } else {
+            _hasNext = false
         }
-    } else
-        throw new NoSuchElementException("reached iterator end")
+    }
 }
 
 private[immutable] trait RRBVectorPointer[A] {
@@ -1435,8 +1443,9 @@ private[immutable] trait RRBVectorPointer[A] {
     }
 
     private[immutable] final def focusOn(index: Int): Unit = {
-        if (focusStart <= index && index < focusEnd) {
-            val indexInFocus = index - focusStart
+        val _focusStart = focusStart
+        if (_focusStart <= index && index < focusEnd) {
+            val indexInFocus = index - _focusStart
             val xor = indexInFocus ^ focus
             if (xor >= 32)
                 gotoPos(indexInFocus, xor)
@@ -1490,9 +1499,9 @@ private[immutable] trait RRBVectorPointer[A] {
         if (RRBVector.compileAssertions) {
             assert(0 <= indexInSubTree && indexInSubTree < sizes(sizes.length - 1))
         }
-        // TODO Try optimization: if (indexInSubTree == 0) then is is trivially 0 and no need to access sizes
+        if (indexInSubTree == 0)
+            return 0
         var is = 0
-        //        if (indexInSubTree == 0) return 0 or return is look at bytecode
         while (sizes(is) <= indexInSubTree)
             is += 1
         is
@@ -1881,26 +1890,36 @@ private[immutable] trait RRBVectorPointer[A] {
             display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 32768) {
-            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+            val d1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 1048576) {
-            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+            val d2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = d2
+            val d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 33554432) {
-            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+            val d3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = d3
+            val d2 = d3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = d2
+            val d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 1073741824) {
-            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
-            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-            display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+            val d4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display4 = d4
+            val d3 = d4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = d3
+            val d2 = d3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = d2
+            val d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else
             throw new IllegalArgumentException()
@@ -1911,26 +1930,36 @@ private[immutable] trait RRBVectorPointer[A] {
             display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 32768) {
-            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+            val d1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1(0).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 1048576) {
-            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-            display1 = display2(0).asInstanceOf[Array[AnyRef]]
-            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+            val d2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            val d1 = d2(0).asInstanceOf[Array[AnyRef]]
+            display0 = d1(0).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display2 = d2
             return
         } else if (xor < 33554432) {
-            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-            display2 = display3(0).asInstanceOf[Array[AnyRef]]
-            display1 = display2(0).asInstanceOf[Array[AnyRef]]
-            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+            val d3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            val d2 = d3(0).asInstanceOf[Array[AnyRef]]
+            val d1 = d2(0).asInstanceOf[Array[AnyRef]]
+            display0 = d1(0).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display2 = d2
+            display3 = d3
             return
         } else if (xor < 1073741824) {
-            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
-            display3 = display4(0).asInstanceOf[Array[AnyRef]]
-            display2 = display3(0).asInstanceOf[Array[AnyRef]]
-            display1 = display2(0).asInstanceOf[Array[AnyRef]]
-            display0 = display1(0).asInstanceOf[Array[AnyRef]]
+            val d4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            val d3 = d4(0).asInstanceOf[Array[AnyRef]]
+            val d2 = d3(0).asInstanceOf[Array[AnyRef]]
+            val d1 = d2(0).asInstanceOf[Array[AnyRef]]
+            display4 = d4
+            display3 = d3
+            display2 = d2
+            display1 = d1
+            display0 = d1(0).asInstanceOf[Array[AnyRef]]
             return
         } else
             throw new IllegalArgumentException()
@@ -1941,26 +1970,36 @@ private[immutable] trait RRBVectorPointer[A] {
             display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 32768) {
-            display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+            val d1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1(31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 1048576) {
-            display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-            display1 = display2(31).asInstanceOf[Array[AnyRef]]
-            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+            val d2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+            display2 = d2
+            val d1 = d2(31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1(31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 33554432) {
-            display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-            display2 = display3(31).asInstanceOf[Array[AnyRef]]
-            display1 = display2(31).asInstanceOf[Array[AnyRef]]
-            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+            val d3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+            display3 = d3
+            val d2 = d3(31).asInstanceOf[Array[AnyRef]]
+            display2 = d2
+            val d1 = d2(31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d3(31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 1073741824) {
-            display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
-            display3 = display4(31).asInstanceOf[Array[AnyRef]]
-            display2 = display3(31).asInstanceOf[Array[AnyRef]]
-            display1 = display2(31).asInstanceOf[Array[AnyRef]]
-            display0 = display1(31).asInstanceOf[Array[AnyRef]]
+            val d4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+            display4 = d4
+            val d3 = d4(31).asInstanceOf[Array[AnyRef]]
+            display3 = d3
+            val d2 = d3(31).asInstanceOf[Array[AnyRef]]
+            display2 = d2
+            val d1 = d2(31).asInstanceOf[Array[AnyRef]]
+            display1 = d1
+            display0 = d1(31).asInstanceOf[Array[AnyRef]]
             return
         } else
             throw new IllegalArgumentException()
@@ -2255,149 +2294,167 @@ private[immutable] trait RRBVectorPointer[A] {
                 }
             }
         }
-        //        _depth match {
-        //            case 1 => ()
-        //            case 2 =>
-        //                display1((_focus>>5)&31) = display0
-        //                return
-        //            case 3 =>
-        //                display2((_focus>>10)&31) = display1
-        //                display1((_focus>>5)&31) = display0
-        //                return
-        //            case 4 =>
-        //                display3((_focus>>15)&31) = display2)
-        //                display2((_focus>>10)&31) = display1)
-        //                display1((_focus>>5)&31) = display0)
-        //                return
-        //            case 5 =>
-        //                display4((_focus>>20)&31) = display3
-        //                display3((_focus>>15)&31) = display2
-        //                display2((_focus>>10)&31) = display1
-        //                display1((_focus>>5)&31) = display0)
-        //                return
-        //            case 6 =>
-        //                display5((_focus>>25)&31) = display4
-        //                display4((_focus>>20)&31) = display3
-        //                display3((_focus>>15)&31) = display2
-        //                display2((_focus>>10)&31) = display1
-        //                display1((_focus>>5)&31) = display0
-        //                return
-        //        }
+//                _depth match {
+//                    case 1 =>
+//                        return
+//                    case 2 =>
+//                        display1((_focus>>5)&31) = display0
+//                        return
+//                    case 3 =>
+//                        display2((_focus>>10)&31) = display1
+//                        display1((_focus>>5)&31) = display0
+//                        return
+//                    case 4 =>
+//                        display3((_focus>>15)&31) = display2
+//                        display2((_focus>>10)&31) = display1
+//                        display1((_focus>>5)&31) = display0
+//                        return
+//                    case 5 =>
+//                        display4((_focus>>20)&31) = display3
+//                        display3((_focus>>15)&31) = display2
+//                        display2((_focus>>10)&31) = display1
+//                        display1((_focus>>5)&31) = display0
+//                        return
+//                    case 6 =>
+//                        display5((_focus>>25)&31) = display4
+//                        display4((_focus>>20)&31) = display3
+//                        display3((_focus>>15)&31) = display2
+//                        display2((_focus>>10)&31) = display1
+//                        display1((_focus>>5)&31) = display0
+//                        return
+//                }
     }
 
     private[immutable] final def cleanTopTake(cutIndex: Int): Unit = this.depth match {
         case 2 =>
-            if ((cutIndex >> 5) == 0) {
+            var newDepth = 0
+            if (cutIndex < 32) {
                 display1 = null
-                this.depth = 1
+                newDepth = 1
             } else
-                this.depth = 2
+                newDepth = 2
+            this.depth = newDepth
             return
         case 3 =>
-            if ((cutIndex >> 10) == 0) {
+            var newDepth = 0
+            if (cutIndex < 1024) {
                 display2 = null
-                if ((cutIndex >> 5) == 0) {
+                if (cutIndex < 32) {
                     display1 = null
-                    this.depth = 1
+                    newDepth = 1
                 } else
-                    this.depth = 2
+                    newDepth = 2
             } else
-                this.depth = 3
+                newDepth = 3
+            this.depth = newDepth
             return
         case 4 =>
-            if ((cutIndex >> 15) == 0) {
+            var newDepth = 0
+            if (cutIndex < 32768) {
                 display3 = null
-                if ((cutIndex >> 10) == 0) {
+                if (cutIndex < 1024) {
                     display2 = null
-                    if ((cutIndex >> 5) == 0) {
+                    if (cutIndex < 32) {
                         display1 = null
-                        this.depth = 1
+                        newDepth = 1
                     } else
-                        this.depth = 2
+                        newDepth = 2
                 } else
-                    this.depth = 3
+                    newDepth = 3
             } else
-                this.depth = 4
+                newDepth = 4
+            this.depth = newDepth
             return
         case 5 =>
-            if ((cutIndex >> 20) == 0) {
+            var newDepth = 0
+            if (cutIndex < 1048576) {
                 display4 = null
-                if ((cutIndex >> 15) == 0) {
+                if (cutIndex < 32768) {
                     display3 = null
-                    if ((cutIndex >> 10) == 0) {
+                    if (cutIndex < 1024) {
                         display2 = null
-                        if ((cutIndex >> 5) == 0) {
+                        if (cutIndex < 32) {
                             display1 = null
-                            this.depth = 1
+                            newDepth = 1
                         } else
-                            this.depth = 2
+                            newDepth = 2
                     } else
-                        this.depth = 3
+                        newDepth = 3
                 } else
-                    this.depth = 4
+                    newDepth = 4
             } else
-                this.depth = 5
+                newDepth = 5
+            this.depth = newDepth
             return
         case 6 =>
-            if ((cutIndex >> 25) == 0) {
+            var newDepth = 0
+            if (cutIndex < 33554432) {
                 display5 = null
-                if ((cutIndex >> 20) == 0) {
+                if (cutIndex < 1048576) {
                     display4 = null
-                    if ((cutIndex >> 15) == 0) {
+                    if (cutIndex < 32768) {
                         display3 = null
-                        if ((cutIndex >> 10) == 0) {
+                        if (cutIndex < 1024) {
                             display2 = null
-                            if ((cutIndex >> 5) == 0) {
+                            if (cutIndex < 32) {
                                 display1 = null
-                                this.depth = 1
+                                newDepth = 1
                             } else
-                                this.depth = 2
+                                newDepth = 2
                         } else
-                            this.depth = 3
+                            newDepth = 3
                     } else
-                        this.depth = 4
+                        newDepth = 4
                 } else
-                    this.depth = 5
+                    newDepth = 5
             } else
-                this.depth = 6
+                newDepth = 6
+            this.depth = newDepth
             return
     }
 
     private[immutable] final def cleanTopDrop(cutIndex: Int): Unit = this.depth match {
         case 2 =>
+            var newDepth = 0
             if ((cutIndex >> 5) == display1.length - 2) {
                 display1 = null
-                this.depth = 1
+                newDepth = 1
             } else
-                this.depth = 2
+                newDepth = 2
+            this.depth = newDepth
             return
         case 3 =>
+            var newDepth = 0
             if ((cutIndex >> 10) == display2.length - 2) {
                 display2 = null
                 if ((cutIndex >> 5) == display1.length - 2) {
                     display1 = null
-                    this.depth = 1
+                    newDepth = 1
                 } else
-                    this.depth = 2
+                    newDepth = 2
             } else
-                this.depth = 3
+                newDepth = 3
+            this.depth = newDepth
             return
         case 4 =>
+            var newDepth = 0
             if ((cutIndex >> 15) == display3.length - 2) {
                 display3 = null
                 if ((cutIndex >> 10) == display2.length - 2) {
                     display2 = null
                     if ((cutIndex >> 5) == display1.length - 2) {
                         display1 = null
-                        this.depth = 1
+                        newDepth = 1
                     } else
-                        this.depth = 2
+                        newDepth = 2
                 } else
-                    this.depth = 3
+                    newDepth = 3
             } else
-                this.depth = 4
+                newDepth = 4
+            this.depth = newDepth
             return
         case 5 =>
+            var newDepth = 0
             if ((cutIndex >> 20) == display4.length - 2) {
                 display4 = null
                 if ((cutIndex >> 15) == display3.length - 2) {
@@ -2406,17 +2463,19 @@ private[immutable] trait RRBVectorPointer[A] {
                         display2 = null
                         if ((cutIndex >> 5) == display1.length - 2) {
                             display1 = null
-                            this.depth = 1
+                            newDepth = 1
                         } else
-                            this.depth = 2
+                            newDepth = 2
                     } else
-                        this.depth = 3
+                        newDepth = 3
                 } else
-                    this.depth = 4
+                    newDepth = 4
             } else
-                this.depth = 5
+                newDepth = 5
+            this.depth = newDepth
             return
         case 6 =>
+            var newDepth = 0
             if ((cutIndex >> 25) == display5.length - 2) {
                 display5 = null
                 if ((cutIndex >> 20) == display4.length - 2) {
@@ -2427,17 +2486,18 @@ private[immutable] trait RRBVectorPointer[A] {
                             display2 = null
                             if ((cutIndex >> 5) == display1.length - 2) {
                                 display1 = null
-                                this.depth = 1
+                                newDepth = 1
                             } else
-                                this.depth = 2
+                                newDepth = 2
                         } else
-                            this.depth = 3
+                            newDepth = 3
                     } else
-                        this.depth = 4
+                        newDepth = 4
                 } else
-                    this.depth = 5
+                    newDepth = 5
             } else
-                this.depth = 6
+                newDepth = 6
+            this.depth = newDepth
             return
     }
 
