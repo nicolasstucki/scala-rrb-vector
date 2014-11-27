@@ -14,7 +14,12 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        performance of "concatenation" in {
+        val warmups = 50
+
+        performance of "concatenation" config(
+          Key.exec.minWarmupRuns -> warmups,
+          Key.exec.maxWarmupRuns -> warmups
+          ) in {
             for (otherSize <- Seq(8, 16, 32, 64, 512, 1000, 1024)) {
                 val otherVector = tabulatedVector(otherSize)
                 performance of s"Vector_$otherSize ++ vector" in {
@@ -28,7 +33,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
                 performance of s"vector ++ Vector$otherSize" in {
                     performance of s"Height $height" in {
-                        using(generateVectors(from, to(to_), by)) curve vectorName setUp { x: Vec => System.gc()}in { vec =>
+                        using(generateVectors(from, to(to_), by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
                             val v = plusPlus(vec, otherVector)
                             sideeffect = v.length
                         }
