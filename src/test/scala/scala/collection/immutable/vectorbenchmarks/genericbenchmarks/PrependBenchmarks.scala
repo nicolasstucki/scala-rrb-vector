@@ -16,16 +16,15 @@ abstract class PrependBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         measure method "prepend" in {
-            for (elems <- Seq(8, 256)) {
-                val warmups = if (height == 1) (100 * 256) / elems else if (height == 2) (30 * 256) / elems else 10
-                performance of s"prepend $elems elements" config(
-                  Key.exec.minWarmupRuns -> warmups,
-                  Key.exec.maxWarmupRuns -> warmups
-                  ) in {
-                    performance of s"Height $height" in {
-                        using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
-                            sideeffect = prepend(vec, elems, 1)
-                        }
+            val elems = 256
+            val warmups = if (height == 1) (100 * 256) / elems else if (height == 2) (30 * 256) / elems else 10
+            performance of s"prepend $elems elements" config(
+              Key.exec.minWarmupRuns -> warmups,
+              Key.exec.maxWarmupRuns -> warmups
+              ) in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                        sideeffect = prepend(vec, elems, 1)
                     }
                 }
             }
