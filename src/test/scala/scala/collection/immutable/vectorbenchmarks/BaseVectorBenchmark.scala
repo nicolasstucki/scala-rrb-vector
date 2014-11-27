@@ -1,7 +1,6 @@
 package scala.collection.immutable
 package vectorbenchmarks
 
-import org.scalameter
 import org.scalameter.PerformanceTest.OfflineRegressionReport
 import org.scalameter.{Gen, Key}
 
@@ -15,7 +14,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
     def minHeight = 1
     def maxHeight = 3
     def points = 16
-    def independentSamples = 32
+    def independentSamples = 8
     def benchRunsPerSample = 32
     def benchRuns = independentSamples * benchRunsPerSample
     def memoryInHeapSeq = Seq("16g")//, "512m")
@@ -41,7 +40,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
             performance of s"vector benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
               Key.exec.benchRuns -> benchRuns,
               Key.exec.independentSamples -> independentSamples,
-              Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+PrintCompilation",
+              Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining" "-XX:+PrintCompilation",
               ) in {
                 for (height <- maxHeight to minHeight by -1) {
                     benchmarks(height)
