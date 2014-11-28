@@ -401,8 +401,12 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         val newVec = new RRBVector(thisVecLen + thatVecLen)
                         newVec.initWithFocusFrom(this)
                         newVec.transient = this.transient
-                        if (thatVecLen > 32) newVec.concatenate(thisVecLen, thatVec)
-                        else newVec.appendAll(thisVecLen, thatVec.display0)
+                        if (1024 < thisVecLen && thatVecLen <= 32) {
+                            /* appending a small amont of elements to a large vector */
+                            newVec.appendAll(thisVecLen, thatVec.display0)
+                        } else {
+                            newVec.concatenate(thisVecLen, thatVec)
+                        }
                         return newVec.asInstanceOf[That]
                     }
                 case _ =>
@@ -2294,35 +2298,35 @@ private[immutable] trait RRBVectorPointer[A] {
                 }
             }
         }
-//                _depth match {
-//                    case 1 =>
-//                        return
-//                    case 2 =>
-//                        display1((_focus>>5)&31) = display0
-//                        return
-//                    case 3 =>
-//                        display2((_focus>>10)&31) = display1
-//                        display1((_focus>>5)&31) = display0
-//                        return
-//                    case 4 =>
-//                        display3((_focus>>15)&31) = display2
-//                        display2((_focus>>10)&31) = display1
-//                        display1((_focus>>5)&31) = display0
-//                        return
-//                    case 5 =>
-//                        display4((_focus>>20)&31) = display3
-//                        display3((_focus>>15)&31) = display2
-//                        display2((_focus>>10)&31) = display1
-//                        display1((_focus>>5)&31) = display0
-//                        return
-//                    case 6 =>
-//                        display5((_focus>>25)&31) = display4
-//                        display4((_focus>>20)&31) = display3
-//                        display3((_focus>>15)&31) = display2
-//                        display2((_focus>>10)&31) = display1
-//                        display1((_focus>>5)&31) = display0
-//                        return
-//                }
+        //                _depth match {
+        //                    case 1 =>
+        //                        return
+        //                    case 2 =>
+        //                        display1((_focus>>5)&31) = display0
+        //                        return
+        //                    case 3 =>
+        //                        display2((_focus>>10)&31) = display1
+        //                        display1((_focus>>5)&31) = display0
+        //                        return
+        //                    case 4 =>
+        //                        display3((_focus>>15)&31) = display2
+        //                        display2((_focus>>10)&31) = display1
+        //                        display1((_focus>>5)&31) = display0
+        //                        return
+        //                    case 5 =>
+        //                        display4((_focus>>20)&31) = display3
+        //                        display3((_focus>>15)&31) = display2
+        //                        display2((_focus>>10)&31) = display1
+        //                        display1((_focus>>5)&31) = display0
+        //                        return
+        //                    case 6 =>
+        //                        display5((_focus>>25)&31) = display4
+        //                        display4((_focus>>20)&31) = display3
+        //                        display3((_focus>>15)&31) = display2
+        //                        display2((_focus>>10)&31) = display1
+        //                        display1((_focus>>5)&31) = display0
+        //                        return
+        //                }
     }
 
     private[immutable] final def cleanTopTake(cutIndex: Int): Unit = this.depth match {
