@@ -14,7 +14,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
     def minHeight = 1
     def maxHeight = 3
     def points = 16
-    def independentSamples = 8
+    def independentSamples = 32
     def benchRunsPerSample = 32
     def benchRuns = independentSamples * benchRunsPerSample
     def memoryInHeapSeq = Seq("16g")//, "512m")

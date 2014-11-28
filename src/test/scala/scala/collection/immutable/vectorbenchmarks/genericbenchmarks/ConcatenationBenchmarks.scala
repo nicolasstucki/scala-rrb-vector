@@ -14,7 +14,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val warmups = 2000
+        val warmups = 3000
 
         performance of "concatenation" config(
           Key.exec.minWarmupRuns -> warmups,
