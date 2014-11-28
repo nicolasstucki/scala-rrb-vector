@@ -14,7 +14,7 @@ abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val warmups = if (height == 1) 50 else if (height == 2) 30 else 15
+        val warmups = if (height == 1) 500 else if (height == 2) 300 else if (height == 3) 150 else 20
         performance of "iteration" config(
           Key.exec.minWarmupRuns -> warmups,
           Key.exec.minWarmupRuns -> warmups
