@@ -7,8 +7,8 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
 
-    override val minHeight: Int = 1
-    override val maxHeight: Int = 4
+    override def minHeight: Int = 1
+    override def maxHeight: Int = 4
 
     def buildVector(n: Int): Int
 
