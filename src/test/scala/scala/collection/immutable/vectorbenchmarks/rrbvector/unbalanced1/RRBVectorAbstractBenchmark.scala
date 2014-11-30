@@ -9,8 +9,7 @@ trait RRBVectorAbstractBenchmark[A] extends BaseVectorBenchmark[A] with RRBVecto
 
     override def generateVectors(from: Int, to: Int, by: Int) = {
         sizes(from, to, by) map { n =>
-            val vecs = tabulatedVector(n).splitAt(n / 2)
-            vecs._1 ++ vecs._2
+            rangedVector(0, n / 2) ++ rangedVector(n / 2, n)
         }
     }
 
