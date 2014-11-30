@@ -1279,27 +1279,33 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
         val newBlockIndex = oldBlockIndex + endLo
         blockIndex = newBlockIndex
         lo = 0
-        if (newBlockIndex < focusEnd) {
+        val _focusEnd = focusEnd
+        if (newBlockIndex < _focusEnd) {
             val _focusStart = focusStart
             val newBlockIndexInFocus = newBlockIndex - _focusStart
             gotoNextBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ (oldBlockIndex - _focusStart))
-        } else if (newBlockIndex < endIndex) {
-            focusOn(newBlockIndex)
-            if (endIndex < focusEnd)
-                focusEnd = endIndex
+            endLo = java.lang.Math.min(_focusEnd - newBlockIndex, 32)
+            return
         } else {
-            /* setup dummy index that will not fail with IndexOutOfBound in subsequent 'next()' invocations */
-            lo = 0
-            blockIndex = endIndex
-            endLo = 1
-            if (_hasNext) {
-                _hasNext = false
-                // return to avoid the resetting of endLo
+            val _endIndex = endIndex
+            if (newBlockIndex < _endIndex) {
+                focusOn(newBlockIndex)
+                if (_endIndex < focusEnd)
+                    focusEnd = _endIndex
+                endLo = java.lang.Math.min(focusEnd - newBlockIndex, 32)
                 return
+            } else {
+                /* setup dummy index that will not fail with IndexOutOfBound in subsequent 'next()' invocations */
+                lo = 0
+                blockIndex = _endIndex
+                endLo = 1
+                if (_hasNext) {
+                    _hasNext = false
+                    return
+                }
+                else throw new NoSuchElementException("reached iterator end")
             }
-            else throw new NoSuchElementException("reached iterator end")
         }
-        endLo = java.lang.Math.min(focusEnd - newBlockIndex, 32)
     }
 
     private[collection] def remaining: Int = java.lang.Math.max(endIndex - (blockIndex + lo), 0)
