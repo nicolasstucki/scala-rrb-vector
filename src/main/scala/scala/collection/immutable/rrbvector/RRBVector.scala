@@ -110,9 +110,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
 
     private[immutable] def append[B](elem: B, _endIndex: Int): Unit = {
-        if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
-            normalizeAndFocusOn(_endIndex - 1)
-        }
+        focusOnLastBlock(_endIndex)
 
         val elemIndexInBlock = (_endIndex - focusStart) & 31
         if /* if next element will go in current block position */ (elemIndexInBlock != 0) {
@@ -127,16 +125,28 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     }
 
-    private def appendOnCurrentBlock[B](elem: B, elemIndexInBlock: Int): Unit = {
+    private final def focusOnFirstBlock(): Unit = {
+        if (focusStart != 0 || (focus & -32) != 0) {
+            /* the current focused block is not on the left most leaf block of the vector */
+            normalizeAndFocusOn(0)
+        }
+    }
+
+    private final def focusOnLastBlock(_endIndex: Int): Unit = {
+        if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
+            normalizeAndFocusOn(_endIndex - 1)
+        }
+    }
+
+    private final def appendOnCurrentBlock[B](elem: B, elemIndexInBlock: Int): Unit = {
         focusEnd = endIndex
-        val d0 = new Array[AnyRef](elemIndexInBlock + 1)
-        System.arraycopy(display0, 0, d0, 0, elemIndexInBlock)
+        val d0 = copyOf(display0, elemIndexInBlock, elemIndexInBlock + 1)
         d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
         display0 = d0
         makeTransientIfNeeded()
     }
 
-    private def appendBackNewBlock[B](elem: B, _endIndex: Int) = {
+    private final def appendBackNewBlock[B](elem: B, _endIndex: Int) = {
         val oldDepth = depth
         val newRelaxedIndex = _endIndex - focusStart + focusRelax
         val focusJoined = focus | focusRelax
@@ -193,7 +203,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         transient = true
     }
 
-    private def makeTransientIfNeeded() = {
+    private final def makeTransientIfNeeded() = {
         val _depth = depth
         if (_depth > 1 && !transient) {
             copyDisplaysAndNullFocusedBranch(_depth, focus | focusRelax)
@@ -201,7 +211,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    private[immutable] def normalizeAndFocusOn(index: Int): Unit = {
+    private[immutable] final def normalizeAndFocusOn(index: Int): Unit = {
         if (transient) {
             normalize(depth)
             transient = false
@@ -209,7 +219,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         focusOn(index)
     }
 
-    override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That =
+    override final def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]): That =
         if (bf.eq(IndexedSeq.ReusableCBF)) {
             val _endIndex = this.endIndex
             if (_endIndex != 0) {
@@ -225,11 +235,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         } else
             return super.:+(elem)(bf)
 
-    private[immutable] def prepend[B](elem: B): Unit = {
-        if (focusStart != 0 || (focus & -32) != 0) {
-            /* the current focused block is not on the left most leaf block of the vector */
-            normalizeAndFocusOn(0)
-        }
+    private[immutable] final def prepend[B](elem: B): Unit = {
+        focusOnFirstBlock()
         val d0 = display0
         if /* element fits in current block */ (d0.length < 32) {
             prependOnCurrentBlock(elem, d0)
@@ -242,18 +249,22 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    private def prependOnCurrentBlock[B](elem: B, oldD0: Array[AnyRef]): Unit = {
+    private final def prependOnCurrentBlock[B](elem: B, oldD0: Array[AnyRef]): Unit = {
+        def shiftedCopyOf(array: Array[AnyRef], newLen: Int) = {
+            val newArray = new Array[AnyRef](newLen)
+            System.arraycopy(array, 0, newArray, 1, newLen - 1)
+            newArray
+        }
         val newLen = oldD0.length + 1
         focusEnd = newLen
-        val newD0 = new Array[AnyRef](newLen)
+        val newD0 = shiftedCopyOf(oldD0, newLen)
         newD0(0) = elem.asInstanceOf[AnyRef]
-        System.arraycopy(oldD0, 0, newD0, 1, newLen - 1)
         display0 = newD0
         makeTransientIfNeeded()
         if (RRBVector.compileAssertions) assertVectorInvariant()
     }
 
-    private[immutable] def prependFrontNewBlock[B](elem: B): Unit = {
+    private[immutable] final def prependFrontNewBlock[B](elem: B): Unit = {
         if (RRBVector.compileAssertions) {
             assert(display0.length == 32)
         }
@@ -402,7 +413,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         newVec.initWithFocusFrom(this)
                         newVec.transient = this.transient
                         if (1024 < thisVecLen && thatVecLen <= 32) {
-                            /* appending a small amont of elements to a large vector */
+                            /* appending a small amount of elements to a large vector */
                             newVec.appendAll(thisVecLen, thatVec.display0)
                         } else {
                             newVec.concatenate(thisVecLen, thatVec)
@@ -433,14 +444,11 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             throw new UnsupportedOperationException("empty.init")
 
 
-    private[immutable] def appendAll(currentEndIndex: Int, that: Array[AnyRef]): Unit = {
+    private[immutable] final def appendAll(currentEndIndex: Int, that: Array[AnyRef]): Unit = {
         var _endIndex = currentEndIndex
         val newEndIndex = this.endIndex
 
-        if /* vector focus is not focused block of the last element */ ((focusEnd != _endIndex) || ((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
-            normalizeAndFocusOn(_endIndex - 1)
-        }
-
+        focusOnLastBlock(_endIndex)
         makeTransientIfNeeded()
 
         var i = 0
@@ -467,7 +475,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     }
 
-    private[immutable] def concatenate[B >: A](currentSize: Int, that: RRBVector[B]): scala.Unit = {
+    private[immutable] final def concatenate[B >: A](currentSize: Int, that: RRBVector[B]): scala.Unit = {
         if (this.transient) {
             this.normalize(depth)
             this.transient = false
@@ -738,7 +746,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         top
     }
 
-    private def rebalancedLeafs(displayLeft: Array[AnyRef], displayRight: Array[AnyRef], isTop: Boolean): Array[AnyRef] = {
+    private final def rebalancedLeafs(displayLeft: Array[AnyRef], displayRight: Array[AnyRef], isTop: Boolean): Array[AnyRef] = {
         val leftLength = displayLeft.length
         val rightLength = displayRight.length
         if (leftLength == 32) {
@@ -770,7 +778,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    private def computeBranching(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int) = {
+    private final def computeBranching(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int) = {
         val leftLength = if (displayLeft == null) 0 else displayLeft.length - 1
         val concatLength = if (concat == null) 0 else concat.length - 1
         val rightLength = if (displayRight == null) 0 else displayRight.length - 1
@@ -809,7 +817,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         branching
     }
 
-    private def takeFront0(n: Int): RRBVector[A] = {
+    private final def takeFront0(n: Int): RRBVector[A] = {
         if (transient) {
             normalize(depth)
             transient = false
@@ -879,7 +887,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         vec
     }
 
-    private def dropFront0(n: Int): RRBVector[A] = {
+    private final def dropFront0(n: Int): RRBVector[A] = {
         if (transient) {
             normalize(depth)
             transient = false
@@ -946,7 +954,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    private[immutable] def assertVectorInvariant(): Unit = {
+    private[immutable] final def assertVectorInvariant(): Unit = {
         if (RRBVector.compileAssertions) {
             assert(0 <= depth && depth <= 6, depth)
             assert(isEmpty == (depth == 0), (isEmpty, depth))
@@ -1065,7 +1073,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    private[immutable] def debugToString: String = {
+    private[immutable] final def debugToString: String = {
         s"""
            |RRBVector (
            |    display0 = $display0 ${
@@ -1102,19 +1110,27 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
 
     display0 = new Array[AnyRef](32)
     depth = 1
-    private var blockIndex = 0
-    private var lo = 0
+    private final var blockIndex = 0
+    private final var lo = 0
 
-    private var acc: RRBVector[A] = null
+    private final var acc: RRBVector[A] = null
 
-    private[collection] def endIndex = {
+    private[collection] final def endIndex = {
         var sz = blockIndex + lo
         if (acc != null)
             sz += acc.endIndex
         sz
     }
 
-    def +=(elem: A): this.type = {
+    final def +=(elem: A): this.type = {
+        // Method split into 2 to help with )
+        def gotoNextBlock(): Unit = {
+            val _blockIndex = blockIndex
+            val newBlockIndex = _blockIndex + 32
+            blockIndex = newBlockIndex
+            gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ _blockIndex)
+            lo = 0
+        }
         if (lo >= 32)
             gotoNextBlock()
         display0(lo) = elem.asInstanceOf[AnyRef]
@@ -1122,15 +1138,7 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
         this
     }
 
-    private def gotoNextBlock(): Unit = {
-        val _blockIndex = blockIndex
-        val newBlockIndex = _blockIndex + 32
-        blockIndex = newBlockIndex
-        gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ _blockIndex)
-        lo = 0
-    }
-
-    override def ++=(xs: TraversableOnce[A]): this.type = {
+    override final def ++=(xs: TraversableOnce[A]): this.type = {
         if (xs.nonEmpty) {
             xs match {
                 case thatVec: RRBVector[A] =>
@@ -1149,7 +1157,7 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
         this
     }
 
-    private def resultCurrent(): RRBVector[A] = {
+    private final def resultCurrent(): RRBVector[A] = {
         val _lo = lo
         val size = blockIndex + _lo
         if (size == 0)
@@ -1170,7 +1178,7 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
         }
     }
 
-    def result(): RRBVector[A] = {
+    final def result(): RRBVector[A] = {
         val current = resultCurrent()
         val resultVector =
             if (acc == null) current
@@ -1179,7 +1187,7 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
         resultVector
     }
 
-    private def clearCurrent(): Unit = {
+    private final def clearCurrent(): Unit = {
         display0 = new Array[AnyRef](32)
         display1 = null
         display2 = null
@@ -1191,7 +1199,7 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
         lo = 0
     }
 
-    def clear(): Unit = {
+    final def clear(): Unit = {
         clearCurrent()
         acc = null
     }
@@ -1199,12 +1207,12 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
 
 class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with RRBVectorPointer[A@uncheckedVariance] {
     /* Index in the vector of the first element of current block, i.e. current display0 */
-    private var blockIndex: Int = _
+    private final var blockIndex: Int = _
     /* Index in current block, i.e. current display0 */
-    private var lo: Int = _
+    private final var lo: Int = _
     /* End index (or length) of current block, i.e. current display0 */
-    private var endLo: Int = _
-    private var _hasNext: Boolean = _
+    private final var endLo: Int = _
+    private final var _hasNext: Boolean = _
 
     private[collection] final def initIteratorFrom[B >: A](that: RRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that)
@@ -1227,7 +1235,7 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
 
     final def hasNext = _hasNext
 
-    def next(): A = {
+    final def next(): A = {
         var _lo = lo
         val res: A = display0(_lo).asInstanceOf[A]
         _lo += 1
@@ -1273,10 +1281,10 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
 }
 
 class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with RRBVectorPointer[A@uncheckedVariance] {
-    private var lastIndexOfBlock: Int = _
-    private var lo: Int = _
-    private var endLo: Int = _
-    private var _hasNext: Boolean = _
+    private final var lastIndexOfBlock: Int = _
+    private final var lo: Int = _
+    private final var endLo: Int = _
+    private final var _hasNext: Boolean = _
 
     private[collection] final def initIteratorFrom[B >: A](that: RRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that)
@@ -1298,7 +1306,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
 
     final def hasNext = _hasNext
 
-    def next(): A = {
+    final def next(): A = {
         // TODO push the check of _hasNext and the throwing of the NoSuchElementException into gotoPrevBlock() like in the normal RRBVectorIterator
         if (_hasNext) {
             var _lo = lo
@@ -2626,7 +2634,7 @@ private[immutable] trait RRBVectorPointer[A] {
           )
     }
 
-    private def treeSize(node: Array[AnyRef], currentDepth: Int): Int = {
+    private final def treeSize(node: Array[AnyRef], currentDepth: Int): Int = {
         def treeSizeRec(node: Array[AnyRef], currentDepth: Int, acc: Int): Int = {
             if (currentDepth == 1) {
                 return acc + node.length
