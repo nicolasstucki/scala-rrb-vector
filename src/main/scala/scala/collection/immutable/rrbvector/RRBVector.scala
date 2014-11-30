@@ -61,28 +61,30 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     def apply(index: Int): A = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
+        def getElemFromInsideFocus(index: Int, _focusStart: Int): A = {
+            // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+            val indexInFocus = index - _focusStart
+            getElem(indexInFocus, indexInFocus ^ focus)
+        }
+
+        def getElemFromOutsideFocus(index: Int): A = {
+            if /* index is in the vector bounds */ (0 <= index && index < endIndex) {
+                if (transient) {
+                    normalize(depth)
+                    transient = false
+                }
+                return getElementFromRoot(index)
+            } else
+                throw new IndexOutOfBoundsException(index.toString)
+        }
+
         val _focusStart = focusStart
         if /* index is in focused subtree */ (_focusStart <= index && index < focusEnd) {
             return getElemFromInsideFocus(index, _focusStart)
         } else {
             return getElemFromOutsideFocus(index)
         }
-    }
-
-    private def getElemFromInsideFocus(index: Int, _focusStart: Int): A = {
-        val indexInFocus = index - _focusStart
-        getElem(indexInFocus, indexInFocus ^ focus)
-    }
-
-    private def getElemFromOutsideFocus(index: Int): A = {
-        if /* index is in the vector bounds */ (0 <= index && index < endIndex) {
-            if (transient) {
-                normalize(depth)
-                transient = false
-            }
-            return getElementFromRoot(index)
-        } else
-            throw new IndexOutOfBoundsException(index.toString)
     }
 
     private def createSingletonVector[B](elem: B): RRBVector[B] = {
@@ -110,7 +112,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
 
     private[immutable] def append[B](elem: B, _endIndex: Int): Unit = {
-        focusOnLastBlock(_endIndex)
+        // keep method size under 35 bytes, so that it can be JIT-inlined
+        focusOnLastBlock(_endIndex) // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
 
         val elemIndexInBlock = (_endIndex - focusStart) & 31
         if /* if next element will go in current block position */ (elemIndexInBlock != 0) {
@@ -126,6 +129,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private final def focusOnFirstBlock(): Unit = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (focusStart != 0 || (focus & -32) != 0) {
             /* the current focused block is not on the left most leaf block of the vector */
             normalizeAndFocusOn(0)
@@ -133,12 +137,14 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private final def focusOnLastBlock(_endIndex: Int): Unit = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
             normalizeAndFocusOn(_endIndex - 1)
         }
     }
 
     private final def appendOnCurrentBlock[B](elem: B, elemIndexInBlock: Int): Unit = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         focusEnd = endIndex
         val d0 = copyOf(display0, elemIndexInBlock, elemIndexInBlock + 1)
         d0(elemIndexInBlock) = elem.asInstanceOf[AnyRef]
@@ -236,6 +242,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             return super.:+(elem)(bf)
 
     private[immutable] final def prepend[B](elem: B): Unit = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         focusOnFirstBlock()
         val d0 = display0
         if /* element fits in current block */ (d0.length < 32) {
@@ -250,7 +257,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private final def prependOnCurrentBlock[B](elem: B, oldD0: Array[AnyRef]): Unit = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         def shiftedCopyOf(array: Array[AnyRef], newLen: Int) = {
+            // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
             val newArray = new Array[AnyRef](newLen)
             System.arraycopy(array, 0, newArray, 1, newLen - 1)
             newArray
@@ -349,13 +358,16 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     override def isEmpty: Boolean = this.endIndex == 0
 
-    override def head: A =
+    override def head: A = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (this.endIndex != 0)
             return apply(0)
         else
             throw new UnsupportedOperationException("empty.head")
+    }
 
-    override def take(n: Int): RRBVector[A] =
+    override def take(n: Int): RRBVector[A] = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (0 < n) {
             if (n < endIndex)
                 return takeFront0(n)
@@ -364,8 +376,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         } else {
             return RRBVector.empty
         }
-
+    }
     override def takeRight(n: Int): RRBVector[A] = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (0 < n) {
             val _endIndex = endIndex
             if (n < _endIndex) return dropFront0(_endIndex - n)
@@ -375,15 +388,18 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
-    override def drop(n: Int): RRBVector[A] =
+    override def drop(n: Int): RRBVector[A] = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (n <= 0)
             return this
         else if (n < endIndex)
             return dropFront0(n)
         else
             return RRBVector.empty
+    }
 
-    override def dropRight(n: Int): RRBVector[A] =
+    override def dropRight(n: Int): RRBVector[A] = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (n <= 0)
             return this
         else {
@@ -393,6 +409,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             else
                 return RRBVector.empty
         }
+    }
 
     override def slice(from: Int, until: Int): RRBVector[A] = take(until).drop(from)
 
@@ -425,24 +442,29 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             }
         } else return super.++(that.seq)
 
-    override def tail: RRBVector[A] =
+    override def tail: RRBVector[A] = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (this.endIndex.!=(0))
             return this.drop(1)
         else
             throw new UnsupportedOperationException("empty.tail")
+    }
 
-    override def last: A =
+    override def last: A = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (this.endIndex != 0)
             return this.apply(this.endIndex - 1)
         else
             throw new UnsupportedOperationException("empty.last")
+    }
 
-    override def init: RRBVector[A] =
+    override def init: RRBVector[A] = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         if (this.endIndex != 0)
             return dropRight(1)
         else
             throw new UnsupportedOperationException("empty.init")
-
+    }
 
     private[immutable] final def appendAll(currentEndIndex: Int, that: Array[AnyRef]): Unit = {
         var _endIndex = currentEndIndex
@@ -1123,8 +1145,8 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
     }
 
     final def +=(elem: A): this.type = {
-        // Method split into 2 to help with )
         def gotoNextBlock(): Unit = {
+            // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
             val _blockIndex = blockIndex
             val newBlockIndex = _blockIndex + 32
             blockIndex = newBlockIndex
