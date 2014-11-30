@@ -62,6 +62,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     def apply(index: Int): A = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
+
         def getElemFromInsideFocus(index: Int, _focusStart: Int): A = {
             // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
             val indexInFocus = index - _focusStart
@@ -69,6 +70,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
 
         def getElemFromOutsideFocus(index: Int): A = {
+            // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
             if /* index is in the vector bounds */ (0 <= index && index < endIndex) {
                 if (transient) {
                     normalize(depth)
@@ -377,6 +379,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
             return RRBVector.empty
         }
     }
+
     override def takeRight(n: Int): RRBVector[A] = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         if (0 < n) {
@@ -719,11 +722,11 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                     iMid += 1
                     iSizes += 1
                 } else {
-                    val numElementsToCopy = math.min(displayValueEnd - j, 32 - iBot)
+                    val numElementsToCopy = java.lang.Math.min(displayValueEnd - j, 32 - iBot)
                     if (iBot == 0) {
                         if (currentDepth != 2 && bot != null)
                             withComputedSizes(bot, currentDepth - 1)
-                        bot = new Array[AnyRef](math.min(branching - (iTop << 10) - (iMid << 5), 32) + (if (currentDepth == 2) 0 else 1))
+                        bot = new Array[AnyRef](java.lang.Math.min(branching - (iTop << 10) - (iMid << 5), 32) + (if (currentDepth == 2) 0 else 1))
                         mid(iMid) = bot
                     }
 
@@ -858,7 +861,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
             val cutIndex = vec.focus | vec.focusRelax
             vec.cleanTopTake(cutIndex)
-            vec.focusDepth = math.min(vec.depth, vec.focusDepth)
+            vec.focusDepth = java.lang.Math.min(vec.depth, vec.focusDepth)
             if (vec.depth > 1) {
                 vec.copyDisplays(vec.focusDepth, cutIndex)
                 var i = vec.depth
@@ -1245,7 +1248,7 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
             lo = focus & 31
             if (endIndex < focusEnd)
                 focusEnd = endIndex
-            endLo = math.min(focusEnd - blockIndex, 32)
+            endLo = java.lang.Math.min(focusEnd - blockIndex, 32)
             return
         } else {
             blockIndex = 0
@@ -1258,6 +1261,7 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
     final def hasNext = _hasNext
 
     final def next(): A = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
         var _lo = lo
         val res: A = display0(_lo).asInstanceOf[A]
         _lo += 1
@@ -1295,10 +1299,10 @@ class RRBVectorIterator[+A](startIndex: Int, override private[immutable] val end
             }
             else throw new NoSuchElementException("reached iterator end")
         }
-        endLo = math.min(focusEnd - newBlockIndex, 32)
+        endLo = java.lang.Math.min(focusEnd - newBlockIndex, 32)
     }
 
-    private[collection] def remaining: Int = math.max(endIndex - (blockIndex + lo), 0)
+    private[collection] def remaining: Int = java.lang.Math.max(endIndex - (blockIndex + lo), 0)
 
 }
 
@@ -1316,7 +1320,7 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
             focusOn(idx)
             lastIndexOfBlock = idx
             lo = (idx - focusStart) & 31
-            endLo = math.max(startIndex - focusStart - lastIndexOfBlock, 0)
+            endLo = java.lang.Math.max(startIndex - focusStart - lastIndexOfBlock, 0)
             return
         } else {
             lastIndexOfBlock = 0
@@ -1350,14 +1354,14 @@ class RRBVectorReverseIterator[+A](startIndex: Int, final override private[immut
             gotoPrevBlockStart(newBlockIndexInFocus, newBlockIndexInFocus ^ (lastIndexOfBlock - _focusStart))
             lastIndexOfBlock = newBlockIndex
             lo = 31
-            endLo = math.max(startIndex - focusStart - focus, 0)
+            endLo = java.lang.Math.max(startIndex - focusStart - focus, 0)
             return
         } else if (startIndex < focusStart) {
             val newIndex = focusStart - 1
             focusOn(newIndex)
             lastIndexOfBlock = newIndex
             lo = (newIndex - focusStart) & 31
-            endLo = math.max(startIndex - focusStart - lastIndexOfBlock, 0)
+            endLo = java.lang.Math.max(startIndex - focusStart - lastIndexOfBlock, 0)
             return
         } else {
             _hasNext = false
@@ -1680,6 +1684,7 @@ private[immutable] trait RRBVectorPointer[A] {
         newRoot(len) = newSizes
         newRoot
     }
+
 
     private[immutable] final def setupNewBlockInNextBranch(xor: Int, transient: Boolean): Unit = {
         if (xor < 1024) {
