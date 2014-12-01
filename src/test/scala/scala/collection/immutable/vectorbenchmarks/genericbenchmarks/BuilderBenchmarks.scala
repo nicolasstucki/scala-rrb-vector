@@ -8,6 +8,7 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
 
     override def minHeight: Int = 1
+
     override def maxHeight: Int = 4
 
     def buildVector(n: Int): Int
@@ -17,7 +18,7 @@ abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val warmups = if (height <= 2) 100 else 10
+        val warmups = if (height <= 2) 1000 else if (height == 3) 25 else 10
         measure method "builder" config(
           Key.exec.minWarmupRuns -> warmups,
           Key.exec.maxWarmupRuns -> warmups
