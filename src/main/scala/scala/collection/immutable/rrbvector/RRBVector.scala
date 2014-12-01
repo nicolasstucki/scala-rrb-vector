@@ -501,18 +501,20 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private[immutable] final def concatenate[B >: A](currentSize: Int, that: RRBVector[B]): scala.Unit = {
+        val thisDepth = this.depth
+        val thatDepth = that.depth
         if (this.transient) {
-            this.normalize(depth)
+            this.normalize(thisDepth)
             this.transient = false
         }
 
         if (that.transient) {
-            that.normalize(that.depth)
+            that.normalize(thatDepth)
             that.transient = false
         }
 
         this.focusOn(currentSize - 1)
-        math.max(this.depth, that.depth) match {
+        math.max(thisDepth, thatDepth) match {
             case 1 =>
                 val concat = rebalancedLeafs(display0, that.display0, isTop = true)
                 initFromRoot(concat, if (endIndex <= 32) 1 else 2)
@@ -1148,18 +1150,16 @@ final class RRBVectorBuilder[A] extends mutable.Builder[A, RRBVector[A]] with RR
     }
 
     final def +=(elem: A): this.type = {
-        def gotoNextBlock(): Unit = {
-            // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
+        var _lo = lo
+        if (_lo >= 32) {
             val _blockIndex = blockIndex
             val newBlockIndex = _blockIndex + 32
             blockIndex = newBlockIndex
             gotoNextBlockStartWritable(newBlockIndex, newBlockIndex ^ _blockIndex)
-            lo = 0
+            _lo = 0
         }
-        if (lo >= 32)
-            gotoNextBlock()
-        display0(lo) = elem.asInstanceOf[AnyRef]
-        lo += 1
+        display0(_lo) = elem.asInstanceOf[AnyRef]
+        lo = _lo + 1
         this
     }
 
