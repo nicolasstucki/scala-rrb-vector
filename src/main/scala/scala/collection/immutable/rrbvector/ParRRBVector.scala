@@ -4,9 +4,6 @@ package parallel.immutable
 package rrbvector
 
 import scala.collection.generic.{GenericParTemplate, CanCombineFrom, ParFactory}
-import scala.collection.immutable.VectorBuilder
-import scala.collection.mutable
-import scala.collection.parallel.immutable.LazyParVectorCombiner
 import scala.collection.parallel.{ParSeqLike, Combiner, SeqSplitter}
 import mutable.ArrayBuffer
 import immutable.rrbvector.RRBVector
