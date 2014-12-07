@@ -24,7 +24,7 @@ object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVecto
     private[immutable] final val emptyTransientBlock = new Array[AnyRef](2)
 }
 
-final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, MbRRBVector] with scala.collection.IndexedSeqLike[A, MbRRBVector[A]] with MbRRBVectorPointer[A@uncheckedVariance] with Serializable {
+final class MbRRBVector[@miniboxed +A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, MbRRBVector] with scala.collection.IndexedSeqLike[A, MbRRBVector[A]] with MbRRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
 
     override def par = new ParMbRRBVector[A](this)
@@ -279,10 +279,8 @@ final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override p
             vec.focusOn(n - 1)
             val d0len = (vec.focus & 31) + 1
             if (d0len != 32) {
-                // FIXME: this is to create the new array with the class-tag contained in vec.display0
-                val d0 = vec.display0.take(d0len)
-                //                val d0 = new Array[A](d0len)
-                //                System.arraycopy(vec.display0, 0, d0, 0, d0len)
+                val d0 = newElemsArray(d0len)
+                System.arraycopy(vec.display0, 0, d0, 0, d0len)
                 vec.display0 = d0
             }
 
@@ -330,10 +328,8 @@ final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override p
             if (MbRRBVector.compileAssertions) vec.assertVectorInvariant()
             return vec
         } else if ( /* depth==1 && */ n != 32) {
-            // FIXME: this is to create the new array with the class-tag contained in vec.display0
-            val d0 = vec.display0.take(n)
-            //            val d0 = new Array[A](n)
-            //            System.arraycopy(vec.display0, 0, d0, 0, n)
+            val d0 = newElemsArray(n)
+            System.arraycopy(vec.display0, 0, d0, 0, n)
             vec.display0 = d0
             vec.initFocus(0, 0, n, 1, 0)
             if (MbRRBVector.compileAssertions) vec.assertVectorInvariant()
@@ -355,10 +351,8 @@ final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override p
             val d0Start = cutIndex & 31
             if (d0Start != 0) {
                 val d0len = vec.display0.length - d0Start
-                // FIXME: this is to create the new array with the class-tag contained in vec.display0
-                val d0 = vec.display0.takeRight(d0len)
-                //                val d0 = new Array[A](d0len)
-                //                System.arraycopy(vec.display0, d0Start, d0, 0, d0len)
+                val d0 = newElemsArray(d0len)
+                System.arraycopy(vec.display0, d0Start, d0, 0, d0len)
                 vec.display0 = d0
             }
 
@@ -401,10 +395,8 @@ final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override p
             return vec
         } else {
             val newLen = vec.display0.length - n
-            // FIXME: this is to create the new array with the class-tag contained in vec.display0
-            val d0 = vec.display0.takeRight(newLen)
-            //            val d0 = new Array[A](newLen)
-            //            System.arraycopy(vec.display0, n, d0, 0, newLen)
+            val d0 = newElemsArray(newLen)
+            System.arraycopy(vec.display0, n, d0, 0, newLen)
             vec.display0 = d0
             vec.initFocus(0, 0, newLen, 1, 0)
             if (MbRRBVector.compileAssertions) vec.assertVectorInvariant()
@@ -537,7 +529,7 @@ final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override p
         s"""
            |MbRRBVector (
            |    display0 = $display0 ${
-            if (display0 != null) display0.mkString("[", ", ", "]") else ""
+            if (display0 != null) (0 until display0.length()).map(display0(_)).mkString("[", ", ", "]") else ""
         }
            |    display1 = $display1 ${
             if (display1 != null) display1.mkString("[", ", ", "]") else ""
@@ -566,12 +558,9 @@ final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override p
     }
 }
 
-final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder[A, MbRRBVector[A]] /*with MbRRBVectorPointer[A] */ {
+final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVector[A]] /*with MbRRBVectorPointer[A] */ {
 
-    private final type Elem = AnyRef // TODO: A
-    private final type ElemsArray = Array[Elem] // TODO: MbArray[Elem]
-
-    private final var display0: ElemsArray = new Array[AnyRef](32)
+    private final var display0: MbArray[A] = MbArray.empty[A](32)
     private final var display1: Array[AnyRef] = _
     private final var display2: Array[AnyRef] = _
     private final var display3: Array[AnyRef] = _
@@ -635,11 +624,9 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
             val resultVector = new MbRRBVector[A](size)
             var d0 = display0
             if (_lo != 32) {
-                // FIXME: this is to create the new array with the class-tag contained in vec.display0
-                d0 = d0.take(_lo)
-                //                val d0_truncated = new Array[A](_lo)
-                //                System.arraycopy(d0, 0, d0_truncated, 0, _lo)
-                //                d0 = d0_truncated
+                val d0_truncated = MbArray.empty[A](_lo)
+                System.arraycopy(d0, 0, d0_truncated, 0, _lo)
+                d0 = d0_truncated
             }
             resultVector.focusEnd = size
             val _depth = depth
@@ -653,7 +640,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                 case 2 =>
                     def init() = {
                         val d1 = copyOfAndStabilize(display1, d0, (lastIndex >> 5) & 31)
-                        resultVector.initFromDisplays(d1(0).asInstanceOf[ElemsArray], d1)
+                        resultVector.initFromDisplays(d1(0).asInstanceOf[MbArray[A]], d1)
                     }
                     init()
                     if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
@@ -663,7 +650,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         val d1 = copyOfAndStabilize(display1, d0, (lastIndex >> 5) & 31)
                         val d2 = copyOfAndStabilize(display2, d1, (lastIndex >> 10) & 31)
                         val d1_0 = d2(0).asInstanceOf[Array[AnyRef]]
-                        val d0_0 = d1_0(0).asInstanceOf[ElemsArray]
+                        val d0_0 = d1_0(0).asInstanceOf[MbArray[A]]
                         resultVector.initFromDisplays(d0_0, d1_0, d2)
                     }
                     init()
@@ -676,7 +663,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         val d3 = copyOfAndStabilize(display3, d2, (lastIndex >> 15) & 31)
                         val d2_0 = d3(0).asInstanceOf[Array[AnyRef]]
                         val d1_0 = d2_0(0).asInstanceOf[Array[AnyRef]]
-                        val d0_0 = d1_0(0).asInstanceOf[ElemsArray]
+                        val d0_0 = d1_0(0).asInstanceOf[MbArray[A]]
                         resultVector.initFromDisplays(d0_0, d1_0, d2_0, d3)
                     }
                     init()
@@ -691,7 +678,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         val d3_0 = d4(0).asInstanceOf[Array[AnyRef]]
                         val d2_0 = d3_0(0).asInstanceOf[Array[AnyRef]]
                         val d1_0 = d2_0(0).asInstanceOf[Array[AnyRef]]
-                        val d0_0 = d1_0(0).asInstanceOf[ElemsArray]
+                        val d0_0 = d1_0(0).asInstanceOf[MbArray[A]]
                         resultVector.initFromDisplays(d0_0, d1_0, d2_0, d3_0, d4)
                     }
                     init()
@@ -708,7 +695,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         val d3_0 = d4_0(0).asInstanceOf[Array[AnyRef]]
                         val d2_0 = d3_0(0).asInstanceOf[Array[AnyRef]]
                         val d1_0 = d2_0(0).asInstanceOf[Array[AnyRef]]
-                        val d0_0 = d1_0(0).asInstanceOf[ElemsArray]
+                        val d0_0 = d1_0(0).asInstanceOf[MbArray[A]]
                         resultVector.initFromDisplays(d0_0, d1_0, d2_0, d3_0, d4_0, d5)
                     }
                     init()
@@ -742,7 +729,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
     }
 
     private final def clearCurrent(): Unit = {
-        display0 = new ElemsArray(32)
+        display0 = MbArray.empty[A](32)
         display1 = null
         display2 = null
         display3 = null
@@ -771,7 +758,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                     } else {
                         display1
                     }
-                val d0 = new ElemsArray(32)
+                val d0 = MbArray.empty[A](32)
                 display0 = d0
                 d1((blockIndex >> 5) & 31) = d0
             }
@@ -787,7 +774,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         display2 = d2
                         d2
                     } else display2
-                val d0 = new ElemsArray(32)
+                val d0 = MbArray.empty[A](32)
                 val d1 = new Array[AnyRef](33)
                 display0 = d0
                 display1 = d1
@@ -807,7 +794,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         display3 = d3
                         d3
                     } else display3
-                val d0 = new ElemsArray(32)
+                val d0 = MbArray.empty[A](32)
                 val d1 = new Array[AnyRef](33)
                 val d2 = new Array[AnyRef](33)
                 display0 = d0
@@ -830,7 +817,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         display4 = d4
                         d4
                     } else display4
-                val d0 = new ElemsArray(32)
+                val d0 = MbArray.empty[A](32)
                 val d1 = new Array[AnyRef](33)
                 val d2 = new Array[AnyRef](33)
                 val d3 = new Array[AnyRef](33)
@@ -856,7 +843,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
                         display5 = d5
                         d5
                     } else display5
-                val d0 = new ElemsArray(32)
+                val d0 = MbArray.empty[A](32)
                 val d1 = new Array[AnyRef](33)
                 val d2 = new Array[AnyRef](33)
                 val d3 = new Array[AnyRef](33)
@@ -880,7 +867,7 @@ final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder
     }
 }
 
-class MbRRBVectorIterator[ /* TODO @miniboxed */ +A](startIndex: Int, override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
+class MbRRBVectorIterator[@miniboxed +A](startIndex: Int, override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
     /* Index in the vector of the first element of current block, i.e. current display0 */
     private final var blockIndex: Int = _
     /* Index in current block, i.e. current display0 */
@@ -962,7 +949,7 @@ class MbRRBVectorIterator[ /* TODO @miniboxed */ +A](startIndex: Int, override p
 
 }
 
-class MbRRBVectorReverseIterator[ /* TODO @miniboxed */ +A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
+class MbRRBVectorReverseIterator[@miniboxed +A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
     private final var lastIndexOfBlock: Int = _
     private final var lo: Int = _
     private final var endLo: Int = _
@@ -1027,10 +1014,7 @@ class MbRRBVectorReverseIterator[ /* TODO @miniboxed */ +A](startIndex: Int, fin
 
 private[immutable] trait MbRRBVectorPointer[AA] {
 
-    private final type Elem = AnyRef  // TODO: AA
-    private final type ElemsArray = Array[Elem]  // TODO: MbArray[Elem]
-
-    private[immutable] final var display0: ElemsArray = _
+    private[immutable] final var display0: MbArray[AA] = _
     private[immutable] final var display1: Array[AnyRef] = _
     private[immutable] final var display2: Array[AnyRef] = _
     private[immutable] final var display3: Array[AnyRef] = _
@@ -1046,7 +1030,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
 
     private[immutable] def endIndex: Int
 
-    private[immutable] final def newElemsArray(n: Int): ElemsArray = new ElemsArray(1)
+    private[immutable] final def newElemsArray(n: Int): MbArray[AA] = MbArray.empty[AA](n)
 
     private[immutable] final def initWithFocusFrom(that: MbRRBVectorPointer[AA]): Unit = {
         initFocus(that.focus, that.focusStart, that.focusEnd, that.focusDepth, that.focusRelax)
@@ -1061,7 +1045,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         this.focusRelax = focusRelax
     }
 
-    private[immutable] final def initFromLeaf(leaf: ElemsArray): Unit = {
+    private[immutable] final def initFromLeaf(leaf: MbArray[AA]): Unit = {
         display0 = leaf
         depth = 1
         focusEnd = focusStart
@@ -1084,25 +1068,25 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         focusOn(0)
     }
 
-    private[immutable] final def initFromDisplays(display0: ElemsArray): Unit = {
+    private[immutable] final def initFromDisplays(display0: MbArray[AA]): Unit = {
         this.depth = 1
         this.display0 = display0
     }
 
-    private[immutable] final def initFromDisplays(display0: ElemsArray, display1: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: MbArray[AA], display1: Array[AnyRef]): Unit = {
         this.depth = 2
         this.display0 = display0
         this.display1 = display1
     }
 
-    private[immutable] final def initFromDisplays(display0: ElemsArray, display1: Array[AnyRef], display2: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: MbArray[AA], display1: Array[AnyRef], display2: Array[AnyRef]): Unit = {
         this.depth = 3
         this.display0 = display0
         this.display1 = display1
         this.display2 = display2
     }
 
-    private[immutable] final def initFromDisplays(display0: ElemsArray, display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: MbArray[AA], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef]): Unit = {
         this.depth = 4
         this.display0 = display0
         this.display1 = display1
@@ -1110,7 +1094,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         this.display3 = display3
     }
 
-    private[immutable] final def initFromDisplays(display0: ElemsArray, display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: MbArray[AA], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef]): Unit = {
         this.depth = 5
         this.display0 = display0
         this.display1 = display1
@@ -1119,7 +1103,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         this.display4 = display4
     }
 
-    private[immutable] final def initFromDisplays(display0: ElemsArray, display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef], display5: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: MbArray[AA], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef], display5: Array[AnyRef]): Unit = {
         this.depth = 6
         this.display0 = display0
         this.display1 = display1
@@ -1178,8 +1162,8 @@ private[immutable] trait MbRRBVectorPointer[AA] {
     private[immutable] final def initSingleton(elem: AA): Unit = {
         depth = 1
         initFocus(0, 0, 1, 1, 0)
-        val d0 = new ElemsArray(1)
-        d0(0) = elem.asInstanceOf[Elem]
+        val d0 = MbArray.empty[AA](1)
+        d0(0) = elem
         display0 = d0
     }
 
@@ -1229,7 +1213,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             if (sizesIdx != 0)
                 indexInSubTree -= sizes(sizesIdx - 1)
             if (currentDepth == 2) {
-                return getElem0(display(sizesIdx).asInstanceOf[ElemsArray], indexInSubTree)
+                return getElem0(display(sizesIdx).asInstanceOf[MbArray[AA]], indexInSubTree)
             }
             display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
             if (currentDepth > 2)
@@ -1287,7 +1271,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 } else {
                     val is = getIndexInSizes(sizes, index - _startIndex)
                     if (currentDepth == 2) {
-                        display0 = display(is).asInstanceOf[ElemsArray]
+                        display0 = display(is).asInstanceOf[MbArray[AA]]
                         continue = false
                     } else {
                         display = display(is).asInstanceOf[Array[AnyRef]]
@@ -1420,7 +1404,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 }
                 display1 = newRoot
             }
-            display0 = new ElemsArray(1)
+            display0 = MbArray.empty[AA](1)
             return
         } else if (xor < 32768) {
             if (transient)
@@ -1437,7 +1421,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 }
                 display2 = newRoot
             }
-            display0 = new ElemsArray(1) //.asInstanceOf[Array[AA]]
+            display0 = MbArray.empty[AA](1)
             display1 = MbRRBVector.emptyTransientBlock
             return
         } else if (xor < 1048576) {
@@ -1455,7 +1439,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 }
                 display3 = newRoot
             }
-            display0 = new ElemsArray(1) //.asInstanceOf[Array[AA]]
+            display0 = MbArray.empty[AA](1)
             val _emptyTransientBlock = MbRRBVector.emptyTransientBlock
             display1 = _emptyTransientBlock // new Array(2)
             display2 = _emptyTransientBlock // new Array(2)
@@ -1476,7 +1460,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 display4 = newRoot
             }
 
-            display0 = new ElemsArray(1) //.asInstanceOf[Array[AA]]
+            display0 = MbArray.empty[AA](1)
             val _emptyTransientBlock = MbRRBVector.emptyTransientBlock
             display1 = _emptyTransientBlock // new Array(2)
             display2 = _emptyTransientBlock // new Array(2)
@@ -1497,7 +1481,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 }
                 display5 = newRoot
             }
-            display0 = new ElemsArray(1) //.asInstanceOf[Array[AA]]
+            display0 = MbArray.empty[AA](1)
             val _emptyTransientBlock = MbRRBVector.emptyTransientBlock
             display1 = _emptyTransientBlock // new Array(2)
             display2 = _emptyTransientBlock // new Array(2)
@@ -1528,7 +1512,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     }
                     display1 = newRoot
                 }
-                display0 = new ElemsArray(1) //.asInstanceOf[Array[AA]]
+                display0 = MbArray.empty[AA](1)
                 return
             case 3 =>
                 if (transient)
@@ -1546,7 +1530,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 }
                 val _emptyTransientBlock = MbRRBVector.emptyTransientBlock
                 display1 = _emptyTransientBlock // new Array[AnyRef](2)
-                display0 = new ElemsArray(1) //.asInstanceOf[Array[AA]]
+                display0 = MbArray.empty[AA](1)
                 return
             case 4 =>
                 if (transient)
@@ -1565,7 +1549,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 val _emptyTransientBlock = MbRRBVector.emptyTransientBlock
                 display2 = _emptyTransientBlock // new Array[AnyRef](2)
                 display1 = _emptyTransientBlock // new Array[AnyRef](2)
-                display0 = new ElemsArray(1)
+                display0 = MbArray.empty[AA](1)
                 return
             case 5 =>
                 if (transient)
@@ -1585,7 +1569,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 display3 = _emptyTransientBlock // new Array[AnyRef](2)
                 display2 = _emptyTransientBlock // new Array[AnyRef](2)
                 display1 = _emptyTransientBlock // new Array[AnyRef](2)
-                display0 = (new ElemsArray(1)) //.asInstanceOf[Array[AA]]
+                display0 = MbArray.empty[AA](1)
                 return
             case 6 =>
                 if (transient)
@@ -1606,7 +1590,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 display3 = _emptyTransientBlock // new Array[AnyRef](2)
                 display2 = _emptyTransientBlock // new Array[AnyRef](2)
                 display1 = _emptyTransientBlock // new Array[AnyRef](2)
-                display0 = new ElemsArray(1)
+                display0 = MbArray.empty[AA](1)
                 return
             case _ => throw new IllegalStateException()
         }
@@ -1622,41 +1606,41 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         else throw new IllegalArgumentException(xor.toString)
     }
 
-    private final def getElem0(display: ElemsArray, index: Int): AA =
+    private final def getElem0(display: MbArray[AA], index: Int): AA =
         display(index & 31).asInstanceOf[AA]
 
     private final def getElem1(display: Array[AnyRef], index: Int): AA =
-        display((index >> 5) & 31).asInstanceOf[ElemsArray](index & 31).asInstanceOf[AA]
+        display((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
     private final def getElem2(display: Array[AnyRef], index: Int): AA =
-        display((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[ElemsArray](index & 31).asInstanceOf[AA]
+        display((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
     private final def getElem3(display: Array[AnyRef], index: Int): AA =
-        display((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[ElemsArray](index & 31).asInstanceOf[AA]
+        display((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
     private final def getElem4(display: Array[AnyRef], index: Int): AA =
-        display((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[ElemsArray](index & 31).asInstanceOf[AA]
+        display((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
     private final def getElem5(display: Array[AnyRef], index: Int): AA =
-        display((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[ElemsArray](index & 31).asInstanceOf[AA]
+        display((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
     private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
         if (xor < 32)
             return
         else if (xor < 1024) {
-            display0 = display1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = display1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 32768) {
             val d1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = d1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 1048576) {
             val d2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
             display2 = d2
             val d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = d1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 33554432) {
             val d3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
@@ -1665,7 +1649,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             display2 = d2
             val d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = d1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 1073741824) {
             val d4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
@@ -1676,7 +1660,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             display2 = d2
             val d1 = d2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = d1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else
             throw new IllegalArgumentException()
@@ -1684,17 +1668,17 @@ private[immutable] trait MbRRBVectorPointer[AA] {
 
     private[immutable] final def gotoNextBlockStart(index: Int, xor: Int): Unit = {
         if (xor < 1024) {
-            display0 = display1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = display1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 32768) {
             val d1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1(0).asInstanceOf[ElemsArray]
+            display0 = d1(0).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 1048576) {
             val d2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
             val d1 = d2(0).asInstanceOf[Array[AnyRef]]
-            display0 = d1(0).asInstanceOf[ElemsArray]
+            display0 = d1(0).asInstanceOf[MbArray[AA]]
             display1 = d1
             display2 = d2
             return
@@ -1702,7 +1686,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             val d3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
             val d2 = d3(0).asInstanceOf[Array[AnyRef]]
             val d1 = d2(0).asInstanceOf[Array[AnyRef]]
-            display0 = d1(0).asInstanceOf[ElemsArray]
+            display0 = d1(0).asInstanceOf[MbArray[AA]]
             display1 = d1
             display2 = d2
             display3 = d3
@@ -1716,7 +1700,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             display3 = d3
             display2 = d2
             display1 = d1
-            display0 = d1(0).asInstanceOf[ElemsArray]
+            display0 = d1(0).asInstanceOf[MbArray[AA]]
             return
         } else
             throw new IllegalArgumentException()
@@ -1724,19 +1708,19 @@ private[immutable] trait MbRRBVectorPointer[AA] {
 
     private[immutable] final def gotoPrevBlockStart(index: Int, xor: Int): Unit = {
         if (xor < 1024) {
-            display0 = display1((index >> 5) & 31).asInstanceOf[ElemsArray]
+            display0 = display1((index >> 5) & 31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 32768) {
             val d1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1(31).asInstanceOf[ElemsArray]
+            display0 = d1(31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 1048576) {
             val d2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
             display2 = d2
             val d1 = d2(31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1(31).asInstanceOf[ElemsArray]
+            display0 = d1(31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 33554432) {
             val d3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
@@ -1745,7 +1729,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             display2 = d2
             val d1 = d2(31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d3(31).asInstanceOf[ElemsArray]
+            display0 = d3(31).asInstanceOf[MbArray[AA]]
             return
         } else if (xor < 1073741824) {
             val d4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
@@ -1756,7 +1740,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             display2 = d2
             val d1 = d2(31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d1(31).asInstanceOf[ElemsArray]
+            display0 = d1(31).asInstanceOf[MbArray[AA]]
             return
         } else
             throw new IllegalArgumentException()
@@ -2188,12 +2172,12 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             return
     }
 
-    private[immutable] final def copyOf0 /*[B >: AA]*/ (array: ElemsArray, numElements: Int, newSize: Int) = {
+    private[immutable] final def copyOf0 /*[B >: AA]*/ (array: MbArray[AA], numElements: Int, newSize: Int) = {
         if (MbRRBVector.compileAssertions) {
             assert(array != null)
             assert(0 <= numElements && numElements <= newSize && numElements <= array.length, (numElements, newSize, array.length))
         }
-        val newArray = new ElemsArray(newSize)
+        val newArray = MbArray.empty[AA](newSize)
         System.arraycopy(array, 0, newArray, 0, numElements)
         newArray
     }
@@ -2353,7 +2337,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         focusEnd = endIndex
         val d0 = copyOf0(display0, elemIndexInBlock, elemIndexInBlock + 1)
-        d0(elemIndexInBlock) = elem.asInstanceOf[ElemsArray]
+        d0(elemIndexInBlock) = elem
         display0 = d0
         makeTransientIfNeeded()
     }
@@ -2411,7 +2395,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         else
             initFocus(0, _endIndex, _endIndex + 1, 1, newRelaxedIndex & -32)
 
-        display0(0) = elem.asInstanceOf[ElemsArray]
+        display0(0) = elem
         transient = true
     }
 
@@ -2427,7 +2411,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         }
     }
 
-    private[immutable] final def appendAll(currentEndIndex: Int, that: ElemsArray): Unit = {
+    private[immutable] final def appendAll(currentEndIndex: Int, that: MbArray[AA]): Unit = {
         var _endIndex = currentEndIndex
         val newEndIndex = this.endIndex
         makeTransientIfNeeded()
@@ -2453,18 +2437,18 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         }
     }
 
-    private final def prependOnCurrentBlock(elem: AA, oldD0: ElemsArray): Unit = {
+    private final def prependOnCurrentBlock(elem: AA, oldD0: MbArray[AA]): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
-        def shiftedCopyOf(array: ElemsArray, newLen: Int): ElemsArray = {
+        def shiftedCopyOf(array: MbArray[AA], newLen: Int): MbArray[AA] = {
             // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
-            val newArray = new ElemsArray(newLen) //.asInstanceOf[Array[AA]]
+            val newArray = MbArray.empty[AA](newLen) //.asInstanceOf[Array[AA]]
             System.arraycopy(array, 0, newArray, 1, newLen - 1)
             newArray
         }
         val newLen = oldD0.length + 1
         focusEnd = newLen
         val newD0 = shiftedCopyOf(oldD0, newLen)
-        newD0(0) = elem.asInstanceOf[Elem]
+        newD0(0) = elem
         display0 = newD0
         makeTransientIfNeeded()
     }
@@ -2548,7 +2532,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
 
         initFocus(0, 0, 1, 1, 0)
 
-        display0(0) = elem.asInstanceOf[Elem]
+        display0(0) = elem
         transient = true
     }
 
@@ -2582,14 +2566,14 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 else initFromRoot(rebalancedLeafs(display0, that.display0), 2)
                 return
             case 2 =>
-                var d0: ElemsArray = null
+                var d0: MbArray[AA] = null
                 var d1: Array[AnyRef] = null
                 if (((that.focus | that.focusRelax) & -32) == 0) {
                     d1 = that.display1
                     d0 = that.display0
                 } else {
                     if (that.display1 != null) d1 = that.display1
-                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[ElemsArray]
+                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
                 concat = rebalanced(this.display1, concat, that.display1, 2)
@@ -2601,7 +2585,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     return
                 }
             case 3 =>
-                var d0: ElemsArray = null
+                var d0: MbArray[AA] = null
                 var d1: Array[AnyRef] = null
                 var d2: Array[AnyRef] = null
                 if (((that.focus | that.focusRelax) & -32) == 0) {
@@ -2612,7 +2596,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                 else {
                     if (that.display2 != null) d2 = that.display2
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[ElemsArray]
+                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
                 concat = rebalanced(this.display1, concat, d1, 2)
@@ -2625,7 +2609,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     return
                 }
             case 4 =>
-                var d0: ElemsArray = null
+                var d0: MbArray[AA] = null
                 var d1: Array[AnyRef] = null
                 var d2: Array[AnyRef] = null
                 var d3: Array[AnyRef] = null
@@ -2638,7 +2622,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     if (that.display3 != null) d3 = that.display3
                     if (d3 == null) d2 = that.display2 else d2 = d3(0).asInstanceOf[Array[AnyRef]]
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[ElemsArray]
+                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
                 concat = rebalanced(this.display1, concat, d1, 2)
@@ -2652,7 +2636,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     return
                 }
             case 5 =>
-                var d0: ElemsArray = null
+                var d0: MbArray[AA] = null
                 var d1: Array[AnyRef] = null
                 var d2: Array[AnyRef] = null
                 var d3: Array[AnyRef] = null
@@ -2669,7 +2653,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     if (d4 == null) d3 = that.display3 else d3 = d4(0).asInstanceOf[Array[AnyRef]]
                     if (d3 == null) d2 = that.display2 else d2 = d3(0).asInstanceOf[Array[AnyRef]]
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[ElemsArray]
+                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
                 concat = rebalanced(this.display1, concat, d1, 2)
@@ -2684,7 +2668,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     return
                 }
             case 6 =>
-                var d0: ElemsArray = null
+                var d0: MbArray[AA] = null
                 var d1: Array[AnyRef] = null
                 var d2: Array[AnyRef] = null
                 var d3: Array[AnyRef] = null
@@ -2703,7 +2687,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
                     if (d4 == null) d3 = that.display3 else d3 = d4(0).asInstanceOf[Array[AnyRef]]
                     if (d3 == null) d2 = that.display2 else d2 = d3(0).asInstanceOf[Array[AnyRef]]
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
-                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[ElemsArray]
+                    if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
                 var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
                 concat = rebalanced(this.display1, concat, d1, 2)
@@ -2824,16 +2808,16 @@ private[immutable] trait MbRRBVectorPointer[AA] {
         top
     }
 
-    private final def mergedLeafs(displayLeft: ElemsArray, displayRight: ElemsArray): ElemsArray = {
+    private final def mergedLeafs(displayLeft: MbArray[AA], displayRight: MbArray[AA]): MbArray[AA] = {
         val leftLength = displayLeft.length
         val rightLength = displayRight.length
-        val mergedDisplay = new Array[AnyRef](leftLength + rightLength).asInstanceOf[ElemsArray]
+        val mergedDisplay = MbArray.empty[AA](leftLength + rightLength)
         System.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
         System.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
         mergedDisplay
     }
 
-    private final def rebalancedLeafs(displayLeft: ElemsArray, displayRight: ElemsArray): Array[AnyRef] = {
+    private final def rebalancedLeafs(displayLeft: MbArray[AA], displayRight: MbArray[AA]): Array[AnyRef] = {
         val leftLength = displayLeft.length
         val rightLength = displayRight.length
         if (leftLength == 32) {
@@ -2842,7 +2826,7 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             top(1) = displayRight
             return top
         } else if (leftLength + rightLength <= 32) {
-            val mergedDisplay = new ElemsArray(leftLength + rightLength)
+            val mergedDisplay = MbArray.empty[AA](leftLength + rightLength)
             System.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
             System.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
             val top = new Array[AnyRef](2)
@@ -2850,8 +2834,8 @@ private[immutable] trait MbRRBVectorPointer[AA] {
             return top
         } else {
             val top = new Array[AnyRef](3)
-            val arr0 = new ElemsArray(32)
-            val arr1 = new ElemsArray(leftLength + rightLength - 32)
+            val arr0 = MbArray.empty[AA](32)
+            val arr1 = MbArray.empty[AA](leftLength + rightLength - 32)
             top(0) = arr0
             top(1) = arr1
             System.arraycopy(displayLeft, 0, arr0, 0, leftLength)
