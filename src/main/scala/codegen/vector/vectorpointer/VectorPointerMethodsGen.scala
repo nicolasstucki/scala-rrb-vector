@@ -10,7 +10,7 @@ trait VectorPointerMethodsGen {
     self: VectorPointerCodeGen with VectorProperties =>
 
     protected[vectorpointer] def generateVectorPointerMethods() = {
-        val displays = (0 to 5) map (i => fieldDef(TermName(s"display$i"), tq"Array[AnyRef]"))
+        val displays = (0 to maxTreeDepth) map (i => fieldDef(TermName(s"display$i"), tq"Array[AnyRef]"))
 
         var fields = Seq.empty[Tree]
         fields = fields :+ fieldDef(depth, tq"Int")
@@ -20,9 +20,12 @@ trait VectorPointerMethodsGen {
         val methods =
             Seq(initWithFocusFromDef, initFocusDef, initFromRootDef, initFromDef, initSingletonDef, rootDef,
                 focusOnDef, getElementFromRootDef, getIndexInSizesDef, gotoPosFromRootDef, setupNewBlockInNextBranchDef,
-                gotoPosDef, gotoNextBlockStartDef, gotoPrevBlockStartDef, gotoNextBlockStartWritableDef,
-                stabilizeDef, copyDisplaysDef, copyDisplaysTopDef, stabilizeDisplayPathDef, cleanTopDef, copyOfDef, getElementDef) ++
-              ((0 to 5) map getElementIDef)
+                setupNewBlockInInitBranchDef, gotoPosDef, gotoNextBlockStartDef, gotoPrevBlockStartDef, gotoNextBlockStartWritableDef,
+                normalizeDef, copyDisplaysDef, copyDisplaysAndNullFocusedBranchDef, copyDisplaysAndStabilizeDisplayPathDef,
+                copyDisplaysTopDef, stabilizeDisplayPathDef, cleanTopTakeDef, cleanTopDropDef, copyOf1Def, copyOf3Def,
+                copyOfAndNullDef, makeNewRoot0Def, makeNewRoot1Def, makeTransientSizesDef, copyAndIncRightRootDef,
+                copyAndIncLeftRootDef, withComputedSizes1Def, withComputedSizesDef, withRecomputedSizesDef, notBalancedDef, treeSizeDef, getElementDef) ++
+              ((0 to maxTreeLevel) map getElementIDef) :+ debugToStringDef
 
         displays ++ fields ++ methods
     }
@@ -100,10 +103,17 @@ trait VectorPointerMethodsGen {
 
 
     private[vectorpointer] def setupNewBlockInNextBranchDef: Tree = {
-        val indexParam = TermName("index")
         val xorParam = TermName("xor")
-        val code = setupNewBlockInNextBranchCode(indexParam, xorParam)
-        q"private[immutable] final def $setupNewBlockInNextBranch($indexParam: Int, $xorParam: Int): Unit = $code"
+        val transientParam = TermName("transient")
+        val code = setupNewBlockInNextBranchCode(xorParam, transientParam)
+        q"private[immutable] final def $setupNewBlockInNextBranch($xorParam: Int, $transientParam: Boolean): Unit = $code"
+    }
+
+    private def setupNewBlockInInitBranchDef = {
+        val xorParam = TermName("insertionDepth")
+        val transientParam = TermName("transient")
+        val code = setupNewBlockInInitBranchCode(xorParam, transientParam)
+        q"private[immutable] final def $setupNewBlockInInitBranch($xorParam: Int, $transientParam: Boolean): Unit = $code"
     }
 
     private def getElementDef: Tree = {
@@ -149,9 +159,10 @@ trait VectorPointerMethodsGen {
     }
 
 
-    private[vectorpointer] def stabilizeDef = {
-        val code = stabilizeCode()
-        q"private[immutable] final def $stabilize(): Unit = $code"
+    private[vectorpointer] def normalizeDef = {
+        val depthParam = TermName("_depth")
+        val code = normalizeCode(depthParam)
+        q"private[immutable] final def $normalize($depthParam: Int): Unit = $code"
     }
 
     private[vectorpointer] def stabilizeDisplayPathDef = {
@@ -161,10 +172,16 @@ trait VectorPointerMethodsGen {
         q"private[immutable] final def $stabilizeDisplayPath($depthParam: Int, $focusParam: Int): Unit = $code"
     }
 
-    private[vectorpointer] def cleanTopDef = {
+    private[vectorpointer] def cleanTopTakeDef = {
         val cutIndex = TermName("cutIndex")
-        val code = cleanTopCode(cutIndex)
-        q"private[immutable] def $cleanTop($cutIndex: Int): Unit = $code"
+        val code = cleanTopTakeCode(cutIndex)
+        q"private[immutable] def $cleanTopTake($cutIndex: Int): Unit = $code"
+    }
+
+    private[vectorpointer] def cleanTopDropDef = {
+        val cutIndex = TermName("cutIndex")
+        val code = cleanTopDropCode(cutIndex)
+        q"private[immutable] def $cleanTopDrop($cutIndex: Int): Unit = $code"
     }
 
 
@@ -175,6 +192,21 @@ trait VectorPointerMethodsGen {
         q"private[immutable] final def $copyDisplays($depthParam: Int, $focusParam: Int): Unit = $code"
     }
 
+    private def copyDisplaysAndNullFocusedBranchDef = {
+        val depthParam = TermName("_depth")
+        val focusParam = TermName("_focus")
+        val code = copyDisplaysAndNullFocusedBranchCode(depthParam, focusParam)
+        q"private[immutable] final def $copyDisplaysAndNullFocusedBranch($depthParam: Int, $focusParam: Int): Unit = $code"
+    }
+
+    private def copyDisplaysAndStabilizeDisplayPathDef = {
+        val depthParam = TermName("_depth")
+        val focusParam = TermName("_focus")
+        val code = copyDisplaysAndStabilizeDisplayPathCode(depthParam, focusParam)
+        q"private[immutable] final def $copyDisplaysAndStabilizeDisplayPath($depthParam: Int, $focusParam: Int): Unit = $code"
+    }
+
+
     private[vectorpointer] def copyDisplaysTopDef = {
         val currentDepth = TermName("currentDepth")
         val focusRelaxParam = TermName("_focusRelax")
@@ -183,12 +215,104 @@ trait VectorPointerMethodsGen {
     }
 
 
-    private[vectorpointer] def copyOfDef = {
+    private[vectorpointer] def copyOf1Def = {
+        val array = TermName("array")
+        val code = copyOfCode(q"$array")
+        q"private[immutable] final def $copyOf($array: Array[AnyRef]) = $code"
+    }
+
+    private[vectorpointer] def copyOf3Def = {
         val array = TermName("array")
         val numElements = TermName("numElements")
         val newSize = TermName("newSize")
         val code = copyOfCode(q"$array", q"$numElements", q"$newSize")
         q"private[immutable] final def $copyOf($array: Array[AnyRef], $numElements: Int, $newSize: Int) = $code"
+    }
+
+    private[vectorpointer] def copyOfAndNullDef = {
+        val arrayParam = TermName("array")
+        val nullIndexParam = TermName("nullIndex")
+        val code = copyOfAndNullCode(arrayParam, nullIndexParam)
+        q"private[immutable] final def $copyOfAndNull($arrayParam: Array[AnyRef], $nullIndexParam: Int) = $code"
+    }
+
+    private[vectorpointer] def makeNewRoot0Def = {
+        val nodeParam = TermName("node")
+        val code = makeNewRoot0Code(nodeParam)
+        q"private final def $makeNewRoot0($nodeParam: Array[AnyRef]) = $code"
+    }
+
+    private[vectorpointer] def makeNewRoot1Def = {
+        val nodeParam = TermName("node")
+        val currentDepthParam = TermName("currentDepth")
+        val code = makeNewRoot1Code(nodeParam, currentDepthParam)
+        q"private final def $makeNewRoot1($nodeParam: Array[AnyRef], $currentDepthParam: Int) = $code"
+    }
+
+    private[vectorpointer] def makeTransientSizesDef = {
+        val oldSizesParam = TermName("oldSizes")
+        val transientBranchIndexParam = TermName("transientBranchIndex")
+        val code = makeTransientSizesCode(oldSizesParam, transientBranchIndexParam)
+        q"private[immutable] final def $makeTransientSizes($oldSizesParam: Array[Int], $transientBranchIndexParam: Int) = $code"
+    }
+
+    private[vectorpointer] def copyAndIncRightRootDef = {
+        val nodeParam = TermName("node")
+        val transientParam = TermName("transient")
+        val currentLevelParam = TermName("currentLevel")
+        val code = copyAndIncRightRootCode(nodeParam, transientParam, currentLevelParam)
+        q"private final def $copyAndIncRightRoot($nodeParam: Array[AnyRef], $transientParam: Boolean, $currentLevelParam: Int) = $code"
+    }
+
+    private[vectorpointer] def copyAndIncLeftRootDef = {
+        val nodeParam = TermName("node")
+        val transientParam = TermName("transient")
+        val currentLevelParam = TermName("currentLevel")
+        val code = copyAndIncLeftRootCode(nodeParam, transientParam, currentLevelParam)
+        q"private final def $copyAndIncLeftRoot($nodeParam: Array[AnyRef], $transientParam: Boolean, $currentLevelParam: Int) = $code"
+    }
+
+    private[vectorpointer] def withComputedSizes1Def = {
+        val nodeParam = TermName("node")
+        val code = withComputedSizes1Code(nodeParam)
+        q"private[immutable] final def $withComputedSizes1($nodeParam: Array[AnyRef]) = $code"
+    }
+
+    private[vectorpointer] def withComputedSizesDef = {
+        val nodeParam = TermName("node")
+        val currentDepthParam = TermName("currentDepth")
+        val code = withComputedSizesCode(nodeParam, currentDepthParam)
+        q"private[immutable] final def $withComputedSizes($nodeParam: Array[AnyRef], $currentDepthParam: Int) = $code"
+    }
+
+    private[vectorpointer] def withRecomputedSizesDef = {
+        val nodeParam = TermName("node")
+        val currentDepthParam = TermName("currentDepth")
+        val branchToUpdateParam = TermName("branchToUpdate")
+        val code = withRecomputedSizesCode(nodeParam, currentDepthParam, branchToUpdateParam)
+        q"private final def $withRecomputedSizes($nodeParam: Array[AnyRef], $currentDepthParam: Int, $branchToUpdateParam: Int) = $code"
+    }
+
+    private[vectorpointer] def notBalancedDef = {
+        val nodeParam = TermName("node")
+        val sizesParam = TermName("sizes")
+        val currentDepthParam = TermName("currentDepth")
+        val endParam = TermName("end")
+        val code = notBalancedCode(nodeParam, sizesParam, currentDepthParam, endParam)
+        q"@inline private final def $notBalanced($nodeParam: Array[AnyRef], $sizesParam: Array[Int], $currentDepthParam: Int, $endParam: Int) = $code"
+    }
+
+
+    private[vectorpointer] def treeSizeDef = {
+        val treeParam = TermName("tree")
+        val currentDepthParam = TermName("currentDepth")
+        val code = treeSizeCode(treeParam, currentDepthParam)
+        q"private final def $treeSize($treeParam: Array[AnyRef], $currentDepthParam: Int) = $code"
+    }
+
+    private def debugToStringDef = {
+        val code = debugToStringCode()
+        q"private[immutable] def $debugToString(): String = $code"
     }
 }
 

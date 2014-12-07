@@ -1,11 +1,15 @@
 package scala.collection.immutable.vectortests
 
+import java.util.NoSuchElementException
+
 import org.scalatest._
 
 import scala.collection.immutable.vectorutils.{VectorGeneratorType, BaseVectorGenerator}
 
 
 abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with VectorGeneratorType[A] {
+
+    def isRRBVectorImplementation: Boolean = true
 
     "A Vector" when {
         "empty" should {
@@ -133,13 +137,26 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
             var i = 17
             while (i < (1 << 16)) {
                 for (j <- 1 to 3) {
-                    s"vector of size $i (rnd $j)" should {
+                    s"vector of size $i (rnd ${i + j})" should {
                         val vector = randomVectorOfSize(i)(BaseVectorGenerator.defaultVectorConfig(i + j))
                         testNonEmptyVectorProperties(vector, i)
                     }
                 }
                 i = (1.2 * i).toInt
             }
+
+            val seed = 111
+            for (n <- Seq(1025, 2304, 5366, 7665, 9455, 20435, 32768, 32769)) {
+                s"vector of size $n (rnd $seed)" should {
+                    val vector = randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
+                    testNonEmptyVectorProperties(vector, n)
+                    s"return the i-th element of Vector.tabulate($n)(i => element(i)) should be i when apply is invoked" in {
+                        for (i <- 0 until n) assertResult(element(i))(vector(i))
+                    }
+                }
+            }
+
+
         }
 
     }
@@ -185,4 +202,159 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
         }
     }
 
+    "A Vector Iterator" when {
+        "empty" should {
+            "not have a next element" in {
+                assert(!emptyVector.iterator.hasNext)
+            }
+            "throw a no such element exception with next" in {
+                intercept[NoSuchElementException](emptyVector.iterator.next())
+            }
+        }
+
+        def testIteration(vec: Vec, seq: Seq[Int], n: Int): Unit = {
+            s"of size $n" when {
+                "yield all elements of the vector and then stop" in {
+                    var i = 0
+                    val it = vec.iterator
+                    while (it.hasNext) {
+                        val value = it.next()
+                        assertResult(element(i))(value)
+                        i += 1
+                    }
+                    intercept[NoSuchElementException](it.next())
+                }
+
+                if (isRRBVectorImplementation) {
+                    for (start <- seq if start < n; end <- seq if start < end && end <= n) {
+                        s"iterating from $start" when {
+                            s"iterating from $end" should {
+                                "yield all elements of in that range of the vector and then stop" in {
+                                    var i = start
+                                    val it = iterator(vec, start, end)
+                                    while (it.hasNext) {
+                                        val value = it.next()
+                                        assertResult(element(i))(value)
+                                        i += 1
+                                    }
+                                    intercept[NoSuchElementException](it.next())
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+        "non-empty and balanced" should {
+            val seq = Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)
+            for (n <- seq) {
+                val vec = tabulatedVector(n)
+                testIteration(vec, seq, n)
+            }
+        }
+
+        "non-empty and non-balanced" should {
+            val seq = Seq(1025, 2304, 5366, 7665, 9455, 20435, 32768, 32769)
+            for (n <- seq) {
+                val vec = randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
+                testIteration(vec, seq, n)
+            }
+        }
+
+    }
+
+    "A VectorBuilder" should {
+        "build with +=" when {
+            for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    0 until n foreach (e => b += element(e))
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
+                }
+            }
+        }
+
+        "build with ++= by adding singleton lists" when {
+            for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    0 until n foreach (e => b ++= element(e) :: Nil)
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
+                }
+            }
+        }
+
+        "build with ++= by adding singleton vectors" when {
+            for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    0 until n foreach (e => b ++= plus(emptyVector, element(e)))
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
+                }
+            }
+        }
+        "build with ++= by adding small vectors" when {
+            for (n <- Seq(5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    val step = 17
+                    for (i <- 0 until n by step) {
+                        b ++= rangedVector(i, (i + step) min n)
+                    }
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
+                }
+            }
+        }
+
+        "build with ++= by adding big vectors" when {
+            for (n <- Seq(1024, 1025, 2345, 5557, 8466, 32768, 32769)) {
+                s"when size is $n" in {
+                    val b = newBuilder()
+                    val step = 1050
+                    for (i <- 0 until n by step) {
+                        b ++= rangedVector(i, (i + step) min n)
+                    }
+                    val vec = b.result()
+                    assertResult(n)(vec.length)
+                    1 until n foreach (i => assertResult(element(i))(vec(i)))
+                }
+            }
+        }
+    }
+
+    "A ParVector" should {
+        for (n <- Seq(1, 5, 8, 16, 17, 32, 33, 53, 64, 65, 1024, 1025, 32768, 32769)) {
+            s"when size is $n" when {
+                for (balanced <- Seq(true, false)) {
+                    val balancedString = if (balanced) "balanced" else "unbalanced balanced"
+                    balancedString should {
+                        val vec =
+                            if (balanced) tabulatedVector(n)
+                            else randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
+                        val parvec = vec.par
+                        "return the same result as a Vector" when {
+                            "map is invoked" in {
+                                assertResult(vec map mapFun1)(parvec map mapFun1)
+                                assertResult(vec map mapFun2)(parvec map mapFun2)
+                                assertResult(vec map mapFun3)(parvec map mapFun3)
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
 }
+

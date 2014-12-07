@@ -15,11 +15,15 @@ trait VectorProperties {
 
     protected final def blockMask = blockWidth - 1
 
-    protected val blockInvariants = 1
+    protected final def maxTreeLevel =  31 / blockIndexBits /* 31 for bits that are used to represent positive Int for indices*/
 
-    protected val A = TypeName("A")
+    protected final def maxTreeDepth = maxTreeLevel + 1
 
-    protected val B = TypeName("B")
+    protected final val blockInvariants = 1
+
+    protected final val A = TypeName("A")
+
+    protected final val B = TypeName("B")
 
 
     protected def vectorObjectName = TermName(vectorName())

@@ -1,4 +1,4 @@
-package scala.collection.immutable.vectorbenchmarks.rrbvector.balanced
+package scala.collection.immutable.vectorbenchmarks.rrbvector.unbalanced1
 
 import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.AppendBenchmarks
@@ -10,8 +10,8 @@ abstract class RRBVectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] w
 class RRBVectorAppendIntBenchmark extends RRBVectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
     def append(vec: RRBVector[Int], n: Int): Int = {
-        var i = 0
         var v = vec
+        var i = 0
         while (i < n) {
             v = vec :+ 0
             i += 1

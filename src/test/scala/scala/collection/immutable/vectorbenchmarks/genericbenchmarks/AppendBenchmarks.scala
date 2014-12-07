@@ -8,57 +8,30 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
-    def append(vec: Vec, n: Int, times: Int): Int
+    def append(vec: Vec, n: Int): Int
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
 
         var sideeffect = 0
 
-        measure method "append" config(
-          Key.exec.minWarmupRuns -> 500,
-          Key.exec.maxWarmupRuns -> 2000
-          ) in {
-            val times = 10000
+        measure method "append" in {
+            for (elems <- Seq(256)) {
+                val warmups = if (height == 1) 1500 else 1000
+                performance of s"append $elems elements" config(
+                  Key.exec.minWarmupRuns -> warmups,
+                  Key.exec.maxWarmupRuns -> warmups
+                  ) in {
 
-            performance of s"append 1 element, $times times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 1, times)
-                    }
-                }
-            }
-
-            performance of s"append 8 element, $times times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 1, times)
-                    }
-                }
-            }
-
-            performance of s"append 32 elements, $times times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 32, times)
-                    }
-                }
-            }
-
-            performance of s"append 100 elements, ${times/10} times" in {
-
-                performance of s"Height $height" in {
-                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                        sideeffect = append(vec, 100, times/10)
+                    performance of s"Height $height" in {
+                        using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                            sideeffect = append(vec, elems)
+                        }
                     }
                 }
             }
         }
 
     }
-
 
 }

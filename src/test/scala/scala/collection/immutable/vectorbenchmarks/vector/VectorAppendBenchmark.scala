@@ -11,20 +11,14 @@ abstract class VectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with
 
 class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
-    def append(vec: Vector[Int], n: Int, times: Int): Int = {
+    def append(vec: Vector[Int], n: Int): Int = {
+        var v = vec
         var i = 0
-        var sum = 0
-        while (i < times) {
-            var v = vec
-            var j = 0
-            while (j<n) {
-                v = vec :+ 0
-                j += 1
-            }
-            sum += v.length
+        while (i < n) {
+            v = vec :+ 0
             i += 1
         }
-        sum
+        v.length
     }
 
 }
@@ -32,19 +26,13 @@ class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with V
 class VectorAppendStringBenchmark extends VectorAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
 
-    def append(vec: Vector[String], n: Int, times: Int): Int = {
+    def append(vec: Vector[String], n: Int): Int = {
+        var v = vec
         var i = 0
-        var sum = 0
-        while (i < times) {
-            var v = vec
-            var j = 0
-            while (j<n) {
-                v = vec :+ ref
-                j += 1
-            }
-            sum += v.length
+        while (i < n) {
+            v = vec :+ ref
             i += 1
         }
-        sum
+        v.length
     }
 }

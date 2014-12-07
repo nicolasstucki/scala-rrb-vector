@@ -17,20 +17,22 @@ package scala {
             def newBuilder[A]: mutable.Builder[A, RRBVector_q_128_asserted[A]] = new RRBVectorBuilder_q_128_asserted[A]();
             implicit def canBuildFrom[A]: scala.collection.generic.CanBuildFrom[Coll, A, RRBVector_q_128_asserted[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]];
             lazy private val EMPTY_VECTOR = new RRBVector_q_128_asserted[Nothing](0);
-            override def empty[A]: RRBVector_q_128_asserted[A] = EMPTY_VECTOR
+            override def empty[A]: RRBVector_q_128_asserted[A] = EMPTY_VECTOR;
+            final lazy private[immutable] val emptyTransientBlock = new Array[AnyRef](2)
           }
 
           final class RRBVector_q_128_asserted[+A](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector_q_128_asserted] with scala.collection.IndexedSeqLike[A, RRBVector_q_128_asserted[A]] with RRBVectorPointer_q_128_asserted[A @uncheckedVariance] with Serializable { self =>
-            private[immutable] var dirty: Boolean = false;
+            private[immutable] var transient: Boolean = false;
             override def companion: scala.collection.generic.GenericCompanion[RRBVector_q_128_asserted] = RRBVector_q_128_asserted;
             def length(): Int = endIndex;
             override def lengthCompare(len: Int): Int = endIndex.-(len);
             override def par = new ParRRBVector_q_128_asserted[A](this);
             override def iterator: RRBVectorIterator_q_128_asserted[A] = {
-              if (this.dirty)
+              if (this.transient)
                 {
-                  this.stabilize();
-                  this.dirty = false
+                  this.normalize(this.depth);
+                  this.transient = false;
+                  assert(this.assertVectorInvariant())
                 }
               else
                 ();
@@ -39,10 +41,11 @@ package scala {
               it
             };
             override def reverseIterator: RRBVectorReverseIterator_q_128_asserted[A] = {
-              if (this.dirty)
+              if (this.transient)
                 {
-                  this.stabilize();
-                  this.dirty = false
+                  this.normalize(this.depth);
+                  this.transient = false;
+                  assert(this.assertVectorInvariant())
                 }
               else
                 ();
@@ -64,58 +67,37 @@ package scala {
                   throw new IndexOutOfBoundsException(index.toString)
             };
             override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector_q_128_asserted[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
-              (if (this.endIndex.==(0))
-  {
-    val resultVector = new RRBVector_q_128_asserted[B](1);
-    resultVector.initSingleton(elem);
-    resultVector
-  }
-else
-  {
-    val _endIndex = this.endIndex;
-    val resultVector = new RRBVector_q_128_asserted[B](_endIndex.+(1));
-    resultVector.initWithFocusFrom(this);
-    resultVector.dirty = this.dirty;
-    if (_endIndex.-(1).-(this.focusStart).^(this.focus).>=(128))
-      {
-        if (resultVector.dirty)
-          {
-            resultVector.stabilize();
-            resultVector.dirty = false
-          }
-        else
-          ();
-        resultVector.focusOn(_endIndex.-(1))
-      }
-    else
-      ();
-    val elemIndexInBlock = _endIndex.-(resultVector.focusStart).&(127);
-    if (elemIndexInBlock.==(0))
-      {
-        if (resultVector.dirty)
-          {
-            resultVector.stabilize();
-            resultVector.dirty = false
-          }
-        else
-          ();
-        resultVector.appendBackSetupNewBlock();
-        resultVector.display0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef]);
-        assert(resultVector.assertVectorInvariant());
-        resultVector
-      }
-    else
-      {
-        resultVector.dirty = true;
-        resultVector.focusEnd = resultVector.endIndex;
-        val d0 = new Array[AnyRef](elemIndexInBlock.+(1));
-        Platform.arraycopy(resultVector.display0, 0, d0, 0, elemIndexInBlock);
-        d0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef]);
-        resultVector.display0 = d0;
-        assert(resultVector.assertVectorInvariant());
-        resultVector
-      }
-  }).asInstanceOf[That]
+              {
+                val _endIndex = this.endIndex;
+                if (_endIndex.!=(0))
+                  {
+                    val resultVector = new RRBVector_q_128_asserted[B](_endIndex.+(1));
+                    resultVector.transient = this.transient;
+                    resultVector.initWithFocusFrom(this);
+                    resultVector.append(elem, _endIndex);
+                    assert(resultVector.assertVectorInvariant());
+                    resultVector.asInstanceOf[That]
+                  }
+                else
+                  createSingletonVector(elem).asInstanceOf[That]
+              }
+            else
+              super.:+(elem)(bf);
+            override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[RRBVector_q_128_asserted[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
+              {
+                val _endIndex = this.endIndex;
+                if (_endIndex.!=(0))
+                  {
+                    val resultVector = new RRBVector_q_128_asserted[B](_endIndex.+(1));
+                    resultVector.transient = this.transient;
+                    resultVector.initWithFocusFrom(this);
+                    resultVector.prepend(elem);
+                    assert(resultVector.assertVectorInvariant());
+                    resultVector.asInstanceOf[That]
+                  }
+                else
+                  createSingletonVector(elem).asInstanceOf[That]
+              }
             else
               super.:+(elem)(bf);
             override def isEmpty: Boolean = this.endIndex.==(0);
@@ -130,6 +112,13 @@ else
                 takeFront0(n)
               else
                 this;
+            override def drop(n: Int): RRBVector_q_128_asserted[A] = if (n.<=(0))
+              this
+            else
+              if (n.<(endIndex))
+                dropFront0(n)
+              else
+                RRBVector_q_128_asserted.empty;
             override def dropRight(n: Int): RRBVector_q_128_asserted[A] = if (n.<=(0))
               this
             else
@@ -137,6 +126,13 @@ else
                 takeFront0(endIndex.-(n))
               else
                 RRBVector_q_128_asserted.empty;
+            override def takeRight(n: Int): RRBVector_q_128_asserted[A] = if (n.<=(0))
+              RRBVector_q_128_asserted.empty
+            else
+              if (n.<(endIndex))
+                dropFront0(endIndex.-(n))
+              else
+                this;
             override def slice(from: Int, until: Int): RRBVector_q_128_asserted[A] = take(until).drop(from);
             override def splitAt(n: Int): scala.Tuple2[RRBVector_q_128_asserted[A], RRBVector_q_128_asserted[A]] = scala.Tuple2(take(n), drop(n));
             override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[RRBVector_q_128_asserted[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
@@ -146,12 +142,13 @@ else
                 if (that.isInstanceOf[RRBVector_q_128_asserted[B]])
                   {
                     val thatVec = that.asInstanceOf[RRBVector_q_128_asserted[B]];
-                    if (this.isEmpty)
+                    if (this.endIndex.==(0))
                       thatVec.asInstanceOf[That]
                     else
                       {
                         val newVec = new RRBVector_q_128_asserted(this.endIndex.+(thatVec.endIndex));
                         newVec.initWithFocusFrom(this);
+                        newVec.transient = this.transient;
                         newVec.concatenate(this.endIndex, thatVec);
                         newVec.asInstanceOf[That]
                       }
@@ -172,86 +169,239 @@ else
               dropRight(1)
             else
               throw new UnsupportedOperationException("empty.init");
-            private[immutable] def appendBackSetupNewBlock() = {
-              assert(dirty.`unary_!`);
+            private[immutable] def append[B](elem: B, _endIndex: Int): scala.Unit = {
+              if (focusStart.+(focus).^(_endIndex.-(1)).>=(32))
+                normalizeAndFocusOn(_endIndex.-(1))
+              else
+                ();
+              val elemIndexInBlock = _endIndex.-(focusStart).&(127);
+              if (elemIndexInBlock.!=(0))
+                appendOnCurrentBlock(elem, elemIndexInBlock)
+              else
+                appendBackNewBlock(elem, elemIndexInBlock)
+            };
+            private def appendOnCurrentBlock[B](elem: B, elemIndexInBlock: Int): scala.Unit = {
+              focusEnd = endIndex;
+              val d0 = new Array[AnyRef](elemIndexInBlock.+(1));
+              System.arraycopy(display0, 0, d0, 0, elemIndexInBlock);
+              d0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef]);
+              display0 = d0;
+              makeTransientIfNeeded();
+              assert(assertVectorInvariant())
+            };
+            private def appendBackNewBlock[B](elem: B, elemIndexInBlock: Int): scala.Unit = {
               val oldDepth = depth;
               val newRelaxedIndex = endIndex.-(1).-(focusStart).+(focusRelax);
-              val xor = newRelaxedIndex.^(focus.|(focusRelax));
-              setupNewBlockInNextBranch(newRelaxedIndex, xor);
+              val focusJoined = focus.|(focusRelax);
+              val xor = newRelaxedIndex.^(focusJoined);
+              val _transient = transient;
+              setupNewBlockInNextBranch(xor, _transient);
               if (oldDepth.==(depth))
                 {
-                  var i = (31).-(java.lang.Integer.numberOfLeadingZeros(xor))./(7).+(1);
-                  val _focusDepth = focusDepth;
-                  while (i.<(oldDepth)) 
+                  var i = if (xor.<(16384))
+                    2
+                  else
+                    if (xor.<(2097152))
+                      3
+                    else
+                      if (xor.<(268435456))
+                        4
+                      else
+                        if (xor.<(8))
+                          5
+                        else
+                          5;
+                  if (i.<(oldDepth))
                     {
-                      var display: Array[AnyRef] = null;
-                      var newDisplay: Array[AnyRef] = null;
-                      var newSizes: Array[Int] = null;
-                      i match {
-                        case 2 => display = display2
-                        case 3 => display = display3
-                        case 4 => display = display4
-                        case 5 => display = display5
+                      val _focusDepth = focusDepth;
+                      var display: Array[AnyRef] = i match {
+                        case 2 => display2
+                        case 3 => display3
+                        case 4 => display4
                       };
-                      val displayLen = display.length.-(1);
-                      if (i.>=(_focusDepth))
+                      do 
                         {
-                          val oldSizes = display(displayLen).asInstanceOf[Array[Int]];
-                          newSizes = new Array[Int](displayLen);
-                          Platform.arraycopy(oldSizes, 0, newSizes, 0, displayLen.-(1));
-                          newSizes.update(displayLen.-(1), oldSizes(displayLen.-(1)).+(1))
+                          val displayLen = display.length.-(1);
+                          val newSizes: Array[Int] = if (i.>=(_focusDepth))
+                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], displayLen.-(1))
+                          else
+                            null;
+                          val newDisplay = new Array[AnyRef](display.length);
+                          System.arraycopy(display, 0, newDisplay, 0, displayLen.-(1));
+                          if (i.>=(_focusDepth))
+                            newDisplay.update(displayLen, newSizes)
+                          else
+                            ();
+                          i match {
+                            case 2 => {
+                              display2 = newDisplay;
+                              display = display3
+                            }
+                            case 3 => {
+                              display3 = newDisplay;
+                              display = display4
+                            }
+                            case 4 => display4 = newDisplay
+                          };
+                          i.+=(1)
                         }
-                      else
-                        ();
-                      newDisplay = new Array[AnyRef](display.length);
-                      Platform.arraycopy(display, 0, newDisplay, 0, displayLen);
-                      if (i.>=(_focusDepth))
-                        newDisplay.update(displayLen, newSizes)
-                      else
-                        ();
-                      i match {
-                        case 2 => {
-                          newDisplay.update(newRelaxedIndex.>>(14).&(127), display1);
-                          display2 = newDisplay
-                        }
-                        case 3 => {
-                          newDisplay.update(newRelaxedIndex.>>(21).&(127), display2);
-                          display3 = newDisplay
-                        }
-                        case 4 => {
-                          newDisplay.update(newRelaxedIndex.>>(28).&(127), display3);
-                          display4 = newDisplay
-                        }
-                        case 5 => {
-                          newDisplay.update(newRelaxedIndex.>>(35).&(127), display4);
-                          display5 = newDisplay
-                        }
-                      };
-                      i.+=(1)
+                       while (i.<(oldDepth)) 
                     }
-                  
+                  else
+                    ()
                 }
               else
                 ();
               if (oldDepth.==(focusDepth))
                 initFocus(endIndex.-(1), 0, endIndex, depth, 0)
               else
-                initFocus(endIndex.-(1), endIndex.-(1), endIndex, 1, newRelaxedIndex.&(-128))
+                initFocus(endIndex.-(1), endIndex.-(1), endIndex, 1, newRelaxedIndex.&(-128));
+              display0.update(elemIndexInBlock, elem.asInstanceOf[AnyRef]);
+              transient = true;
+              assert(this.assertVectorInvariant())
+            };
+            private[immutable] def prepend[B](elem: B): scala.Unit = {
+              if (focusStart.!=(0).||(focus.&(-128).!=(0)))
+                normalizeAndFocusOn(0)
+              else
+                ();
+              val d0 = display0;
+              if (d0.length.<(128))
+                prependOnCurrentBlock(elem, d0)
+              else
+                prependFrontNewBlock(elem);
+              assert(this.assertVectorInvariant())
+            };
+            private def prependOnCurrentBlock[B](elem: B, oldD0: Array[AnyRef]): scala.Unit = {
+              val newLen = oldD0.length.+(1);
+              focusEnd = newLen;
+              val newD0 = new Array[AnyRef](newLen);
+              newD0.update(0, elem.asInstanceOf[AnyRef]);
+              System.arraycopy(oldD0, 0, newD0, 1, newLen.-(1));
+              display0 = newD0;
+              makeTransientIfNeeded();
+              assert(this.assertVectorInvariant())
+            };
+            private def prependFrontNewBlock[B](elem: B): scala.Unit = {
+              assert(display0.length.==(128));
+              var currentDepth = focusDepth;
+              if (currentDepth.==(1))
+                currentDepth.+=(1)
+              else
+                ();
+              var display = currentDepth match {
+                case 1 => {
+                  currentDepth = 2;
+                  display1
+                }
+                case 2 => display1
+                case 3 => display2
+                case 4 => display3
+                case 5 => display4
+              };
+              while (display.!=(null).&&(display.length.==(129))) 
+                {
+                  currentDepth.+=(1);
+                  currentDepth match {
+                    case 2 => display = display1
+                    case 3 => display = display2
+                    case 4 => display = display3
+                    case 5 => display = display4
+                    case _ => throw new IllegalStateException()
+                  }
+                }
+              ;
+              val oldDepth = depth;
+              val _transient = transient;
+              setupNewBlockInInitBranch(currentDepth, _transient);
+              if (oldDepth.==(depth))
+                {
+                  var i = currentDepth;
+                  if (i.<(oldDepth))
+                    {
+                      val _focusDepth = focusDepth;
+                      var display: Array[AnyRef] = i match {
+                        case 2 => display2
+                        case 3 => display3
+                        case 4 => display4
+                      };
+                      do 
+                        {
+                          val displayLen = display.length.-(1);
+                          val newSizes: Array[Int] = if (i.>=(_focusDepth))
+                            makeTransientSizes(display(displayLen).asInstanceOf[Array[Int]], 1)
+                          else
+                            null;
+                          val newDisplay = new Array[AnyRef](display.length);
+                          System.arraycopy(display, 0, newDisplay, 0, displayLen.-(1));
+                          if (i.>=(_focusDepth))
+                            newDisplay.update(displayLen, newSizes)
+                          else
+                            ();
+                          i match {
+                            case 2 => {
+                              display2 = newDisplay;
+                              display = display3
+                            }
+                            case 3 => {
+                              display3 = newDisplay;
+                              display = display4
+                            }
+                            case 4 => display4 = newDisplay
+                          };
+                          i.+=(1)
+                        }
+                       while (i.<(oldDepth)) 
+                    }
+                  else
+                    ()
+                }
+              else
+                ();
+              initFocus(0, 0, 1, 1, 0);
+              display0.update(0, elem.asInstanceOf[AnyRef]);
+              transient = true
+            };
+            private def createSingletonVector[B](elem: B) = {
+              val resultVector = new RRBVector_q_128_asserted[B](1);
+              resultVector.initSingleton(elem);
+              assert(resultVector.assertVectorInvariant());
+              resultVector
+            };
+            private[immutable] def normalizeAndFocusOn(index: Int) = {
+              if (transient)
+                {
+                  normalize(depth);
+                  transient = false
+                }
+              else
+                ();
+              focusOn(index)
+            };
+            private[immutable] def makeTransientIfNeeded() = {
+              val _depth = depth;
+              if (_depth.>(1).&&(transient.`unary_!`))
+                {
+                  copyDisplaysAndNullFocusedBranch(_depth, focus.|(focusRelax));
+                  transient = true
+                }
+              else
+                ()
             };
             private[immutable] def concatenate[B >: A](currentSize: Int, that: RRBVector_q_128_asserted[B]): scala.Unit = {
               assert(that.assertVectorInvariant());
               assert((0).<(that.length));
-              if (this.dirty)
+              if (this.transient)
                 {
-                  this.stabilize();
-                  this.dirty = false
+                  this.normalize(this.depth);
+                  this.transient = false
                 }
               else
                 ();
-              if (that.dirty)
+              if (that.transient)
                 {
-                  that.stabilize();
-                  that.dirty = false
+                  that.normalize(that.depth);
+                  that.transient = false
                 }
               else
                 ();
@@ -263,8 +413,7 @@ else
                   initFromRoot(concat, if (endIndex.<=(128))
                     1
                   else
-                    2);
-                  assert(this.assertVectorInvariant())
+                    2)
                 }
                 case 2 => {
                   var d0: Array[AnyRef] = null;
@@ -290,8 +439,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 2)
                   else
-                    initFromRoot(withComputedSizes(concat, 3), 3);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 3), 3)
                 }
                 case 3 => {
                   var d0: Array[AnyRef] = null;
@@ -324,8 +472,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 3)
                   else
-                    initFromRoot(withComputedSizes(concat, 4), 4);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 4), 4)
                 }
                 case 4 => {
                   var d0: Array[AnyRef] = null;
@@ -365,8 +512,7 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 4)
                   else
-                    initFromRoot(withComputedSizes(concat, 5), 5);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 5), 5)
                 }
                 case 5 => {
                   var d0: Array[AnyRef] = null;
@@ -413,66 +559,11 @@ else
                   if (concat.length.==(2))
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 5)
                   else
-                    initFromRoot(withComputedSizes(concat, 6), 6);
-                  assert(this.assertVectorInvariant())
-                }
-                case 6 => {
-                  var d0: Array[AnyRef] = null;
-                  var d1: Array[AnyRef] = null;
-                  var d2: Array[AnyRef] = null;
-                  var d3: Array[AnyRef] = null;
-                  var d4: Array[AnyRef] = null;
-                  var d5: Array[AnyRef] = null;
-                  if (that.focus.&(-128).==(0))
-                    {
-                      d5 = that.display5;
-                      d4 = that.display4;
-                      d3 = that.display3;
-                      d2 = that.display2;
-                      d1 = that.display1;
-                      d0 = that.display0
-                    }
-                  else
-                    {
-                      if (that.display5.!=(null))
-                        d5 = that.display5
-                      else
-                        ();
-                      if (d5.==(null))
-                        d4 = that.display4
-                      else
-                        d4 = d5(0).asInstanceOf[Array[AnyRef]];
-                      if (d4.==(null))
-                        d3 = that.display3
-                      else
-                        d3 = d4(0).asInstanceOf[Array[AnyRef]];
-                      if (d3.==(null))
-                        d2 = that.display2
-                      else
-                        d2 = d3(0).asInstanceOf[Array[AnyRef]];
-                      if (d2.==(null))
-                        d1 = that.display1
-                      else
-                        d1 = d2(0).asInstanceOf[Array[AnyRef]];
-                      if (d1.==(null))
-                        d0 = that.display0
-                      else
-                        d0 = d1(0).asInstanceOf[Array[AnyRef]]
-                    };
-                  var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0, isTop = false);
-                  concat = rebalanced(this.display1, concat, d1, 2);
-                  concat = rebalanced(this.display2, concat, d2, 3);
-                  concat = rebalanced(this.display3, concat, d3, 4);
-                  concat = rebalanced(this.display4, concat, d4, 5);
-                  concat = rebalanced(this.display5, concat, that.display5, 6);
-                  if (concat.length.==(2))
-                    initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 6)
-                  else
-                    initFromRoot(withComputedSizes(concat, 7), 7);
-                  assert(this.assertVectorInvariant())
+                    initFromRoot(withComputedSizes(concat, 6), 6)
                 }
                 case _ => throw new IllegalStateException()
-              }
+              };
+              assert(this.assertVectorInvariant())
             };
             private def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
               val leftLength = if (displayLeft.==(null))
@@ -546,10 +637,10 @@ else
                   while (i.<(displayEnd)) 
                     {
                       val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]];
-                      val displayValueEnd = displayValue.length.-(if (currentDepth.==(2))
-                        0
+                      val displayValueEnd = if (currentDepth.==(2))
+                        displayValue.length
                       else
-                        1);
+                        displayValue.length.-(1);
                       if (iBot.|(j).==(0).&&(displayValueEnd.==(sizes(iSizes))))
                         {
                           if (currentDepth.!=(2).&&(bot.!=(null)))
@@ -581,7 +672,7 @@ else
                             }
                           else
                             ();
-                          Platform.arraycopy(displayValue, j, bot, iBot, numElementsToCopy);
+                          System.arraycopy(displayValue, j, bot, iBot, numElementsToCopy);
                           j.+=(numElementsToCopy);
                           iBot.+=(numElementsToCopy);
                           if (j.==(displayValueEnd))
@@ -606,7 +697,10 @@ else
                         };
                       if (iMid.==(128))
                         {
-                          top.update(iTop, withComputedSizes(mid, currentDepth));
+                          top.update(iTop, if (currentDepth.==(1))
+                            withComputedSizes1(mid)
+                          else
+                            withComputedSizes(mid, currentDepth));
                           iTop.+=(1);
                           iMid = 0;
                           if (nalen.-(iTop.<<(7)).!=(0))
@@ -626,7 +720,10 @@ else
               else
                 ();
               if (mid.!=(null))
-                top.update(iTop, withComputedSizes(mid, currentDepth))
+                top.update(iTop, if (currentDepth.==(1))
+                  withComputedSizes1(mid)
+                else
+                  withComputedSizes(mid, currentDepth))
               else
                 ();
               top
@@ -645,8 +742,8 @@ else
                 if (leftLength.+(rightLength).<=(128))
                   {
                     val mergedDisplay = new Array[AnyRef](leftLength.+(rightLength));
-                    Platform.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength);
-                    Platform.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength);
+                    System.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength);
+                    System.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength);
                     if (isTop)
                       mergedDisplay
                     else
@@ -663,9 +760,9 @@ else
                     val arr1 = new Array[AnyRef](leftLength.+(rightLength).-(128));
                     top.update(0, arr0);
                     top.update(1, arr1);
-                    Platform.arraycopy(displayLeft, 0, arr0, 0, leftLength);
-                    Platform.arraycopy(displayRight, 0, arr0, leftLength, (128).-(leftLength));
-                    Platform.arraycopy(displayRight, (128).-(leftLength), arr1, 0, rightLength.-(128).+(leftLength));
+                    System.arraycopy(displayLeft, 0, arr0, 0, leftLength);
+                    System.arraycopy(displayRight, 0, arr0, leftLength, (128).-(leftLength));
+                    System.arraycopy(displayRight, (128).-(leftLength), arr1, 0, rightLength.-(128).+(leftLength));
                     top
                   }
             };
@@ -769,77 +866,11 @@ else
               ;
               scala.Tuple2(szs, szsLength)
             };
-            private def withComputedSizes(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
-              assert(node.!=(null));
-              assert((0).<=(currentDepth));
-              assert(currentDepth.<=(6));
-              var i = 0;
-              var acc = 0;
-              val end = node.length.-(1);
-              val sizes = new Array[Int](end);
-              if (currentDepth.>(1))
-                {
-                  while (i.<(end)) 
-                    {
-                      acc.+=(treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1)));
-                      sizes.update(i, acc);
-                      i.+=(1)
-                    }
-                  ;
-                  val last = node(end.-(1)).asInstanceOf[Array[AnyRef]];
-                  if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<((7).*(currentDepth.-(1))))).||(currentDepth.>(2).&&(last(last.length.-(1)).!=(null))))
-                    node.update(end, sizes)
-                  else
-                    ()
-                }
-              else
-                {
-                  while (i.<(end)) 
-                    {
-                      acc.+=(node(i).asInstanceOf[Array[AnyRef]].length);
-                      sizes.update(i, acc);
-                      i.+=(1)
-                    }
-                  ;
-                  if (end.>(1).&&(sizes(end.-(2)).!=(end.-(1).<<(7))))
-                    node.update(end, sizes)
-                  else
-                    ()
-                };
-              node
-            };
-            private def treeSize(tree: Array[AnyRef], currentDepth: Int): Int = {
-              assert(tree.!=(null));
-              assert((0).<=(currentDepth));
-              assert(currentDepth.<=(6));
-              if (currentDepth.==(1))
-                tree.length
-              else
-                {
-                  val treeSizes = tree(tree.length.-(1)).asInstanceOf[Array[Int]];
-                  if (treeSizes.!=(null))
-                    treeSizes(treeSizes.length.-(1))
-                  else
-                    {
-                      var _tree = tree;
-                      var _currentDepth = currentDepth;
-                      var acc = 0;
-                      while (_currentDepth.>(1)) 
-                        {
-                          acc.+=(_tree.length.-(2).*((1).<<((7).*(_currentDepth.-(1)))));
-                          _currentDepth.-=(1);
-                          _tree = _tree(_tree.length.-(2)).asInstanceOf[Array[AnyRef]]
-                        }
-                      ;
-                      acc.+(_tree.length)
-                    }
-                }
-            };
             private def takeFront0(n: Int): RRBVector_q_128_asserted[A] = {
-              if (dirty)
+              if (transient)
                 {
-                  stabilize();
-                  dirty = false
+                  normalize(depth);
+                  transient = false
                 }
               else
                 ();
@@ -852,13 +883,13 @@ else
                   if (d0len.!=(128))
                     {
                       val d0 = new Array[AnyRef](d0len);
-                      Platform.arraycopy(vec.display0, 0, d0, 0, d0len);
+                      System.arraycopy(vec.display0, 0, d0, 0, d0len);
                       vec.display0 = d0
                     }
                   else
                     ();
                   val cutIndex = vec.focus.|(vec.focusRelax);
-                  vec.cleanTop(cutIndex);
+                  vec.cleanTopTake(cutIndex);
                   vec.focusDepth = math.min(vec.depth, vec.focusDepth);
                   if (vec.depth.>(1))
                     {
@@ -873,19 +904,18 @@ else
                             case 3 => display = vec.display2
                             case 4 => display = vec.display3
                             case 5 => display = vec.display4
-                            case 6 => display = vec.display5
                           };
                           val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
                           val newLen = vec.focusRelax.>>((7).*(i.-(1))).&(127).+(1);
                           val newSizes = new Array[Int](newLen);
-                          Platform.arraycopy(oldSizes, 0, newSizes, 0, newLen.-(1));
+                          System.arraycopy(oldSizes, 0, newSizes, 0, newLen.-(1));
                           newSizes.update(newLen.-(1), n.-(offset));
                           if (newLen.>(1))
                             offset.+=(newSizes(newLen.-(2)))
                           else
                             ();
                           val newDisplay = new Array[AnyRef](newLen.+(1));
-                          Platform.arraycopy(display, 0, newDisplay, 0, newLen);
+                          System.arraycopy(display, 0, newDisplay, 0, newLen);
                           newDisplay.update(newLen.-(1), null);
                           newDisplay.update(newLen, newSizes);
                           i match {
@@ -893,7 +923,6 @@ else
                             case 3 => vec.display2 = newDisplay
                             case 4 => vec.display3 = newDisplay
                             case 5 => vec.display4 = newDisplay
-                            case 6 => vec.display5 = newDisplay
                           };
                           i.-=(1)
                         }
@@ -908,7 +937,7 @@ else
                 if (n.!=(128))
                   {
                     val d0 = new Array[AnyRef](n);
-                    Platform.arraycopy(vec.display0, 0, d0, 0, n);
+                    System.arraycopy(vec.display0, 0, d0, 0, n);
                     vec.display0 = d0;
                     vec.initFocus(0, 0, n, 1, 0)
                   }
@@ -917,130 +946,249 @@ else
               assert(vec.assertVectorInvariant());
               vec
             };
+            private def dropFront0(n: Int): RRBVector_q_128_asserted[A] = {
+              if (transient)
+                {
+                  normalize(depth);
+                  transient = false
+                }
+              else
+                ();
+              val vec = new RRBVector_q_128_asserted[A](this.endIndex.-(n));
+              vec.initWithFocusFrom(this);
+              if (vec.depth.>(1))
+                {
+                  vec.focusOn(n);
+                  val cutIndex = vec.focus.|(vec.focusRelax);
+                  val d0Start = cutIndex.&(127);
+                  if (d0Start.!=(0))
+                    {
+                      val d0len = vec.display0.length.-(d0Start);
+                      val d0 = new Array[AnyRef](d0len);
+                      System.arraycopy(vec.display0, d0Start, d0, 0, d0len);
+                      vec.display0 = d0
+                    }
+                  else
+                    ();
+                  vec.cleanTopDrop(cutIndex);
+                  if (vec.depth.>(1))
+                    {
+                      var i = 2;
+                      var display = vec.display1;
+                      while (i.<=(vec.depth)) 
+                        {
+                          val splitStart = cutIndex.>>((7).*(i.-(1))).&(127);
+                          val newLen = display.length.-(splitStart).-(1);
+                          val newDisplay = new Array[AnyRef](newLen.+(1));
+                          System.arraycopy(display, splitStart.+(1), newDisplay, 1, newLen.-(1));
+                          i match {
+                            case 2 => {
+                              newDisplay.update(0, vec.display0);
+                              vec.display1 = withComputedSizes(newDisplay, 2);
+                              display = vec.display2
+                            }
+                            case 3 => {
+                              newDisplay.update(0, vec.display1);
+                              vec.display2 = withComputedSizes(newDisplay, 3);
+                              display = vec.display3
+                            }
+                            case 4 => {
+                              newDisplay.update(0, vec.display2);
+                              vec.display3 = withComputedSizes(newDisplay, 4);
+                              display = vec.display4
+                            }
+                            case 5 => {
+                              newDisplay.update(0, vec.display3);
+                              vec.display4 = withComputedSizes(newDisplay, 5)
+                            }
+                          };
+                          i.+=(1)
+                        }
+                      
+                    }
+                  else
+                    ();
+                  vec.initFocus(0, 0, vec.display0.length, 1, 0)
+                }
+              else
+                {
+                  val newLen = vec.display0.length.-(n);
+                  val d0 = new Array[AnyRef](newLen);
+                  System.arraycopy(vec.display0, n, d0, 0, newLen);
+                  vec.display0 = d0;
+                  vec.initFocus(0, 0, newLen, 1, 0)
+                };
+              assert(vec.assertVectorInvariant());
+              vec
+            };
             private[immutable] def assertVectorInvariant(): Boolean = {
-              assert((0).<=(depth).&&(depth.<=(6)), depth);
+              assert((0).<=(depth).&&(depth.<=(5)), depth);
               assert(isEmpty.==(depth.==(0)), scala.Tuple2(isEmpty, depth));
               assert(isEmpty.==(length.==(0)), scala.Tuple2(isEmpty, length));
               assert(length.==(endIndex), scala.Tuple2(length, endIndex));
               assert(depth.<=(0).&&(display0.==(null)).||(depth.>(0).&&(display0.!=(null))), ({
-  val x$53 = depth.toString;
-  "<=0 <==> display0==null ".+:(x$53)
+  val x$52 = depth.toString;
+  "<=0 <==> display0==null ".+:(x$52)
 }).:+(depth, display0));
               assert(depth.<=(1).&&(display1.==(null)).||(depth.>(0).&&(display1.!=(null))), ({
-  val x$54 = depth.toString;
-  "<=1 <==> display1==null ".+:(x$54)
+  val x$53 = depth.toString;
+  "<=1 <==> display1==null ".+:(x$53)
 }).:+(depth, display1));
               assert(depth.<=(2).&&(display2.==(null)).||(depth.>(0).&&(display2.!=(null))), ({
-  val x$55 = depth.toString;
-  "<=2 <==> display2==null ".+:(x$55)
+  val x$54 = depth.toString;
+  "<=2 <==> display2==null ".+:(x$54)
 }).:+(depth, display2));
               assert(depth.<=(3).&&(display3.==(null)).||(depth.>(0).&&(display3.!=(null))), ({
-  val x$56 = depth.toString;
-  "<=3 <==> display3==null ".+:(x$56)
+  val x$55 = depth.toString;
+  "<=3 <==> display3==null ".+:(x$55)
 }).:+(depth, display3));
               assert(depth.<=(4).&&(display4.==(null)).||(depth.>(0).&&(display4.!=(null))), ({
-  val x$57 = depth.toString;
-  "<=4 <==> display4==null ".+:(x$57)
+  val x$56 = depth.toString;
+  "<=4 <==> display4==null ".+:(x$56)
 }).:+(depth, display4));
-              assert(depth.<=(5).&&(display5.==(null)).||(depth.>(0).&&(display5.!=(null))), ({
-  val x$58 = depth.toString;
-  "<=5 <==> display5==null ".+:(x$58)
-}).:+(depth, display5));
-              if (display5.!=(null))
+              if (transient.`unary_!`)
                 {
-                  assert(display4.!=(null));
-                  if (focusDepth.<=(5))
-                    assert(display5(focusRelax.>>(35).&(127)).==(display4))
+                  if (display4.!=(null))
+                    {
+                      assert(display3.!=(null));
+                      if (focusDepth.<=(4))
+                        assert(display4(focusRelax.>>(28).&(127)).==(display3))
+                      else
+                        assert(display4(focus.>>(28).&(127)).==(display3))
+                    }
                   else
-                    assert(display5(focus.>>(35).&(127)).==(display4))
-                }
-              else
-                ();
-              if (display4.!=(null))
-                {
-                  assert(display3.!=(null));
-                  if (focusDepth.<=(4))
-                    assert(display4(focusRelax.>>(28).&(127)).==(display3))
+                    ();
+                  if (display3.!=(null))
+                    {
+                      assert(display2.!=(null));
+                      if (focusDepth.<=(3))
+                        assert(display3(focusRelax.>>(21).&(127)).==(display2))
+                      else
+                        assert(display3(focus.>>(21).&(127)).==(display2))
+                    }
                   else
-                    assert(display4(focus.>>(28).&(127)).==(display3))
-                }
-              else
-                ();
-              if (display3.!=(null))
-                {
-                  assert(display2.!=(null));
-                  if (focusDepth.<=(3))
-                    assert(display3(focusRelax.>>(21).&(127)).==(display2))
+                    ();
+                  if (display2.!=(null))
+                    {
+                      assert(display1.!=(null));
+                      if (focusDepth.<=(2))
+                        assert(display2(focusRelax.>>(14).&(127)).==(display1))
+                      else
+                        assert(display2(focus.>>(14).&(127)).==(display1))
+                    }
                   else
-                    assert(display3(focus.>>(21).&(127)).==(display2))
-                }
-              else
-                ();
-              if (display2.!=(null))
-                {
-                  assert(display1.!=(null));
-                  if (focusDepth.<=(2))
-                    assert(display2(focusRelax.>>(14).&(127)).==(display1))
-                  else
-                    assert(display2(focus.>>(14).&(127)).==(display1))
-                }
-              else
-                ();
-              if (display1.!=(null))
-                {
-                  assert(display0.!=(null));
-                  if (dirty.`unary_!`)
-                    if (focusDepth.<=(1))
-                      assert(display1(focusRelax.>>(7).&(127)).==(display0))
-                    else
-                      assert(display1(focus.>>(7).&(127)).==(display0))
+                    ();
+                  if (display1.!=(null))
+                    {
+                      assert(display0.!=(null));
+                      if (focusDepth.<=(1))
+                        assert(display1(focusRelax.>>(7).&(127)).==(display0))
+                      else
+                        assert(display1(focus.>>(7).&(127)).==(display0))
+                    }
                   else
                     ()
                 }
               else
-                ();
+                {
+                  assert(depth.>(1));
+                  if (display4.!=(null))
+                    {
+                      assert(display3.!=(null));
+                      if (focusDepth.<=(4))
+                        assert(display4(focusRelax.>>(28).&(127)).==(null))
+                      else
+                        assert(display4(focus.>>(28).&(127)).==(null))
+                    }
+                  else
+                    ();
+                  if (display3.!=(null))
+                    {
+                      assert(display2.!=(null));
+                      if (focusDepth.<=(3))
+                        assert(display3(focusRelax.>>(21).&(127)).==(null))
+                      else
+                        assert(display3(focus.>>(21).&(127)).==(null))
+                    }
+                  else
+                    ();
+                  if (display2.!=(null))
+                    {
+                      assert(display1.!=(null));
+                      if (focusDepth.<=(2))
+                        assert(display2(focusRelax.>>(14).&(127)).==(null))
+                      else
+                        assert(display2(focus.>>(14).&(127)).==(null))
+                    }
+                  else
+                    ();
+                  if (display1.!=(null))
+                    {
+                      assert(display0.!=(null));
+                      if (focusDepth.<=(1))
+                        assert(display1(focusRelax.>>(7).&(127)).==(null))
+                      else
+                        assert(display1(focus.>>(7).&(127)).==(null))
+                    }
+                  else
+                    ()
+                };
               assert((0).<=(focusStart).&&(focusStart.<=(focusEnd)).&&(focusEnd.<=(endIndex)), scala.Tuple3(focusStart, focusEnd, endIndex));
               assert(focusStart.==(focusEnd).||(focusEnd.!=(0)), "focusStart==focusEnd ==> focusEnd==0".+(focusStart, focusEnd));
               assert((0).<=(focusDepth).&&(focusDepth.<=(depth)), scala.Tuple2(focusDepth, depth));
               def checkSizes(node: Array[AnyRef], currentDepth: Int, _endIndex: Int): Unit = if (currentDepth.>(1))
-                {
-                  val sizes = node.last.asInstanceOf[Array[Int]];
-                  if (sizes.!=(null))
-                    {
-                      assert(node.length.==(sizes.length.+(1)));
-                      if (dirty.`unary_!`)
-                        assert(sizes.last.==(_endIndex), scala.Tuple2(sizes.last, _endIndex))
-                      else
-                        ();
-                      0.until(sizes.length.-(1)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0))
-                        0
-                      else
-                        sizes(i.-(1))))));
-                      checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), if (sizes.length.>(1))
-                        sizes.last.-(sizes(sizes.length.-(2)))
-                      else
-                        sizes.last)
-                    }
-                  else
-                    {
-                      0.until(node.length.-(2)).foreach(((i) => checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), (1).<<((7).*(currentDepth.-(1))))));
-                      val expectedLast = _endIndex.-((1).<<((7).*(currentDepth.-(1))).*(node.length.-(2)));
-                      assert((1).<=(expectedLast).&&(expectedLast.<=((1).<<((7).*(currentDepth)))));
-                      checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), expectedLast)
-                    }
-                }
+                if (node.!=(null))
+                  {
+                    val sizes = node(node.length.-(1)).asInstanceOf[Array[Int]];
+                    if (sizes.!=(null))
+                      {
+                        assert(node.length.==(sizes.length.+(1)));
+                        if (transient.`unary_!`)
+                          assert(sizes(sizes.length.-(1)).==(_endIndex), scala.Tuple2(sizes(sizes.length.-(1)), _endIndex))
+                        else
+                          ();
+                        var i = 0;
+                        while (i.<(sizes.length.-(1))) 
+                          {
+                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), sizes(i).-(if (i.==(0))
+                              0
+                            else
+                              sizes(i.-(1))));
+                            i.+=(1)
+                          }
+                        ;
+                        checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), if (sizes.length.>(1))
+                          sizes(sizes.length.-(1)).-(sizes(sizes.length.-(2)))
+                        else
+                          sizes(sizes.length.-(1)))
+                      }
+                    else
+                      {
+                        var i = 0;
+                        while (i.<(node.length.-(2))) 
+                          {
+                            checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1), (1).<<((7).*(currentDepth.-(1))));
+                            i.+=(1)
+                          }
+                        ;
+                        val expectedLast = _endIndex.-((1).<<((7).*(currentDepth.-(1))).*(node.length.-(2)));
+                        assert((1).<=(expectedLast).&&(expectedLast.<=((1).<<((7).*(currentDepth)))));
+                        checkSizes(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), expectedLast)
+                      }
+                  }
+                else
+                  assert(transient)
               else
-                if (dirty.`unary_!`)
+                if (node.!=(null))
                   assert(node.length.==(_endIndex))
                 else
-                  ();
+                  assert(transient);
               depth match {
                 case 1 => checkSizes(display0, 1, endIndex)
                 case 2 => checkSizes(display1, 2, endIndex)
                 case 3 => checkSizes(display2, 3, endIndex)
                 case 4 => checkSizes(display3, 4, endIndex)
                 case 5 => checkSizes(display4, 5, endIndex)
-                case 6 => checkSizes(display5, 6, endIndex)
                 case _ => ()
               };
               true
@@ -1072,16 +1220,19 @@ else
                 if (xs.isInstanceOf[RRBVector_q_128_asserted[A]])
                   {
                     val thatVec = xs.asInstanceOf[RRBVector_q_128_asserted[A]];
-                    if (endIndex.!=(0))
-                      {
-                        acc = this.result().++(xs);
-                        this.clearCurrent()
-                      }
-                    else
-                      if (acc.!=(null))
-                        acc = acc.++(thatVec)
+                    if (thatVec.length.>(1024))
+                      if (endIndex.!=(0))
+                        {
+                          acc = this.result().++(xs);
+                          this.clearCurrent()
+                        }
                       else
-                        acc = thatVec
+                        if (acc.!=(null))
+                          acc = acc.++(thatVec)
+                        else
+                          acc = thatVec
+                    else
+                      super.++=(xs)
                   }
                 else
                   super.++=(xs)
@@ -1091,10 +1242,12 @@ else
             };
             def result(): RRBVector_q_128_asserted[A] = {
               val current = currentResult();
-              if (acc.==(null))
+              val resultVector = if (acc.==(null))
                 current
               else
-                acc.++(current)
+                acc.++(current);
+              assert(resultVector.assertVectorInvariant());
+              resultVector
             };
             def clear(): Unit = {
               clearCurrent();
@@ -1137,7 +1290,6 @@ else
               display2 = null;
               display3 = null;
               display4 = null;
-              display5 = null;
               depth = 1;
               blockIndex = 0;
               lo = 0
@@ -1150,20 +1302,6 @@ else
             private var endLo: Int = _;
             private var _hasNext: Boolean = _;
             final private[collection] def initIteratorFrom[B >: A](that: RRBVectorPointer_q_128_asserted[B]): Unit = {
-              if (_hasNext)
-                {
-                  focusOn(startIndex);
-                  blockIndex = focusStart.+(focus.&(-128));
-                  lo = focus.&(127);
-                  endLo = math.min(focusEnd.-(blockIndex), 128)
-                }
-              else
-                {
-                  blockIndex = 0;
-                  lo = 0;
-                  endLo = 1;
-                  display0 = new Array[AnyRef](1)
-                };
               initWithFocusFrom(that);
               _hasNext = startIndex.<(endIndex);
               if (_hasNext)
@@ -1171,6 +1309,10 @@ else
                   focusOn(startIndex);
                   blockIndex = focusStart.+(focus.&(-128));
                   lo = focus.&(127);
+                  if (endIndex.<(focusEnd))
+                    focusEnd = endIndex
+                  else
+                    ();
                   endLo = math.min(focusEnd.-(blockIndex), 128)
                 }
               else
@@ -1203,13 +1345,23 @@ else
                     }
                   else
                     if (newBlockIndex.<(endIndex))
-                      focusOn(newBlockIndex)
+                      {
+                        focusOn(newBlockIndex);
+                        if (endIndex.<(focusEnd))
+                          focusEnd = endIndex
+                        else
+                          ()
+                      }
                     else
                       {
-                        lo = focusEnd.-(1).&(127);
+                        lo = 0;
                         blockIndex = endIndex;
+                        endLo = 1;
                         if (_hasNext)
-                          _hasNext = false
+                          {
+                            _hasNext = false;
+                            return res
+                          }
                         else
                           throw new NoSuchElementException("reached iterator end")
                       };
@@ -1316,14 +1468,13 @@ else
             final private[immutable] def initFromRoot(root: Array[AnyRef], depth: Int): Unit = {
               assert(root.!=(null));
               assert((0).<(depth));
-              assert(depth.<=(6));
+              assert(depth.<=(5));
               depth match {
                 case 1 => display0 = root
                 case 2 => display1 = root
                 case 3 => display2 = root
                 case 4 => display3 = root
                 case 5 => display4 = root
-                case 6 => display5 = root
               };
               this.depth = depth;
               focusEnd = focusStart;
@@ -1357,14 +1508,6 @@ else
                   this.display3 = that.display3;
                   this.display4 = that.display4
                 }
-                case 6 => {
-                  this.display0 = that.display0;
-                  this.display1 = that.display1;
-                  this.display2 = that.display2;
-                  this.display3 = that.display3;
-                  this.display4 = that.display4;
-                  this.display5 = that.display5
-                }
                 case _ => throw new IllegalStateException()
               }
             };
@@ -1382,7 +1525,6 @@ else
               case 3 => display2
               case 4 => display3
               case 5 => display4
-              case 6 => display5
               case _ => throw new IllegalStateException()
             };
             final private[immutable] def focusOn(index: Int): Unit = if (focusStart.<=(index).&&(index.<(focusEnd)))
@@ -1393,46 +1535,46 @@ else
                   gotoPos(indexInFocus, xor)
                 else
                   ();
-                focus = index
+                focus = indexInFocus
               }
             else
               gotoPosFromRoot(index);
             final private[immutable] def getElementFromRoot(index: Int): A = {
-              assert((2).<=(depth));
-              assert(depth.<=(6));
+              assert((0).<=(index));
+              assert((1).<(depth));
+              assert(depth.<=(5));
               var indexInSubTree = index;
               var currentDepth = depth;
-              var display: Array[AnyRef] = null;
-              currentDepth match {
-                case 2 => display = display1
-                case 3 => display = display2
-                case 4 => display = display3
-                case 5 => display = display4
-                case 6 => display = display5
+              var display: Array[AnyRef] = currentDepth match {
+                case 2 => display1
+                case 3 => display2
+                case 4 => display3
+                case 5 => display4
               };
-              while (currentDepth.>(1)) 
+              var sizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
+              do 
                 {
-                  val sizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
-                  if (sizes.==(null))
-                    {
-                      val depthShift = (7).*(currentDepth.-(1));
-                      val idx = indexInSubTree.>>(depthShift);
-                      indexInSubTree.-=(idx.<<(depthShift));
-                      display = display(idx).asInstanceOf[Array[AnyRef]]
-                    }
+                  val sizesIdx = getIndexInSizes(sizes, indexInSubTree);
+                  if (sizesIdx.!=(0))
+                    indexInSubTree.-=(sizes(sizesIdx.-(1)))
                   else
-                    {
-                      val sizesIdx = getIndexInSizes(sizes, indexInSubTree);
-                      if (sizesIdx.!=(0))
-                        indexInSubTree.-=(sizes(sizesIdx.-(1)))
-                      else
-                        ();
-                      display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
-                    };
+                    ();
+                  display = display(sizesIdx).asInstanceOf[Array[AnyRef]];
+                  if (currentDepth.>(2))
+                    sizes = display(display.length.-(1)).asInstanceOf[Array[Int]]
+                  else
+                    sizes = null;
                   currentDepth.-=(1)
                 }
-              ;
-              display(indexInSubTree).asInstanceOf[A]
+               while (sizes.!=(null)) ;
+              currentDepth match {
+                case 1 => getElem0(display, indexInSubTree)
+                case 2 => getElem1(display, indexInSubTree)
+                case 3 => getElem2(display, indexInSubTree)
+                case 4 => getElem3(display, indexInSubTree)
+                case 5 => getElem4(display, indexInSubTree)
+                case _ => throw new IllegalStateException()
+              }
             };
             final private def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
               assert((0).<=(indexInSubTree));
@@ -1444,40 +1586,38 @@ else
               is
             };
             final private[immutable] def gotoPosFromRoot(index: Int): Unit = {
+              assert((0).<=(index));
               var _startIndex: Int = 0;
               var _endIndex: Int = endIndex;
               var currentDepth: Int = depth;
               var _focusRelax: Int = 0;
               var continue: Boolean = currentDepth.>(1);
-              while (continue) 
+              if (continue)
                 {
-                  assert((0).<=(_startIndex));
-                  assert(_startIndex.<=(_endIndex));
-                  assert((0).<(currentDepth));
-                  if (currentDepth.<=(1))
-                    continue = false
-                  else
+                  var display = currentDepth match {
+                    case 2 => display1
+                    case 3 => display2
+                    case 4 => display3
+                    case 5 => display4
+                    case _ => throw new IllegalStateException()
+                  };
+                  do 
                     {
-                      val display = currentDepth match {
-                        case 2 => display1
-                        case 3 => display2
-                        case 4 => display3
-                        case 5 => display4
-                        case 6 => display5
-                        case _ => throw new IllegalStateException()
-                      };
                       val sizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
                       if (sizes.==(null))
                         continue = false
                       else
                         {
                           val is = getIndexInSizes(sizes, index.-(_startIndex));
+                          display = display(is).asInstanceOf[Array[AnyRef]];
                           currentDepth match {
-                            case 2 => display0 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 3 => display1 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 4 => display2 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 5 => display3 = display(is).asInstanceOf[Array[AnyRef]]
-                            case 6 => display4 = display(is).asInstanceOf[Array[AnyRef]]
+                            case 2 => {
+                              display0 = display;
+                              continue = false
+                            }
+                            case 3 => display1 = display
+                            case 4 => display2 = display
+                            case 5 => display3 = display
                           };
                           if (is.<(sizes.length.-(1)))
                             _endIndex = _startIndex.+(sizes(is))
@@ -1491,277 +1631,277 @@ else
                           _focusRelax.|=(is.<<((7).*(currentDepth)))
                         }
                     }
+                   while (continue) 
                 }
-              ;
+              else
+                ();
               val indexInFocus = index.-(_startIndex);
               gotoPos(indexInFocus, (1).<<((7).*(currentDepth.-(1))));
               initFocus(indexInFocus, _startIndex, _endIndex, currentDepth, _focusRelax)
             };
-            final private[immutable] def setupNewBlockInNextBranch(index: Int, xor: Int): Unit = if (xor.<(16384))
+            final private[immutable] def setupNewBlockInNextBranch(xor: Int, transient: Boolean): Unit = if (xor.<(16384))
               {
                 if (depth.==(1))
                   {
-                    val newRoot = new Array[AnyRef](3);
-                    newRoot.update(0, display0);
-                    ;
-                    display1 = newRoot;
-                    depth = 2
+                    depth = 2;
+                    {
+                      val newRoot = new Array[AnyRef](3);
+                      newRoot.update(0, display0);
+                      display1 = newRoot
+                    }
                   }
                 else
                   {
-                    val len = display1.length;
-                    val newRoot = copyOf(display1, len, len.+(1));
-                    val sizes = display1(len.-(1));
-                    if (sizes.!=(null))
+                    val newRoot = copyAndIncRightRoot(display1, transient, 1);
+                    if (transient)
                       {
-                        val newSizes = new Array[Int](len);
-                        Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1));
-                        newSizes.update(len.-(1), newSizes(len.-(2)).+(1));
-                        newRoot.update(len, newSizes)
+                        val oldTransientBranch = newRoot.length.-(3);
+                        withRecomputedSizes(newRoot, 2, oldTransientBranch);
+                        newRoot.update(oldTransientBranch, display0)
                       }
                     else
                       ();
                     display1 = newRoot
                   };
                 display0 = new Array(1);
-                display1.update(index.>>(7).&(127), display0)
+                
               }
             else
               if (xor.<(2097152))
                 {
+                  if (transient)
+                    normalize(2)
+                  else
+                    ();
                   if (depth.==(2))
                     {
-                      val newRoot = new Array[AnyRef](3);
-                      newRoot.update(0, display1);
-                      {
-                        val dLen = display1.length;
-                        val dSizes = display1(dLen.-(1));
-                        if (dSizes.!=(null))
-                          {
-                            val newRootSizes = new Array[Int](2);
-                            val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2));
-                            newRootSizes.update(0, dSize);
-                            newRootSizes.update(1, dSize.+(1));
-                            newRoot.update(2, newRootSizes)
-                          }
-                        else
-                          ()
-                      };
-                      display2 = newRoot;
-                      depth = 3
+                      depth = 3;
+                      display2 = makeNewRoot0(display1)
                     }
                   else
                     {
-                      val len = display2.length;
-                      val newRoot = copyOf(display2, len, len.+(1));
-                      val sizes = display2(len.-(1));
-                      if (sizes.!=(null))
+                      val newRoot = copyAndIncRightRoot(display2, transient, 2);
+                      if (transient)
                         {
-                          val newSizes = new Array[Int](len);
-                          Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1));
-                          newSizes.update(len.-(1), newSizes(len.-(2)).+(1));
-                          newRoot.update(len, newSizes)
+                          val oldTransientBranch = newRoot.length.-(3);
+                          withRecomputedSizes(newRoot, 3, oldTransientBranch);
+                          newRoot.update(oldTransientBranch, display1)
                         }
                       else
                         ();
                       display2 = newRoot
                     };
                   display0 = new Array(1);
-                  display1 = new Array(2);
-                  display1.update(index.>>(7).&(127), display0);
-                  display2.update(index.>>(14).&(127), display1)
+                  val _emptyTransientBlock = RRBVector_q_128_asserted.emptyTransientBlock;
+                  display1 = _emptyTransientBlock
                 }
               else
                 if (xor.<(268435456))
                   {
+                    if (transient)
+                      normalize(3)
+                    else
+                      ();
                     if (depth.==(3))
                       {
-                        val newRoot = new Array[AnyRef](3);
-                        newRoot.update(0, display2);
-                        {
-                          val dLen = display2.length;
-                          val dSizes = display2(dLen.-(1));
-                          if (dSizes.!=(null))
-                            {
-                              val newRootSizes = new Array[Int](2);
-                              val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2));
-                              newRootSizes.update(0, dSize);
-                              newRootSizes.update(1, dSize.+(1));
-                              newRoot.update(2, newRootSizes)
-                            }
-                          else
-                            ()
-                        };
-                        display3 = newRoot;
-                        depth = 4
+                        depth = 4;
+                        display3 = makeNewRoot0(display2)
                       }
                     else
                       {
-                        val len = display3.length;
-                        val newRoot = copyOf(display3, len, len.+(1));
-                        val sizes = display3(len.-(1));
-                        if (sizes.!=(null))
+                        val newRoot = copyAndIncRightRoot(display3, transient, 3);
+                        if (transient)
                           {
-                            val newSizes = new Array[Int](len);
-                            Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1));
-                            newSizes.update(len.-(1), newSizes(len.-(2)).+(1));
-                            newRoot.update(len, newSizes)
+                            val oldTransientBranch = newRoot.length.-(3);
+                            withRecomputedSizes(newRoot, 4, oldTransientBranch);
+                            newRoot.update(oldTransientBranch, display2)
                           }
                         else
                           ();
                         display3 = newRoot
                       };
                     display0 = new Array(1);
-                    display1 = new Array(2);
-                    display2 = new Array(2);
-                    display1.update(index.>>(7).&(127), display0);
-                    display2.update(index.>>(14).&(127), display1);
-                    display3.update(index.>>(21).&(127), display2)
+                    val _emptyTransientBlock = RRBVector_q_128_asserted.emptyTransientBlock;
+                    display1 = _emptyTransientBlock;
+                    display2 = _emptyTransientBlock
                   }
                 else
                   if (xor.<(8))
                     {
+                      if (transient)
+                        normalize(4)
+                      else
+                        ();
                       if (depth.==(4))
                         {
-                          val newRoot = new Array[AnyRef](3);
-                          newRoot.update(0, display3);
-                          {
-                            val dLen = display3.length;
-                            val dSizes = display3(dLen.-(1));
-                            if (dSizes.!=(null))
-                              {
-                                val newRootSizes = new Array[Int](2);
-                                val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2));
-                                newRootSizes.update(0, dSize);
-                                newRootSizes.update(1, dSize.+(1));
-                                newRoot.update(2, newRootSizes)
-                              }
-                            else
-                              ()
-                          };
-                          display4 = newRoot;
-                          depth = 5
+                          depth = 5;
+                          display4 = makeNewRoot0(display3)
                         }
                       else
                         {
-                          val len = display4.length;
-                          val newRoot = copyOf(display4, len, len.+(1));
-                          val sizes = display4(len.-(1));
-                          if (sizes.!=(null))
+                          val newRoot = copyAndIncRightRoot(display4, transient, 4);
+                          if (transient)
                             {
-                              val newSizes = new Array[Int](len);
-                              Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1));
-                              newSizes.update(len.-(1), newSizes(len.-(2)).+(1));
-                              newRoot.update(len, newSizes)
+                              val oldTransientBranch = newRoot.length.-(3);
+                              withRecomputedSizes(newRoot, 5, oldTransientBranch);
+                              newRoot.update(oldTransientBranch, display3)
                             }
                           else
                             ();
                           display4 = newRoot
                         };
                       display0 = new Array(1);
-                      display1 = new Array(2);
-                      display2 = new Array(2);
-                      display3 = new Array(2);
-                      display1.update(index.>>(7).&(127), display0);
-                      display2.update(index.>>(14).&(127), display1);
-                      display3.update(index.>>(21).&(127), display2);
-                      display4.update(index.>>(28).&(127), display3)
+                      val _emptyTransientBlock = RRBVector_q_128_asserted.emptyTransientBlock;
+                      display1 = _emptyTransientBlock;
+                      display2 = _emptyTransientBlock;
+                      display3 = _emptyTransientBlock
                     }
                   else
-                    if (xor.<(1024))
+                    throw new IllegalArgumentException();
+            final private[immutable] def setupNewBlockInInitBranch(insertionDepth: Int, transient: Boolean): Unit = insertionDepth match {
+              case 2 => {
+                if (transient)
+                  normalize(1)
+                else
+                  ();
+                if (depth.==(1))
+                  {
+                    depth = 2;
+                    {
+                      val sizes = new Array[Int](2);
+                      sizes.update(1, display0.length);
+                      val newRoot = new Array[AnyRef](3);
+                      newRoot.update(1, display0);
+                      newRoot.update(2, sizes);
+                      display1 = newRoot
+                    }
+                  }
+                else
+                  {
+                    val newRoot = copyAndIncLeftRoot(display1, transient, 1);
+                    if (transient)
                       {
-                        if (depth.==(5))
-                          {
-                            val newRoot = new Array[AnyRef](3);
-                            newRoot.update(0, display4);
-                            {
-                              val dLen = display4.length;
-                              val dSizes = display4(dLen.-(1));
-                              if (dSizes.!=(null))
-                                {
-                                  val newRootSizes = new Array[Int](2);
-                                  val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2));
-                                  newRootSizes.update(0, dSize);
-                                  newRootSizes.update(1, dSize.+(1));
-                                  newRoot.update(2, newRootSizes)
-                                }
-                              else
-                                ()
-                            };
-                            display5 = newRoot;
-                            depth = 6
-                          }
-                        else
-                          {
-                            val len = display5.length;
-                            val newRoot = copyOf(display5, len, len.+(1));
-                            val sizes = display5(len.-(1));
-                            if (sizes.!=(null))
-                              {
-                                val newSizes = new Array[Int](len);
-                                Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len.-(1));
-                                newSizes.update(len.-(1), newSizes(len.-(2)).+(1));
-                                newRoot.update(len, newSizes)
-                              }
-                            else
-                              ();
-                            display5 = newRoot
-                          };
-                        display0 = new Array(1);
-                        display1 = new Array(2);
-                        display2 = new Array(2);
-                        display3 = new Array(2);
-                        display4 = new Array(2);
-                        display1.update(index.>>(7).&(127), display0);
-                        display2.update(index.>>(14).&(127), display1);
-                        display3.update(index.>>(21).&(127), display2);
-                        display4.update(index.>>(28).&(127), display3);
-                        display5.update(index.>>(35).&(127), display4)
+                        withRecomputedSizes(newRoot, 2, 1);
+                        newRoot.update(1, display0)
+                      }
+                    else
+                      ();
+                    display1 = newRoot
+                  };
+                display0 = new Array(1);
+                
+              }
+              case 3 => {
+                if (transient)
+                  normalize(2)
+                else
+                  ();
+                if (depth.==(2))
+                  {
+                    depth = 3;
+                    display2 = makeNewRoot1(display1, 3)
+                  }
+                else
+                  {
+                    val newRoot = copyAndIncLeftRoot(display2, transient, 2);
+                    if (transient)
+                      {
+                        withRecomputedSizes(newRoot, 3, 1);
+                        newRoot.update(1, display1)
+                      }
+                    else
+                      ();
+                    display2 = newRoot
+                  };
+                display0 = new Array(1);
+                val _emptyTransientBlock = RRBVector_q_128_asserted.emptyTransientBlock;
+                display1 = _emptyTransientBlock
+              }
+              case 4 => {
+                if (transient)
+                  normalize(3)
+                else
+                  ();
+                if (depth.==(3))
+                  {
+                    depth = 4;
+                    display3 = makeNewRoot1(display2, 4)
+                  }
+                else
+                  {
+                    val newRoot = copyAndIncLeftRoot(display3, transient, 3);
+                    if (transient)
+                      {
+                        withRecomputedSizes(newRoot, 4, 1);
+                        newRoot.update(1, display2)
+                      }
+                    else
+                      ();
+                    display3 = newRoot
+                  };
+                display0 = new Array(1);
+                val _emptyTransientBlock = RRBVector_q_128_asserted.emptyTransientBlock;
+                display1 = _emptyTransientBlock;
+                display2 = _emptyTransientBlock
+              }
+              case 5 => {
+                if (transient)
+                  normalize(4)
+                else
+                  ();
+                if (depth.==(4))
+                  {
+                    depth = 5;
+                    display4 = makeNewRoot1(display3, 5)
+                  }
+                else
+                  {
+                    val newRoot = copyAndIncLeftRoot(display4, transient, 4);
+                    if (transient)
+                      {
+                        withRecomputedSizes(newRoot, 5, 1);
+                        newRoot.update(1, display3)
+                      }
+                    else
+                      ();
+                    display4 = newRoot
+                  };
+                display0 = new Array(1);
+                val _emptyTransientBlock = RRBVector_q_128_asserted.emptyTransientBlock;
+                display1 = _emptyTransientBlock;
+                display2 = _emptyTransientBlock;
+                display3 = _emptyTransientBlock
+              }
+              case _ => throw new IllegalStateException()
+            };
+            final private[immutable] def gotoPos(index: Int, xor: Int): Unit = if (xor.<(128))
+              ()
+            else
+              if (xor.<(16384))
+                display0 = display1(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]]
+              else
+                if (xor.<(2097152))
+                  {
+                    display1 = display2(index.>>(14).&(127)).asInstanceOf[Array[AnyRef]];
+                    display0 = display1(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]]
+                  }
+                else
+                  if (xor.<(268435456))
+                    {
+                      display2 = display3(index.>>(21).&(127)).asInstanceOf[Array[AnyRef]];
+                      display1 = display2(index.>>(14).&(127)).asInstanceOf[Array[AnyRef]];
+                      display0 = display1(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]]
+                    }
+                  else
+                    if (xor.<(8))
+                      {
+                        display3 = display4(index.>>(28).&(127)).asInstanceOf[Array[AnyRef]];
+                        display2 = display3(index.>>(21).&(127)).asInstanceOf[Array[AnyRef]];
+                        display1 = display2(index.>>(14).&(127)).asInstanceOf[Array[AnyRef]];
+                        display0 = display1(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]]
                       }
                     else
                       throw new IllegalArgumentException();
-            final private[immutable] def gotoPos(index: Int, xor: Int): Unit = if (xor.>=(128))
-              {
-                val d1 = if (xor.>=(16384))
-                  {
-                    val d2 = if (xor.>=(2097152))
-                      {
-                        val d3 = if (xor.>=(268435456))
-                          {
-                            val d4 = if (xor.>=(8))
-                              {
-                                if (xor.>=(1073741824))
-                                  throw new IllegalArgumentException()
-                                else
-                                  ();
-                                val _d4 = display5(index.>>(35).&(127)).asInstanceOf[Array[AnyRef]];
-                                display4 = _d4;
-                                _d4
-                              }
-                            else
-                              display4;
-                            val _d3 = d4(index.>>(28).&(127)).asInstanceOf[Array[AnyRef]];
-                            display3 = _d3;
-                            _d3
-                          }
-                        else
-                          display3;
-                        val _d2 = d3(index.>>(21).&(127)).asInstanceOf[Array[AnyRef]];
-                        display2 = _d2;
-                        _d2
-                      }
-                    else
-                      display2;
-                    val _d1 = d2(index.>>(14).&(127)).asInstanceOf[Array[AnyRef]];
-                    display1 = _d1;
-                    _d1
-                  }
-                else
-                  display1;
-                display0 = d1(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]]
-              }
-            else
-              ();
             final private[immutable] def gotoNextBlockStart(index: Int, xor: Int): Unit = {
               var idx = 0;
               if (xor.>=(16384))
@@ -1771,16 +1911,9 @@ else
                       if (xor.>=(268435456))
                         {
                           if (xor.>=(8))
-                            {
-                              if (xor.>=(1024))
-                                throw new IllegalArgumentException()
-                              else
-                                display4 = display5(index.>>(35).&(127)).asInstanceOf[Array[AnyRef]];
-                              idx = 0
-                            }
+                            throw new IllegalArgumentException()
                           else
-                            idx = index.>>(28).&(127);
-                          display3 = display4(idx).asInstanceOf[Array[AnyRef]];
+                            display3 = display4(index.>>(28).&(127)).asInstanceOf[Array[AnyRef]];
                           idx = 0
                         }
                       else
@@ -1806,16 +1939,9 @@ else
                       if (xor.>=(268435456))
                         {
                           if (xor.>=(8))
-                            {
-                              if (xor.>=(1024))
-                                throw new IllegalArgumentException()
-                              else
-                                display4 = display5(index.>>(35).&(127)).asInstanceOf[Array[AnyRef]];
-                              idx = 127
-                            }
+                            throw new IllegalArgumentException()
                           else
-                            idx = index.>>(28).&(127);
-                          display3 = display4(idx).asInstanceOf[Array[AnyRef]];
+                            display3 = display4(index.>>(28).&(127)).asInstanceOf[Array[AnyRef]];
                           idx = 127
                         }
                       else
@@ -1900,131 +2026,138 @@ else
                       display4.update(index.>>(28).&(127), display3)
                     }
                   else
-                    if (xor.<(1024))
-                      {
-                        if (depth.==(5))
-                          {
-                            display5 = new Array(129);
-                            display5.update(0, display4);
-                            depth.+=(1)
-                          }
-                        else
-                          ();
-                        display0 = new Array(128);
-                        display1 = new Array(129);
-                        display2 = new Array(129);
-                        display3 = new Array(129);
-                        display4 = new Array(129);
-                        display1.update(index.>>(7).&(127), display0);
-                        display2.update(index.>>(14).&(127), display1);
-                        display3.update(index.>>(21).&(127), display2);
-                        display4.update(index.>>(28).&(127), display3);
-                        display5.update(index.>>(35).&(127), display4)
-                      }
-                    else
-                      throw new IllegalArgumentException();
-            final private[immutable] def stabilize(): Unit = {
-              val _depth = depth;
-              if (_depth.>(1))
+                    throw new IllegalArgumentException();
+            final private[immutable] def normalize(_depth: Int): Unit = {
+              assert((1).<(_depth));
+              val _focusDepth = focusDepth;
+              val stabilizationIndex = focus.|(focusRelax);
+              copyDisplaysAndStabilizeDisplayPath(_focusDepth, stabilizationIndex);
+              var currentLevel = _focusDepth;
+              if (currentLevel.<(_depth))
                 {
-                  val stabilizationIndex = focus.|(focusRelax);
-                  val deltaSize = display0.length.-(display1(stabilizationIndex.>>(7).&(127)).asInstanceOf[Array[AnyRef]].length);
-                  val _focusDepth = focusDepth;
-                  copyDisplays(_focusDepth, stabilizationIndex);
-                  stabilizeDisplayPath(_focusDepth, stabilizationIndex);
-                  var currentDepth = _focusDepth.+(1);
-                  var display: Array[AnyRef] = null;
-                  currentDepth match {
-                    case 2 => display = display1
-                    case 3 => display = display2
-                    case 4 => display = display3
-                    case 5 => display = display4
-                    case 6 => display = display5
+                  var display = currentLevel match {
+                    case 1 => display1
+                    case 2 => display2
+                    case 3 => display3
+                    case 4 => display4
                   };
-                  while (currentDepth.<=(_depth)) 
+                  do 
                     {
-                      val oldSizes = display(display.length.-(1)).asInstanceOf[Array[Int]];
-                      val newSizes = new Array[Int](oldSizes.length);
-                      val lastSizesIndex = oldSizes.length.-(1);
-                      Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex);
-                      newSizes.update(lastSizesIndex, oldSizes(lastSizesIndex).+(deltaSize));
-                      val idx = stabilizationIndex.>>((7).*(currentDepth)).&(127);
-                      val newDisplay = copyOf(display, idx, idx.+(2));
-                      newDisplay.update(newDisplay.length.-(1), newSizes);
-                      currentDepth match {
-                        case 2 => {
+                      val newDisplay = copyOf(display);
+                      val idx = stabilizationIndex.>>((7).*(currentLevel)).&(31);
+                      currentLevel match {
+                        case 1 => {
                           newDisplay.update(idx, display0);
-                          display1.update(idx, newDisplay);
+                          display1 = withRecomputedSizes(newDisplay, 2, idx);
                           display = display2
                         }
-                        case 3 => {
+                        case 2 => {
                           newDisplay.update(idx, display1);
-                          display2.update(idx, newDisplay);
+                          display2 = withRecomputedSizes(newDisplay, 3, idx);
                           display = display3
                         }
-                        case 4 => {
+                        case 3 => {
                           newDisplay.update(idx, display2);
-                          display3.update(idx, newDisplay);
+                          display3 = withRecomputedSizes(newDisplay, 4, idx);
                           display = display4
                         }
-                        case 5 => {
+                        case 4 => {
                           newDisplay.update(idx, display3);
-                          display4.update(idx, newDisplay);
-                          display = display5
-                        }
-                        case 6 => {
-                          newDisplay.update(idx, display4);
-                          display5.update(idx, newDisplay)
+                          display4 = withRecomputedSizes(newDisplay, 5, idx)
                         }
                       };
-                      currentDepth.+=(1)
+                      currentLevel.+=(1)
                     }
-                  
+                   while (currentLevel.<(_depth)) 
                 }
               else
                 ()
             };
-            final private[immutable] def copyDisplays(_depth: Int, _focus: Int): Unit = _depth match {
-              case 1 => ()
-              case 2 => {
-                var idx = _focus.>>(7).&(127);
-                display1 = copyOf(display1, idx.+(1), idx.+(2))
+            final private[immutable] def copyDisplays(_depth: Int, _focus: Int): Unit = if ((2).<=(_depth))
+              {
+                if ((3).<=(_depth))
+                  {
+                    if ((4).<=(_depth))
+                      {
+                        if ((5).<=(_depth))
+                          {
+                            val idx4 = _focus.>>(28).&(127).+(1);
+                            display4 = copyOf(display4, idx4, idx4.+(1))
+                          }
+                        else
+                          ();
+                        val idx3 = _focus.>>(21).&(127).+(1);
+                        display3 = copyOf(display3, idx3, idx3.+(1))
+                      }
+                    else
+                      ();
+                    val idx2 = _focus.>>(14).&(127).+(1);
+                    display2 = copyOf(display2, idx2, idx2.+(1))
+                  }
+                else
+                  ();
+                val idx1 = _focus.>>(7).&(127).+(1);
+                display1 = copyOf(display1, idx1, idx1.+(1))
               }
+            else
+              ();
+            final private[immutable] def copyDisplaysAndNullFocusedBranch(_depth: Int, _focus: Int): Unit = _depth match {
+              case 2 => display1 = copyOfAndNull(display1, _focus.>>(7).&(127))
               case 3 => {
-                var idx = _focus.>>(7).&(127);
-                display1 = copyOf(display1, idx.+(1), idx.+(2));
-                idx = _focus.>>(14).&(127);
-                display2 = copyOf(display2, idx.+(1), idx.+(2))
+                display1 = copyOfAndNull(display1, _focus.>>(7).&(127));
+                display2 = copyOfAndNull(display2, _focus.>>(14).&(127))
               }
               case 4 => {
-                var idx = _focus.>>(7).&(127);
-                display1 = copyOf(display1, idx.+(1), idx.+(2));
-                idx = _focus.>>(14).&(127);
-                display2 = copyOf(display2, idx.+(1), idx.+(2));
-                idx = _focus.>>(21).&(127);
-                display3 = copyOf(display3, idx.+(1), idx.+(2))
+                display1 = copyOfAndNull(display1, _focus.>>(7).&(127));
+                display2 = copyOfAndNull(display2, _focus.>>(14).&(127));
+                display3 = copyOfAndNull(display3, _focus.>>(21).&(127))
               }
               case 5 => {
-                var idx = _focus.>>(7).&(127);
-                display1 = copyOf(display1, idx.+(1), idx.+(2));
-                idx = _focus.>>(14).&(127);
-                display2 = copyOf(display2, idx.+(1), idx.+(2));
-                idx = _focus.>>(21).&(127);
-                display3 = copyOf(display3, idx.+(1), idx.+(2));
-                idx = _focus.>>(28).&(127);
-                display4 = copyOf(display4, idx.+(1), idx.+(2))
+                display1 = copyOfAndNull(display1, _focus.>>(7).&(127));
+                display2 = copyOfAndNull(display2, _focus.>>(14).&(127));
+                display3 = copyOfAndNull(display3, _focus.>>(21).&(127));
+                display4 = copyOfAndNull(display4, _focus.>>(28).&(127))
               }
-              case 6 => {
-                var idx = _focus.>>(7).&(127);
-                display1 = copyOf(display1, idx.+(1), idx.+(2));
-                idx = _focus.>>(14).&(127);
-                display2 = copyOf(display2, idx.+(1), idx.+(2));
-                idx = _focus.>>(21).&(127);
-                display3 = copyOf(display3, idx.+(1), idx.+(2));
-                idx = _focus.>>(28).&(127);
-                display4 = copyOf(display4, idx.+(1), idx.+(2));
-                idx = _focus.>>(35).&(127);
-                display5 = copyOf(display5, idx.+(1), idx.+(2))
+            };
+            final private[immutable] def copyDisplaysAndStabilizeDisplayPath(_depth: Int, _focus: Int): Unit = _depth match {
+              case 1 => ()
+              case 2 => {
+                val d1: Array[AnyRef] = copyOf(display1);
+                d1.update(_focus.>>(7).&(127), display0);
+                display1 = d1
+              }
+              case 3 => {
+                val d1: Array[AnyRef] = copyOf(display1);
+                d1.update(_focus.>>(7).&(127), display0);
+                display1 = d1;
+                val d2: Array[AnyRef] = copyOf(display2);
+                d2.update(_focus.>>(14).&(127), d1);
+                display2 = d2
+              }
+              case 4 => {
+                val d1: Array[AnyRef] = copyOf(display1);
+                d1.update(_focus.>>(7).&(127), display0);
+                display1 = d1;
+                val d2: Array[AnyRef] = copyOf(display2);
+                d2.update(_focus.>>(14).&(127), d1);
+                display2 = d2;
+                val d3: Array[AnyRef] = copyOf(display3);
+                d3.update(_focus.>>(21).&(127), d2);
+                display3 = d3
+              }
+              case 5 => {
+                val d1: Array[AnyRef] = copyOf(display1);
+                d1.update(_focus.>>(7).&(127), display0);
+                display1 = d1;
+                val d2: Array[AnyRef] = copyOf(display2);
+                d2.update(_focus.>>(14).&(127), d1);
+                display2 = d2;
+                val d3: Array[AnyRef] = copyOf(display3);
+                d3.update(_focus.>>(21).&(127), d2);
+                display3 = d3;
+                val d4: Array[AnyRef] = copyOf(display4);
+                d4.update(_focus.>>(28).&(127), d3);
+                display4 = d4
               }
             };
             final private[immutable] def copyDisplaysTop(currentDepth: Int, _focusRelax: Int): Unit = {
@@ -2048,47 +2181,38 @@ else
                       val cutIndex = _focusRelax.>>(28).&(127);
                       display4 = copyOf(display4, cutIndex.+(1), cutIndex.+(2))
                     }
-                    case 6 => {
-                      val cutIndex = _focusRelax.>>(35).&(127);
-                      display5 = copyOf(display5, cutIndex.+(1), cutIndex.+(2))
-                    }
                     case _ => throw new IllegalStateException()
                   };
                   _currentDepth.+=(1)
                 }
               
             };
-            final private[immutable] def stabilizeDisplayPath(_depth: Int, _focus: Int): Unit = {
-              assert((0).<(_depth));
-              assert(_depth.<=(this.depth));
-              _depth match {
-                case 1 => ()
-                case 2 => display1.update(_focus.>>(7).&(127), display0)
-                case 3 => {
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
-                case 4 => {
-                  display3.update(_focus.>>(21).&(127), display2);
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
-                case 5 => {
-                  display4.update(_focus.>>(28).&(127), display3);
-                  display3.update(_focus.>>(21).&(127), display2);
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
-                case 6 => {
-                  display5.update(_focus.>>(35).&(127), display4);
-                  display4.update(_focus.>>(28).&(127), display3);
-                  display3.update(_focus.>>(21).&(127), display2);
-                  display2.update(_focus.>>(14).&(127), display1);
-                  display1.update(_focus.>>(7).&(127), display0)
-                }
+            final private[immutable] def stabilizeDisplayPath(_depth: Int, _focus: Int): Unit = if ((1).<(_depth))
+              {
+                val d1 = display1;
+                d1.update(_focus.>>(7).&(127), display0);
+                if ((2).<(_depth))
+                  {
+                    val d2 = display2;
+                    d2.update(_focus.>>(14).&(127), d1);
+                    if ((3).<(_depth))
+                      {
+                        val d3 = display3;
+                        d3.update(_focus.>>(21).&(127), d2);
+                        if (_depth.==(5))
+                          display4.update(_focus.>>(28).&(127), d3)
+                        else
+                          ()
+                      }
+                    else
+                      ()
+                  }
+                else
+                  ()
               }
-            };
-            private[immutable] def cleanTop(cutIndex: Int): Unit = this.depth match {
+            else
+              ();
+            private[immutable] def cleanTopTake(cutIndex: Int): Unit = this.depth match {
               case 2 => if (cutIndex.>>(7).==(0))
                 {
                   display1 = null;
@@ -2153,45 +2277,313 @@ else
                 }
               else
                 this.depth = 5
-              case 6 => if (cutIndex.>>(35).==(0))
+            };
+            private[immutable] def cleanTopDrop(cutIndex: Int): Unit = this.depth match {
+              case 2 => if (cutIndex.>>(7).==(display1.length.-(2)))
                 {
-                  display5 = null;
-                  if (cutIndex.>>(28).==(0))
-                    {
-                      display4 = null;
-                      if (cutIndex.>>(21).==(0))
-                        {
-                          display3 = null;
-                          if (cutIndex.>>(14).==(0))
-                            {
-                              display2 = null;
-                              if (cutIndex.>>(7).==(0))
-                                {
-                                  display1 = null;
-                                  this.depth = 1
-                                }
-                              else
-                                this.depth = 2
-                            }
-                          else
-                            this.depth = 3
-                        }
-                      else
-                        this.depth = 4
-                    }
-                  else
-                    this.depth = 5
+                  display1 = null;
+                  this.depth = 1
                 }
               else
-                this.depth = 6
+                this.depth = 2
+              case 3 => if (cutIndex.>>(14).==(display2.length.-(2)))
+                {
+                  display2 = null;
+                  if (cutIndex.>>(7).==(display1.length.-(2)))
+                    {
+                      display1 = null;
+                      this.depth = 1
+                    }
+                  else
+                    this.depth = 2
+                }
+              else
+                this.depth = 3
+              case 4 => if (cutIndex.>>(21).==(display3.length.-(2)))
+                {
+                  display3 = null;
+                  if (cutIndex.>>(14).==(display2.length.-(2)))
+                    {
+                      display2 = null;
+                      if (cutIndex.>>(7).==(display1.length.-(2)))
+                        {
+                          display1 = null;
+                          this.depth = 1
+                        }
+                      else
+                        this.depth = 2
+                    }
+                  else
+                    this.depth = 3
+                }
+              else
+                this.depth = 4
+              case 5 => if (cutIndex.>>(28).==(display4.length.-(2)))
+                {
+                  display4 = null;
+                  if (cutIndex.>>(21).==(display3.length.-(2)))
+                    {
+                      display3 = null;
+                      if (cutIndex.>>(14).==(display2.length.-(2)))
+                        {
+                          display2 = null;
+                          if (cutIndex.>>(7).==(display1.length.-(2)))
+                            {
+                              display1 = null;
+                              this.depth = 1
+                            }
+                          else
+                            this.depth = 2
+                        }
+                      else
+                        this.depth = 3
+                    }
+                  else
+                    this.depth = 4
+                }
+              else
+                this.depth = 5
+            };
+            final private[immutable] def copyOf(array: Array[AnyRef]) = {
+              assert(array.!=(null));
+              val len = array.length;
+              val newArray = new Array[AnyRef](len);
+              System.arraycopy(array, 0, newArray, 0, len);
+              newArray
             };
             final private[immutable] def copyOf(array: Array[AnyRef], numElements: Int, newSize: Int) = {
               assert(array.!=(null));
+              assert((0).<=(numElements));
               assert(numElements.<=(newSize));
               assert(numElements.<=(array.length));
               val newArray = new Array[AnyRef](newSize);
-              Platform.arraycopy(array, 0, newArray, 0, numElements);
+              System.arraycopy(array, 0, newArray, 0, numElements);
               newArray
+            };
+            final private[immutable] def copyOfAndNull(array: Array[AnyRef], nullIndex: Int) = {
+              assert(array.!=(null));
+              assert((0).<=(nullIndex));
+              assert(nullIndex.<=(array.length));
+              val len = array.length;
+              val newArray = new Array[AnyRef](len);
+              System.arraycopy(array, 0, newArray, 0, len.-(1));
+              newArray.update(nullIndex, null);
+              val sizes = array(len.-(1)).asInstanceOf[Array[Int]];
+              if (sizes.!=(null))
+                newArray.update(len.-(1), makeTransientSizes(sizes, nullIndex))
+              else
+                ();
+              newArray
+            };
+            final private def makeNewRoot0(node: Array[AnyRef]) = {
+              val newRoot = new Array[AnyRef](3);
+              newRoot.update(0, node);
+              val dLen = node.length;
+              val dSizes = node(dLen.-(1));
+              if (dSizes.!=(null))
+                {
+                  val newRootSizes = new Array[Int](2);
+                  val dSize = dSizes.asInstanceOf[Array[Int]](dLen.-(2));
+                  newRootSizes.update(0, dSize);
+                  newRootSizes.update(1, dSize);
+                  newRoot.update(2, newRootSizes)
+                }
+              else
+                ();
+              newRoot
+            };
+            final private def makeNewRoot1(node: Array[AnyRef], currentDepth: Int) = {
+              val dSize = treeSize(node, currentDepth.-(1));
+              val newRootSizes = new Array[Int](2);
+              newRootSizes.update(1, dSize);
+              val newRoot = new Array[AnyRef](3);
+              newRoot.update(1, node);
+              newRoot.update(2, newRootSizes);
+              newRoot
+            };
+            final private[immutable] def makeTransientSizes(oldSizes: Array[Int], transientBranchIndex: Int) = {
+              val newSizes = new Array[Int](oldSizes.length);
+              var delta = oldSizes(transientBranchIndex);
+              if (transientBranchIndex.>(0))
+                {
+                  delta.-=(oldSizes(transientBranchIndex.-(1)));
+                  if (oldSizes.eq(newSizes).`unary_!`)
+                    System.arraycopy(oldSizes, 0, newSizes, 0, transientBranchIndex)
+                  else
+                    ()
+                }
+              else
+                ();
+              var i = transientBranchIndex;
+              val len = newSizes.length;
+              while (i.<(len)) 
+                {
+                  newSizes.update(i, oldSizes(i).-(delta));
+                  i.+=(1)
+                }
+              ;
+              newSizes
+            };
+            final private def copyAndIncRightRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int) = {
+              val len = node.length;
+              val newRoot = copyOf(node, len.-(1), len.+(1));
+              val oldSizes = node(len.-(1)).asInstanceOf[Array[Int]];
+              if (oldSizes.!=(null))
+                {
+                  val newSizes = new Array[Int](len);
+                  System.arraycopy(oldSizes, 0, newSizes, 0, len.-(1));
+                  if (transient)
+                    newSizes.update(len.-(1), (1).<<((7).*(currentLevel)))
+                  else
+                    ();
+                  newSizes.update(len.-(1), newSizes(len.-(2)));
+                  newRoot.update(len, newSizes)
+                }
+              else
+                ();
+              newRoot
+            };
+            final private def copyAndIncLeftRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int) = {
+              val len = node.length;
+              val newRoot = new Array[AnyRef](len.+(1));
+              System.arraycopy(node, 0, newRoot, 1, len.-(1));
+              val oldSizes = node(len.-(1));
+              val newSizes = new Array[Int](len);
+              if (oldSizes.!=(null))
+                if (transient)
+                  System.arraycopy(oldSizes, 1, newSizes, 2, len.-(2))
+                else
+                  System.arraycopy(oldSizes, 0, newSizes, 1, len.-(1))
+              else
+                {
+                  val subTreeSize = (1).<<((7).*(currentLevel));
+                  var acc = 0;
+                  var i = 1;
+                  while (i.<(len.-(1))) 
+                    {
+                      acc.+=(subTreeSize);
+                      newSizes.update(i, acc);
+                      i.+=(1)
+                    }
+                  ;
+                  newSizes.update(i, acc.+(treeSize(node(node.length.-(2)).asInstanceOf[Array[AnyRef]], currentLevel)))
+                };
+              newRoot.update(len, newSizes);
+              newRoot
+            };
+            final private[immutable] def withComputedSizes1(node: Array[AnyRef]) = {
+              var i = 0;
+              var acc = 0;
+              val end = node.length.-(1);
+              if (end.>(1))
+                {
+                  val sizes = new Array[Int](end);
+                  while (i.<(end)) 
+                    {
+                      acc.+=(node(i).asInstanceOf[Array[AnyRef]].length);
+                      sizes.update(i, acc);
+                      i.+=(1)
+                    }
+                  ;
+                  if (sizes(end.-(2)).!=(end.-(1).<<(7)))
+                    node.update(end, sizes)
+                  else
+                    ()
+                }
+              else
+                ();
+              node
+            };
+            final private[immutable] def withComputedSizes(node: Array[AnyRef], currentDepth: Int) = {
+              assert(node.!=(null));
+              assert((1).<(currentDepth));
+              var i = 0;
+              var acc = 0;
+              val end = node.length.-(1);
+              if (end.>(1))
+                {
+                  val sizes = new Array[Int](end);
+                  while (i.<(end)) 
+                    {
+                      acc.+=(treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth.-(1)));
+                      sizes.update(i, acc);
+                      i.+=(1)
+                    }
+                  ;
+                  if (notBalanced(node, sizes, currentDepth, end))
+                    node.update(end, sizes)
+                  else
+                    ()
+                }
+              else
+                if (end.==(1).&&(currentDepth.>(2)))
+                  {
+                    val child = node(0).asInstanceOf[Array[AnyRef]];
+                    val childSizes = child(child.length.-(1)).asInstanceOf[Array[Int]];
+                    if (childSizes.!=(null))
+                      if (childSizes.length.!=(1))
+                        {
+                          val sizes = new Array[Int](1);
+                          sizes.update(0, childSizes(childSizes.length.-(1)));
+                          node.update(end, sizes)
+                        }
+                      else
+                        node.update(end, childSizes)
+                    else
+                      ()
+                  }
+                else
+                  ();
+              node
+            };
+            final private def withRecomputedSizes(node: Array[AnyRef], currentDepth: Int, branchToUpdate: Int) = {
+              assert(node.!=(null));
+              assert((1).<(currentDepth));
+              val end = node.length.-(1);
+              val oldSizes = node(end).asInstanceOf[Array[Int]];
+              if (oldSizes.!=(null))
+                {
+                  val newSizes = new Array[Int](end);
+                  val delta = treeSize(node(branchToUpdate).asInstanceOf[Array[AnyRef]], currentDepth.-(1));
+                  if (branchToUpdate.>(0))
+                    System.arraycopy(oldSizes, 0, newSizes, 0, branchToUpdate)
+                  else
+                    ();
+                  var i = branchToUpdate;
+                  while (i.<(end)) 
+                    {
+                      newSizes.update(i, oldSizes(i).+(delta));
+                      i.+=(1)
+                    }
+                  ;
+                  if (notBalanced(node, newSizes, currentDepth, end))
+                    node.update(end, newSizes)
+                  else
+                    ()
+                }
+              else
+                ();
+              node
+            };
+            @inline final private def notBalanced(node: Array[AnyRef], sizes: Array[Int], currentDepth: Int, end: Int) = sizes(end.-(2)).!=(end.-(1).<<((7).*(currentDepth.-(1)))).||(currentDepth.>(2).&&({
+              val last = node(end.-(1)).asInstanceOf[Array[AnyRef]];
+              last(last.length.-(1)).!=(null)
+            }));
+            final private def treeSize(tree: Array[AnyRef], currentDepth: Int) = {
+              def treeSizeRec(node: Array[AnyRef], currentDepth: Int, acc: Int): Int = if (currentDepth.==(1))
+                acc.+(node.length)
+              else
+                {
+                  val treeSizes = node(node.length.-(1)).asInstanceOf[Array[Int]];
+                  if (treeSizes.!=(null))
+                    acc.+(treeSizes(treeSizes.length.-(1)))
+                  else
+                    {
+                      val len = node.length;
+                      treeSizeRec(node(len.-(2)).asInstanceOf[Array[AnyRef]], currentDepth.-(1), acc.+(len.-(2).*((1).<<((7).*(currentDepth.-(1))))))
+                    }
+                };
+              treeSizeRec(tree, currentDepth, 0)
             };
             final private[immutable] def getElem(index: Int, xor: Int): A = if (xor.<(128))
               getElem0(display0, index)
@@ -2208,16 +2600,44 @@ else
                     if (xor.<(8))
                       getElem4(display4, index)
                     else
-                      if (xor.<(1024))
-                        getElem5(display5, index)
-                      else
-                        throw new IllegalArgumentException();
-            final private def getElem0(block: Array[AnyRef], index: Int): A = display0(index.&(127)).asInstanceOf[A];
-            final private def getElem1(block: Array[AnyRef], index: Int): A = display1(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
-            final private def getElem2(block: Array[AnyRef], index: Int): A = display2(index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
-            final private def getElem3(block: Array[AnyRef], index: Int): A = display3(index.>>(21).&(127)).asInstanceOf[Array[AnyRef]](index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
-            final private def getElem4(block: Array[AnyRef], index: Int): A = display4(index.>>(28).&(127)).asInstanceOf[Array[AnyRef]](index.>>(21).&(127)).asInstanceOf[Array[AnyRef]](index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
-            final private def getElem5(block: Array[AnyRef], index: Int): A = display5(index.>>(35).&(127)).asInstanceOf[Array[AnyRef]](index.>>(28).&(127)).asInstanceOf[Array[AnyRef]](index.>>(21).&(127)).asInstanceOf[Array[AnyRef]](index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A]
+                      throw new IllegalArgumentException();
+            final private def getElem0(block: Array[AnyRef], index: Int): A = block(index.&(127)).asInstanceOf[A];
+            final private def getElem1(block: Array[AnyRef], index: Int): A = block(index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
+            final private def getElem2(block: Array[AnyRef], index: Int): A = block(index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
+            final private def getElem3(block: Array[AnyRef], index: Int): A = block(index.>>(21).&(127)).asInstanceOf[Array[AnyRef]](index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
+            final private def getElem4(block: Array[AnyRef], index: Int): A = block(index.>>(28).&(127)).asInstanceOf[Array[AnyRef]](index.>>(21).&(127)).asInstanceOf[Array[AnyRef]](index.>>(14).&(127)).asInstanceOf[Array[AnyRef]](index.>>(7).&(127)).asInstanceOf[Array[AnyRef]](index.&(127)).asInstanceOf[A];
+            private[immutable] def debugToSting(): String = {
+              val sb = new StringBuilder();
+              sb.append("RRBVector (\n");
+              sb.append("\t".+("display0").+(" = ").+(display0).+(" ").+(if (display0.!=(null))
+  display0.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display1").+(" = ").+(display1).+(" ").+(if (display1.!=(null))
+  display1.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display2").+(" = ").+(display2).+(" ").+(if (display2.!=(null))
+  display2.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display3").+(" = ").+(display3).+(" ").+(if (display3.!=(null))
+  display3.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\t".+("display4").+(" = ").+(display4).+(" ").+(if (display4.!=(null))
+  display4.mkString("[", ", ", "]")
+else
+  "").+("\n"));
+              sb.append("\tdepth = ".+(depth).+("\n"));
+              sb.append("\tendIndex = ".+(endIndex).+("\n"));
+              sb.append("\tfocus = ".+(focus).+("\n"));
+              sb.append("\tfocusStart = ".+(focusStart).+("\n"));
+              sb.append("\tfocusEnd = ".+(focusEnd).+("\n"));
+              sb.append("\tfocusRelax = ".+(focusRelax).+("\n"));
+              sb.append(")");
+              sb.toString
+            }
           }
         }
       }
@@ -2265,18 +2685,28 @@ package scala {
                   val rem = remaining;
                   if (rem.>=(2))
                     {
-                      val splitSize = (1).<<((5).*((31).-(java.lang.Integer.numberOfLeadingZeros(rem))./(7).-(1)));
-                      val splitted = new ArrayBuffer[ParRRBVectorIterator_q_128_asserted]();
-                      var currentPos = _end.-(remaining);
-                      while (currentPos.<(rem)) 
-                        {
-                          val pit = new ParRRBVectorIterator_q_128_asserted(currentPos, math.min(currentPos.+(splitSize), _end));
-                          pit.initIteratorFrom(this);
-                          splitted.+=(pit);
-                          currentPos.+=(splitSize)
-                        }
-                      ;
-                      splitted
+                      val _half = rem./(2);
+                      val _splitModulo = if (rem.<=(128))
+                        1
+                      else
+                        if (rem.<=(16384))
+                          128
+                        else
+                          if (rem.<=(2097152))
+                            16384
+                          else
+                            if (rem.<=(268435456))
+                              2097152
+                            else
+                              268435456;
+                      val _halfAdjusted = if (_half.>(_splitModulo))
+                        _half.-(_half.%(_splitModulo))
+                      else
+                        if (_splitModulo.<(_end))
+                          _splitModulo
+                        else
+                          _half;
+                      psplit(_halfAdjusted, rem.-(_halfAdjusted))
                     }
                   else
                     Seq(this)
@@ -2318,9 +2748,10 @@ package scala {
                 this
               else
                 {
-                  val that = other.asInstanceOf[ParRRBVectorCombinator_q_128_asserted[B]];
-                  builder.++=(that.builder.result());
-                  this
+                  val newCombiner = new ParRRBVectorCombinator_q_128_asserted[A]();
+                  newCombiner.++=(this.builder.result());
+                  newCombiner.++=(other.asInstanceOf[ParRRBVectorCombinator_q_128_asserted[A]].builder.result());
+                  newCombiner
                 }
             }
           }

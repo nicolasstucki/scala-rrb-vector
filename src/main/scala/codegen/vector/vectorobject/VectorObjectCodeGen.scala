@@ -11,5 +11,6 @@ trait VectorObjectCodeGen {
 
     // Methods names
     val o_empty = TermName("empty")
+    val o_emptyTransientBlock = TermName("emptyTransientBlock")
 
 }

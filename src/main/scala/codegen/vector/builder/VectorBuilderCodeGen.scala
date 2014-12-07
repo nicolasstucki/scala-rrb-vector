@@ -10,24 +10,27 @@ import scala.reflect.runtime.universe._
 trait VectorBuilderCodeGen {
     self: VectorPointerCodeGen with VectorCodeGen with VectorProperties =>
 
+    private def b_appendOrConcatThreshold = 1024
+
     // Field names
 
     protected final val b_blockIndex = TermName("blockIndex")
-    protected final val b_lo = TermName("lo")
 
 
     // Method names
 
+    protected final val b_lo = TermName("lo")
     protected final val b_plusEq = TermName("+=")
     protected final val b_plusPlusEq = TermName("++=")
     protected final val b_result = TermName("result")
     protected final val b_clear = TermName("clear")
     protected final val b_acc = TermName("acc")
     protected final val b_currentResult = TermName("currentResult")
-    protected final val b_clearCurrent = TermName("clearCurrent")
 
 
     // Method definitions
+
+    protected final val b_clearCurrent = TermName("clearCurrent")
 
     protected def b_endIndexCode() = {
         q"""
@@ -58,13 +61,17 @@ trait VectorBuilderCodeGen {
              if ($xs.nonEmpty) {
                 if ($xs.isInstanceOf[$vectorClassName[$A]]) {
                     val thatVec = $xs.asInstanceOf[$vectorClassName[$A]]
-                    if ($endIndex != 0) {
-                        $b_acc = this.result() ++ $xs
-                        this.clearCurrent()
-                    } else if ($b_acc != null) {
-                        $b_acc = $b_acc ++ thatVec
+                    if (thatVec.length > ${b_appendOrConcatThreshold}) {
+                        if ($endIndex != 0) {
+                            $b_acc = this.result() ++ $xs
+                            this.$b_clearCurrent()
+                        } else if ($b_acc != null) {
+                            $b_acc = $b_acc ++ thatVec
+                        } else {
+                            $b_acc = thatVec
+                        }
                     } else {
-                        $b_acc = thatVec
+                        super.++=($xs)
                     }
                 } else {
                     super.++=($xs)
@@ -75,10 +82,15 @@ trait VectorBuilderCodeGen {
     }
 
     protected def resultCode() = {
+        val current = TermName("current")
+        val resultVector = TermName("resultVector")
         q"""
-            val current = $b_currentResult()
-            if ($b_acc == null) current
-            else $b_acc ++ current
+            val $current = $b_currentResult()
+            val $resultVector =
+                if ($b_acc == null) $current
+                else $b_acc ++ $current
+            ..${assertions(q"$resultVector.$v_assertVectorInvariant()")}
+            $resultVector
          """
     }
 
@@ -120,7 +132,7 @@ trait VectorBuilderCodeGen {
          """
     }
     protected def clearCurrentCode() = {
-        def nullDisplays = (1 to 5) map (i => q"${displayNameAt(i)} = null")
+        def nullDisplays = (1 to maxTreeLevel) map (i => q"${displayNameAt(i)} = null")
         q"""
             ${displayAt(0)} = new Array[AnyRef]($blockWidth)
             ..$nullDisplays

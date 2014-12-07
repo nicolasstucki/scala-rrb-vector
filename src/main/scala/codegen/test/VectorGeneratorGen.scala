@@ -1,10 +1,12 @@
 package codegen
 package test
 
+import codegen.vector.iterator.VectorIteratorCodeGen
+
 import scala.reflect.runtime.universe._
 
 trait VectorGeneratorGen {
-    self: VectorProperties =>
+    self: VectorProperties with VectorIteratorCodeGen =>
 
     def generateVectorGeneratorClass() = {
         inPackages(
@@ -17,11 +19,19 @@ trait VectorGeneratorGen {
 
                     final def vectorClassName: String = ${vectorName()}
 
+                    override final def newBuilder() = $vectorObjectName.newBuilder[$A]
+
                     override final def tabulatedVector(n: Int): Vec = $vectorObjectName.tabulate(n)(element)
 
                     override final def rangedVector(start: Int, end: Int): Vec = $vectorObjectName.range(start, end) map element
 
                     override final def emptyVector: Vec = $vectorObjectName.empty[A]
+
+                    override def iterator(vec: Vec, start: Int, end: Int) = {
+                        val it = new ${vectorIteratorClassName}[$A](start, end)
+                        it.$it_initIteratorFrom(vec)
+                        it
+                    }
 
                     override final def plus(vec: Vec, elem: A): Vec = vec :+ elem
 

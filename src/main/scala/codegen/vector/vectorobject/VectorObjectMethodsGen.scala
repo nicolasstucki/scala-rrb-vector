@@ -12,7 +12,8 @@ trait VectorObjectMethodsGen {
             newBuilderDef(),
             canBuildFromDef(),
             q"private lazy val EMPTY_VECTOR = new $vectorClassName[Nothing](0)",
-            q"override def $o_empty[$A]: $vectorClassName[$A] = EMPTY_VECTOR"
+            q"override def $o_empty[$A]: $vectorClassName[$A] = EMPTY_VECTOR",
+            q"private[immutable] final lazy val $o_emptyTransientBlock = new Array[AnyRef](${1 + blockInvariants})"
         )
     }
 

@@ -1,4 +1,4 @@
-package scala.collection.immutable.vectorbenchmarks.rrbvector.balanced
+package scala.collection.immutable.vectorbenchmarks.rrbvector.unbalanced1
 
 import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.BuilderBenchmarks

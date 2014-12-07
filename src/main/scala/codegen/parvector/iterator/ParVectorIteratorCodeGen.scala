@@ -30,19 +30,19 @@ trait ParVectorIteratorCodeGen {
     }
 
     protected def splitCode(): Tree = {
+        def splitModulo(lvl: Int): Tree = {
+            q"""
+                if (rem <= ${1 << (blockIndexBits * lvl)}) ${1 << (blockIndexBits * (lvl - 1))}
+                else ${if (lvl < maxTreeLevel) splitModulo(lvl + 1) else q"${1 << (blockIndexBits * lvl)}"}
+             """
+        }
         q"""
             val rem = $pit_remaining
             if (rem >= 2) {
-                val splitSize = 1 << (5*(${getIndexLevel(q"rem")}-1))
-                val splitted = new ArrayBuffer[$parVectorIteratorClassName]
-                var currentPos = $pit_end - $pit_remaining
-                while (currentPos < rem) {
-                    val pit = new $parVectorIteratorClassName(currentPos, math.min(currentPos + splitSize, $pit_end))
-                    pit.$it_initIteratorFrom(this)
-                    splitted += pit
-                    currentPos += splitSize
-                }
-                splitted
+                val _half = rem / 2
+                val _splitModulo = ${splitModulo(1)}
+                val _halfAdjusted = if (_half > _splitModulo) _half - _half % _splitModulo else if (_splitModulo < _end) _splitModulo else _half
+                psplit(_halfAdjusted, rem - _halfAdjusted)
             }
             else Seq(this)
          """

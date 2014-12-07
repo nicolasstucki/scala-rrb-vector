@@ -2,11 +2,13 @@ package codegen
 package vector
 package vectorpointer
 
+import codegen.vector.vectorobject.VectorObjectCodeGen
+
 import scala.annotation.tailrec
 import scala.reflect.runtime.universe._
 
 trait VectorPointerCodeGen {
-    self: VectorProperties =>
+    self: VectorProperties with VectorObjectCodeGen =>
 
     // Field names
 
@@ -35,6 +37,7 @@ trait VectorPointerCodeGen {
 
     protected[vectorpointer] val gotoPosFromRoot = TermName("gotoPosFromRoot")
     val setupNewBlockInNextBranch = TermName("setupNewBlockInNextBranch")
+    val setupNewBlockInInitBranch = TermName("setupNewBlockInInitBranch")
 
     val getElement = TermName("getElem")
 
@@ -46,13 +49,34 @@ trait VectorPointerCodeGen {
     val gotoPrevBlockStart = TermName("gotoPrevBlockStart")
     val gotoNextBlockStartWritable = TermName("gotoNextBlockStartWritable")
 
-    val stabilize = TermName("stabilize")
+    val normalize = TermName("normalize")
     val stabilizeDisplayPath = TermName("stabilizeDisplayPath")
-    val cleanTop = TermName("cleanTop")
+    val cleanTopTake = TermName("cleanTopTake")
+    val cleanTopDrop = TermName("cleanTopDrop")
 
     val copyDisplays = TermName("copyDisplays")
+    val copyDisplaysAndNullFocusedBranch = TermName("copyDisplaysAndNullFocusedBranch")
+    val copyDisplaysAndStabilizeDisplayPath = TermName("copyDisplaysAndStabilizeDisplayPath")
     val copyDisplaysTop = TermName("copyDisplaysTop")
     val copyOf = TermName("copyOf")
+    val copyOfRight = TermName("copyOfRight")
+    val copyOfAndNull = TermName("copyOfAndNull")
+
+    val makeNewRoot0 = TermName("makeNewRoot0")
+    val makeNewRoot1 = TermName("makeNewRoot1")
+    val makeTransientSizes = TermName("makeTransientSizes")
+
+    val copyAndIncRightRoot = TermName("copyAndIncRightRoot")
+    val copyAndIncLeftRoot = TermName("copyAndIncLeftRoot")
+
+    val withComputedSizes1 = TermName("withComputedSizes1")
+    val withComputedSizes = TermName("withComputedSizes")
+    val withRecomputedSizes = TermName("withRecomputedSizes")
+    val notBalanced = TermName("notBalanced")
+
+    val treeSize = TermName("treeSize")
+
+    val debugToString = TermName("debugToSting")
 
     // Method definitions
 
@@ -75,8 +99,8 @@ trait VectorPointerCodeGen {
 
     protected def initFromRootCode(rootParam: TermName, depthParam: TermName): Tree = {
         q"""
-            ..${assertions(q"$rootParam != null", q"0 < $depthParam", q"$depthParam <=6")}
-            ${matchOnInt(q"$depthParam", 1 to 6, d => q"${displayAt(d - 1)} = $rootParam")}
+            ..${assertions(q"$rootParam != null", q"0 < $depthParam", q"$depthParam <= $maxTreeDepth")}
+            ${matchOnInt(q"$depthParam", 1 to maxTreeDepth, d => q"${displayAt(d - 1)} = $rootParam")}
             this.$depth = $depthParam
             $focusEnd = $focusStart
             $focusOn(0)
@@ -91,7 +115,7 @@ trait VectorPointerCodeGen {
         q"""
             ..${assertions(q"$thatParam != null")}
             $depth = $thatParam.$depth
-            ..${matchOnInt(q"$thatParam.$depth", 0 to 6, depthCase, Some(q"throw new IllegalStateException"))}
+            ..${matchOnInt(q"$thatParam.$depth", 0 to maxTreeDepth, depthCase, Some(q"throw new IllegalStateException"))}
         """
     }
 
@@ -107,10 +131,10 @@ trait VectorPointerCodeGen {
 
     def rootCode(depth: Tree) = depth match {
         case q"${d: Int}" =>
-            if (0 <= d && d < 6) displayAt(d - 1)
+            if (0 <= d && d < maxTreeDepth) displayAt(d - 1)
             else q"throw new IllegalStateException"
         case _ =>
-            matchOnInt(q"$depth", 0 to 6, d => if (d == 0) q"null" else displayAt(d - 1), Some(q"throw new IllegalStateException"))
+            matchOnInt(q"$depth", 0 to maxTreeDepth, d => if (d == 0) q"null" else displayAt(d - 1), Some(q"throw new IllegalStateException"))
     }
 
     private[vectorpointer] def focusOnCode(indexParam: TermName): Tree = {
@@ -121,7 +145,7 @@ trait VectorPointerCodeGen {
                 if (xor >= $blockWidth) {
                     $gotoPos(indexInFocus, xor)
                 }
-                $focus = $indexParam
+                $focus = indexInFocus
             } else {
                 $gotoPosFromRoot($indexParam)
             }
@@ -130,27 +154,23 @@ trait VectorPointerCodeGen {
 
     private[vectorpointer] def getElementFromRootCode(indexParam: TermName): Tree = {
         q"""
-            ..${assertions(q"2 <= $depth", q"$depth <= 6")}
+            ..${assertions(q"0 <= $indexParam", q"1 < $depth", q"$depth <= $maxTreeDepth")}
             var indexInSubTree = $indexParam
             var currentDepth = $depth
-            var display: Array[AnyRef] = null
-            ${matchOnInt(q"currentDepth", 2 to 6, d => q"display = ${displayAt(d - 1)}")}
-            while (currentDepth > 1) {
-                val sizes = ${getBlockSizes(q"display")}
-                if (sizes == null) {
-                    val depthShift = $blockIndexBits * (currentDepth - 1)
-                    val idx = indexInSubTree >> depthShift
-                    indexInSubTree -= idx << depthShift
-                    display = display(idx).asInstanceOf[Array[AnyRef]]
-                } else {
-                    val sizesIdx = getIndexInSizes(sizes, indexInSubTree)
-                    if (sizesIdx != 0)
-                        indexInSubTree -= sizes(sizesIdx - 1)
-                    display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
-                }
+            var display: Array[AnyRef] = ${matchOnInt(q"currentDepth", 2 to maxTreeDepth, d => displayAt(d - 1))}
+            var sizes = ${getBlockSizes(q"display")}
+            do {
+                val sizesIdx = $getIndexInSizes(sizes, indexInSubTree)
+                if (sizesIdx != 0)
+                    indexInSubTree -= sizes(sizesIdx - 1)
+                display = display(sizesIdx).asInstanceOf[Array[AnyRef]]
+                if (currentDepth > 2)
+                    sizes = display(display.length - 1).asInstanceOf[Array[Int]]
+                else
+                    sizes = null
                 currentDepth -= 1
-            }
-            display(indexInSubTree).asInstanceOf[A]
+            } while (sizes != null)
+            ${matchOnInt(q"currentDepth", 1 to maxTreeDepth, d => q"${getElementI(d - 1)}(display, indexInSubTree)", Some(q"throw new IllegalStateException"))}
          """
     }
 
@@ -164,31 +184,29 @@ trait VectorPointerCodeGen {
          """
     }
 
-
     private[vectorpointer] def gotoPosFromRootCode(indexParam: TermName): Tree = {
         val currentStartIndex = TermName("_startIndex")
         val currentEndIndex = TermName("_endIndex")
         val currentDepth = TermName("currentDepth")
         val currentFocusRelax = TermName("_focusRelax")
         q"""
+            ..${assertions(q"0 <= $indexParam")}
             var $currentStartIndex: Int = 0
             var $currentEndIndex: Int = $endIndex
             var $currentDepth: Int = $depth
             var $currentFocusRelax: Int = 0
             var continue: Boolean = $currentDepth > 1
 
-            while (continue) {
-                ..${assertions(q"0 <= $currentStartIndex", q"$currentStartIndex <= $currentEndIndex", q"0 < $currentDepth")}
-                if ($currentDepth <= 1) {
-                    continue = false
-                } else {
-                    val display = ${matchOnInt(q"$currentDepth", 2 to 6, d => if (d == 0) q"null" else displayAt(d - 1), Some(q"throw new IllegalStateException"))}
+            if (continue) {
+                var display = ${matchOnInt(q"$currentDepth", 2 to maxTreeDepth, d => displayAt(d - 1), Some(q"throw new IllegalStateException"))}
+                do {
                     val sizes = ${getBlockSizes(q"display")}
                     if(sizes == null) {
                         continue = false
                     } else {
                         val is = $getIndexInSizes(sizes, $indexParam - $currentStartIndex)
-                        ${matchOnInt(q"$currentDepth", 2 to 6, d => q"${displayAt(d - 2)} = display(is).asInstanceOf[Array[AnyRef]]")}
+                        display = display(is).asInstanceOf[Array[AnyRef]]
+                        ${matchOnInt(q"$currentDepth", 2 to maxTreeDepth, d => if (d == 2) q"${displayAt(0)} = display; continue = false" else q"${displayAt(d - 2)} = display")}
                         if (is < sizes.length - 1)
                             $currentEndIndex = $currentStartIndex + sizes(is)
                         if (is != 0)
@@ -196,7 +214,7 @@ trait VectorPointerCodeGen {
                         $currentDepth -= 1
                         $currentFocusRelax |= (is << ($blockIndexBits * $currentDepth))
                     }
-                }
+                } while (continue)
             }
             val indexInFocus = $indexParam - $currentStartIndex
             $gotoPos(indexInFocus, 1 << ($blockIndexBits * ($currentDepth - 1)))
@@ -204,51 +222,278 @@ trait VectorPointerCodeGen {
          """
     }
 
-    private[vectorpointer] def setupNewBlockInNextBranchCode(indexParam: TermName, xorParam: TermName) = {
+
+    private[vectorpointer] def makeTransientSizesCode(oldSizes: TermName, transientBranchIndex: TermName) = {
+        q"""
+            val newSizes = new Array[Int]($oldSizes.length)
+            var delta = $oldSizes($transientBranchIndex)
+            if ($transientBranchIndex > 0) {
+                delta -= $oldSizes($transientBranchIndex - 1)
+                if (!$oldSizes.eq(newSizes))
+                    System.arraycopy($oldSizes, 0, newSizes, 0, $transientBranchIndex)
+            }
+            var i = $transientBranchIndex
+            val len = newSizes.length
+            while (i < len) {
+                newSizes(i) = $oldSizes(i) - delta
+                i += 1
+            }
+            newSizes
+         """
+    }
+
+
+    private[vectorpointer] def copyAndIncRightRootCode(node: TermName, transient: TermName, currentLevel: TermName) = {
+        q"""
+            val len = $node.length
+            val newRoot = $copyOf($node, len - 1, len + 1)
+            val oldSizes = $node(len - 1).asInstanceOf[Array[Int]]
+            if (oldSizes != null) {
+                val newSizes = new Array[Int](len)
+                System.arraycopy(oldSizes, 0, newSizes, 0, len - 1)
+                if ($transient) {
+                    newSizes(len - 1) = 1 << ($blockIndexBits * $currentLevel)
+                }
+                newSizes(len - 1) = newSizes(len - 2)
+                newRoot(len) = newSizes
+            }
+            newRoot
+         """
+    }
+
+    private[vectorpointer] def copyAndIncLeftRootCode(node: TermName, transient: TermName, currentLevel: TermName) = {
+        q"""
+            val len = $node.length
+            val newRoot = new Array[AnyRef](len + 1)
+            System.arraycopy($node, 0, newRoot, 1, len - 1)
+
+            val oldSizes = $node(len - 1)
+            val newSizes = new Array[Int](len)
+            if (oldSizes != null) {
+                if ($transient) {
+                    System.arraycopy(oldSizes, 1, newSizes, 2, len - 2)
+                } else {
+                    System.arraycopy(oldSizes, 0, newSizes, 1, len - 1)
+                }
+            } else {
+                val subTreeSize = 1 << ($blockIndexBits * $currentLevel)
+                var acc = 0
+                var i = 1
+                while (i < len - 1) {
+                    acc += subTreeSize
+                    newSizes(i) = acc
+                    i += 1
+                }
+                newSizes(i) = acc + treeSize($node($node.length - 2).asInstanceOf[Array[AnyRef]], currentLevel)
+            }
+            newRoot(len) = newSizes
+            newRoot
+         """
+    }
+
+    private[vectorpointer] def withRecomputedSizesCode(node: TermName, currentDepth: TermName, branchToUpdate: TermName) = {
+        q"""
+            ..${assertions(q"$node != null", q"1 < $currentDepth")}
+            val end = $node.length - 1
+            val oldSizes = $node(end).asInstanceOf[Array[Int]]
+            if (oldSizes != null) {
+                val newSizes = new Array[Int](end)
+                val delta = $treeSize($node($branchToUpdate).asInstanceOf[Array[AnyRef]], $currentDepth - 1)
+                if ($branchToUpdate > 0)
+                    System.arraycopy(oldSizes, 0, newSizes, 0, $branchToUpdate)
+                var i = $branchToUpdate
+                while (i < end) {
+                    newSizes(i) = oldSizes(i) + delta
+                    i += 1
+                }
+                if ($notBalanced($node, newSizes, $currentDepth, end))
+                    $node(end) = newSizes
+            }
+            $node
+         """
+    }
+
+    private[vectorpointer] def withComputedSizes1Code(node: TermName) = {
+        q"""
+            var i = 0
+            var acc = 0
+            val end = $node.length - 1
+            if (end > 1) {
+                val sizes = new Array[Int](end)
+                while (i < end) {
+                    acc += $node(i).asInstanceOf[Array[AnyRef]].length
+                    sizes(i) = acc
+                    i += 1
+                }
+                if /* node is not balanced */ (sizes(end - 2) != ((end - 1) << $blockIndexBits))
+                    $node(end) = sizes
+            }
+            $node
+         """
+    }
+
+    private[vectorpointer] def withComputedSizesCode(node: TermName, currentDepth: TermName) = {
+        q"""
+            ..${assertions(q"$node != null", q"1 < $currentDepth")}
+            var i = 0
+            var acc = 0
+            val end = $node.length - 1
+            if (end > 1) {
+                val sizes = new Array[Int](end)
+                while (i < end) {
+                    acc += $treeSize($node(i).asInstanceOf[Array[AnyRef]], $currentDepth - 1)
+                    sizes(i) = acc
+                    i += 1
+                }
+                if ($notBalanced($node, sizes, $currentDepth, end))
+                    $node(end) = sizes
+            } else if (end == 1 && $currentDepth > 2) {
+                val child = $node(0).asInstanceOf[Array[AnyRef]]
+                val childSizes = child(child.length - 1).asInstanceOf[Array[Int]]
+                if (childSizes != null) {
+                    if (childSizes.length != 1) {
+                        val sizes = new Array[Int](1)
+                        sizes(0) = childSizes(childSizes.length - 1)
+                        $node(end) = sizes
+                    } else {
+                        $node(end) = childSizes
+                    }
+                }
+            }
+            $node
+         """
+    }
+
+    private[vectorpointer] def notBalancedCode(node: TermName, sizes: TermName, currentDepth: TermName, end: TermName) = {
+        q"""
+            ($sizes($end - 2) != (($end - 1) << ($blockIndexBits * ($currentDepth - 1)))) || (
+          ($currentDepth > 2) && {
+              val last = $node($end - 1).asInstanceOf[Array[AnyRef]]
+              last(last.length - 1) != null
+          }
+          )
+         """
+    }
+
+    private[vectorpointer] def treeSizeCode(node: TermName, currentDepth: TermName) = {
+        q"""
+            def treeSizeRec(node: Array[AnyRef], currentDepth: Int, acc: Int): Int = {
+                if (currentDepth == 1)
+                    acc + node.length
+                else {
+                    val treeSizes = node(node.length - 1).asInstanceOf[Array[Int]]
+                    if (treeSizes != null)
+                        acc + treeSizes(treeSizes.length - 1)
+                    else {
+                        val len = node.length
+                        treeSizeRec(node(len - ${1 + blockInvariants}).asInstanceOf[Array[AnyRef]], currentDepth - 1, acc + (len - ${1 + blockInvariants}) * (1 << ($blockIndexBits * (currentDepth - 1))))
+                    }
+                }
+            }
+            treeSizeRec($node, $currentDepth, 0)
+         """
+    }
+
+    private[vectorpointer] def makeNewRoot0Code(node: TermName) = {
+        q"""
+            val newRoot = new Array[AnyRef](${2 + blockInvariants})
+            newRoot(0) = $node
+            val dLen = $node.length
+            val dSizes = $node(dLen - 1)
+            if (dSizes != null) {
+                val newRootSizes = new Array[Int](2)
+                val dSize = dSizes.asInstanceOf[Array[Int]](dLen - 2)
+                newRootSizes(0) = dSize
+                newRootSizes(1) = dSize
+                newRoot(2) = newRootSizes
+            }
+            newRoot
+         """
+    }
+
+    private[vectorpointer] def makeNewRoot1Code(node: TermName, currentDepth: TermName) = {
+        q"""
+            val dSize = treeSize($node, $currentDepth - 1)
+            val newRootSizes = new Array[Int](2)
+            /* newRootSizes(0) = 0 */
+            newRootSizes(1) = dSize
+            val newRoot = new Array[AnyRef](3)
+            newRoot(1) = $node
+            newRoot(2) = newRootSizes
+            newRoot
+         """
+    }
+
+    private[vectorpointer] def setupNewBlockInNextBranchCode(xor: TermName, transient: TermName) = {
         def codeForLevel(lvl: Int): Tree = {
             q"""
+                ..${if (lvl > 1) q"if ($transient) $normalize($lvl)" :: Nil else Nil}
                 if ($depth == $lvl) {
-                    val newRoot = new Array[AnyRef](${2 + blockInvariants})
-                    newRoot.update(0, ${displayAt(lvl - 1)})
+                    $depth = ${lvl + 1}
                     ${
-                if (lvl == 1) q""
-                else
+                if (lvl == 1)
                     q"""
-                    val dLen = ${displayAt(lvl - 1)}.length
-                    val dSizes = ${displayAt(lvl - 1)}(dLen - 1)
-                    if (dSizes != null) {
-                        val newRootSizes = new Array[Int](2)
-                        val dSize = dSizes.asInstanceOf[Array[Int]](dLen - ${1 + blockInvariants})
-                        newRootSizes(0) = dSize
-                        newRootSizes(1) = dSize + 1
-                        newRoot(2) = newRootSizes
-                    }
-                """
+                        val newRoot = new Array[AnyRef](${2 + blockInvariants})
+                        newRoot(0) = ${displayAt(lvl - 1)}
+                        ${displayAt(lvl)} = newRoot
+                     """
+                else
+                    q"${displayAt(lvl)} = $makeNewRoot0(${displayAt(lvl - 1)})"
             }
-                    ${displayAt(lvl)} = newRoot
-                    depth = ${lvl + 1}
                 } else {
-                    val len = ${displayAt(lvl)}.length // ((index >> 10) & 31)
-                    val newRoot = copyOf(${displayAt(lvl)}, len, len + 1)
-                    val sizes = ${displayAt(lvl)}(len - 1)
-                    if (sizes != null) {
-                        val newSizes = new Array[Int](len)
-                        Platform.arraycopy(sizes.asInstanceOf[Array[Int]], 0, newSizes, 0, len - 1)
-                        newSizes(len - 1) = newSizes(len - ${1 + blockInvariants}) + 1
-                        newRoot(len) = newSizes
+                    val newRoot = copyAndIncRightRoot(${displayAt(lvl)}, transient, $lvl)
+                    if (transient) {
+                        val oldTransientBranch = newRoot.length - 3
+                        $withRecomputedSizes(newRoot, ${lvl + 1}, oldTransientBranch)
+                        newRoot(oldTransientBranch) = ${displayAt(lvl - 1)}
                     }
                     ${displayAt(lvl)} = newRoot
                 }
                 ${displayAt(0)} = new Array(1)
-                ..${(1 until lvl) map (lv => q"${displayAt(lv)} = new Array(${1 + blockInvariants})")}
-                ..${(1 to lvl) map (lv => q"${displayAt(lv)}(($indexParam >> ${blockIndexBits * lv}) & $blockMask) = ${displayAt(lv - 1)}")}
+                ${if (lvl > 1) q"val _emptyTransientBlock = $vectorObjectName.$o_emptyTransientBlock" else q""}
+                ..${(1 until lvl) map (lv => q"${displayAt(lv)} = _emptyTransientBlock")}
              """
         }
-        ifInLevel(q"$xorParam", 1 to 5, codeForLevel, q"throw new IllegalArgumentException")
+        ifInLevel(q"$xor", 1 to maxTreeLevel, codeForLevel, q"throw new IllegalArgumentException")
+    }
+
+    private[vectorpointer] def setupNewBlockInInitBranchCode(insertionDepth: TermName, transient: TermName) = {
+        def codeForDepth(dep: Int): Tree = {
+            q"""
+                ..${if (dep > 1) q"if ($transient) $normalize(${dep - 1})" :: Nil else Nil}
+                if ($depth == ${dep - 1}) {
+                    $depth = $dep
+                    ${
+                if (dep == 2)
+                    q"""
+                        val sizes = new Array[Int](2)
+                        sizes(1) = ${displayAt(0)}.length
+                        val newRoot = new Array[AnyRef](${2 + blockInvariants})
+                        newRoot(1) = ${displayAt(0)}
+                        newRoot(2) = sizes
+                        ${displayAt(1)} = newRoot
+                     """
+                else
+                    q"${displayAt(dep - 1)} = $makeNewRoot1(${displayAt(dep - 2)}, $dep)"
+            }
+                } else {
+                    val newRoot = $copyAndIncLeftRoot(${displayAt(dep - 1)}, $transient, ${dep - 1})
+                    if ($transient) {
+                        $withRecomputedSizes(newRoot, $dep, 1)
+                        newRoot(1) = ${displayAt(dep - 2)}
+                    }
+                    ${displayAt(dep - 1)} = newRoot
+                }
+                ${displayAt(0)} = new Array(1)
+                ${if (dep > 2) q"val _emptyTransientBlock = $vectorObjectName.$o_emptyTransientBlock" else q""}
+                ..${(1 until dep - 1) map (lv => q"${displayAt(lv)} = _emptyTransientBlock")}
+             """
+        }
+        matchOnInt(q"$insertionDepth", 2 to maxTreeDepth, codeForDepth, Some(q"throw new IllegalStateException"))
     }
 
     private[codegen] def getElementCode(index: TermName, xor: TermName): Tree = {
-        ifInLevel(q"$xor", 0 to 5, lvl => q"${getElementI(lvl)}(${displayAt(lvl)}, $index)", q"throw new IllegalArgumentException")
+        ifInLevel(q"$xor", 0 to maxTreeLevel, lvl => q"${getElementI(lvl)}(${displayAt(lvl)}, $index)", q"throw new IllegalArgumentException")
     }
 
     private[codegen] def getElementICode(i: Int, block: TermName, index: TermName): Tree = {
@@ -257,42 +502,20 @@ trait VectorPointerCodeGen {
             if (level == 0) q"$display($idx).asInstanceOf[$A]"
             else getElemFromDisplay(q"$display($idx).asInstanceOf[Array[AnyRef]]", level - 1)
         }
-        getElemFromDisplay(displayAt(i), i)
+        getElemFromDisplay(q"$block", i)
     }
 
     def gotoPosCode(index: TermName, xor: TermName) = {
-        def rec(lvl: Int): Tree = {
-            val di = TermName("d" + lvl)
-            val disub = TermName("_d" + (lvl - 1))
-            val recCall =
-                if (lvl < 5) q" val $di = ${rec(lvl + 1)}"
-                else q"if (xor >= 1073741824) throw new IllegalArgumentException"
-            val disubVal =
-                if (lvl < 5) q"$di((index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-                else q"${displayAt(lvl)}((index>>${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]"
-            q"""
-                    if($xor >= ${1 << (blockIndexBits * lvl)}) {
-                        $recCall
-                        val $disub = $disubVal
-                        ${displayAt(lvl - 1)} = $disub
-                        $disub
-                    } else ${displayAt(lvl - 1)}
-                 """
-
+        def gotoPosFormLevel(level: Int): Tree = {
+            q"..${level to 1 by -1 map (lvl => q"${displayAt(lvl - 1)} = ${displayAt(lvl)}(($index >> ${blockIndexBits * lvl}) & $blockMask).asInstanceOf[Array[AnyRef]]")}"
         }
-        val d1 = TermName("d1")
-        q"""
-            if($xor >= ${1 << blockIndexBits}) {
-                val $d1 = ${rec(2)}
-                ${displayAt(0)} = $d1((index >> $blockIndexBits) & $blockMask).asInstanceOf[Array[AnyRef]]
-            }
-         """
+        ifInLevel(q"xor", 0 to maxTreeLevel, gotoPosFormLevel, q"throw new IllegalArgumentException")
     }
 
 
     private def gotoBlockStart(index: TermName, xor: TermName, defaultIndex: Int): Tree = {
         def gotoBlockStartRec(lvl: Int): Seq[Tree] = {
-            if (lvl == 6)
+            if (lvl == maxTreeLevel + 1)
                 q"""
                         if($xor >= ${1 << (blockIndexBits * lvl)}) {
                             throw new IllegalArgumentException
@@ -305,7 +528,7 @@ trait VectorPointerCodeGen {
                     q"""
                             if($xor >= ${1 << (blockIndexBits * lvl)}) {
                                 ..${gotoBlockStartRec(lvl + 1)}
-                                ..${if (lvl < 6) q"idx = $defaultIndex" :: Nil else Nil}
+                                ..${if (lvl < maxTreeDepth) q"idx = $defaultIndex" :: Nil else Nil}
                             } else {
                                 idx = ($index >> ${(lvl - 1) * blockIndexBits}) & $blockMask
                             }
@@ -341,52 +564,57 @@ trait VectorPointerCodeGen {
                 ..${(1 to lvl) map (i => q"${displayAt(i)}(($index >> ${blockIndexBits * i}) & $blockMask) = ${displayAt(i - 1)}")}
              """
         }
-        ifInLevel(q"$xor", 1 to 5, gotoNextBlockStartWritableFromLevel, q"throw new IllegalArgumentException")
+        ifInLevel(q"$xor", 1 to maxTreeLevel, gotoNextBlockStartWritableFromLevel, q"throw new IllegalArgumentException")
     }
 
 
-    private[codegen] def stabilizeCode() = {
+    private[codegen] def normalizeCode(depthParam: TermName) = {
         q"""
-            val _depth = $depth
-            if (_depth > 1) {
-                val stabilizationIndex = $focus | $focusRelax
-                val deltaSize = ${displayAt(0)}.length - (${displayAt(1)}((stabilizationIndex >> $blockIndexBits) & $blockMask).asInstanceOf[Array[AnyRef]].length)
-                val _focusDepth = focusDepth
-                $copyDisplays(_focusDepth, stabilizationIndex)
-                $stabilizeDisplayPath(_focusDepth, stabilizationIndex)
-                var currentDepth = _focusDepth + 1
-                var display: Array[AnyRef] = null
-                ${matchOnInt(q"currentDepth", 2 to 6, d => q"display = ${displayAt(d - 1)}")}
-                while (currentDepth <= _depth) {
-                    val oldSizes = display(display.length - 1 ).asInstanceOf[Array[Int]]
-                    val newSizes = new Array[Int](oldSizes.length)
-                    val lastSizesIndex = oldSizes.length - 1
-                    Platform.arraycopy(oldSizes, 0, newSizes, 0, lastSizesIndex)
-                    newSizes(lastSizesIndex) = oldSizes(lastSizesIndex) + deltaSize
-                    val idx = (stabilizationIndex >> ($blockIndexBits * currentDepth)) & $blockMask
-                    val newDisplay = copyOf(display, idx, idx + 2)
-                    newDisplay(newDisplay.length - 1) = newSizes
-                    ${matchOnInt(q"currentDepth", 2 to 6, d => q"newDisplay(idx) = ${displayAt(d - 2)}; ${displayAt(d - 1)}(idx) = newDisplay; ..${if (d < 6) q"display = ${displayAt(d)}" :: Nil else Nil}")}
-                    currentDepth += 1
-                }
+            ..${assertions(q"1< $depthParam")}
+            val _focusDepth = $focusDepth
+            val stabilizationIndex = $focus | $focusRelax
+            $copyDisplaysAndStabilizeDisplayPath(_focusDepth, stabilizationIndex)
+
+            var currentLevel = _focusDepth
+            if (currentLevel < $depthParam) {
+                var display = ${matchOnInt(q"currentLevel", 1 to maxTreeLevel, displayAt)}
+                do {
+                    val newDisplay = copyOf(display)
+                    val idx = (stabilizationIndex >> ($blockIndexBits * currentLevel)) & 31
+                    ${
+            matchOnInt(q"currentLevel", 1 to maxTreeLevel, lvl =>
+                q"""
+                    newDisplay(idx) = ${displayNameAt(lvl - 1)}
+                    ${displayNameAt(lvl)} = $withRecomputedSizes(newDisplay, ${lvl + 1}, idx)
+                    ..${if (lvl != maxTreeLevel) q"display = ${displayNameAt(lvl + 1)}" :: Nil else Nil}
+                 """
+            )
+        }
+                    currentLevel += 1
+                } while (currentLevel < $depthParam)
             }
          """
     }
 
     private[codegen] def stabilizeDisplayPathCode(depthParam: TermName, focusParam: TermName) = {
-        def stabilizeFromLevel(level: Int) = {
-            def stabilizeDisplay(i: Int) =
-                q"${displayAt(i)}(($focusParam >> ${blockIndexBits * i}) & $blockMask) = ${displayAt(i - 1)}"
-            q"..${(level to 1 by -1) map stabilizeDisplay}"
+        def disp(l: Int) = TermName("d" + l)
+        def stabilizeDisplayPathFromLevel(lvl: Int): Tree = {
+            if (lvl < maxTreeLevel)
+                q"""
+                if($lvl < $depthParam) {
+                    val ${disp(lvl)} = ${displayAt(lvl)}
+                    ${disp(lvl)}(($focusParam >> ${blockIndexBits * lvl}) & $blockMask) = ${if (lvl == 1) displayAt(0) else q"${disp(lvl - 1)}"}
+                    ${stabilizeDisplayPathFromLevel(lvl + 1)}
+                }
+             """
+            else
+                q"if ($depthParam == $maxTreeDepth) ${displayAt(lvl)}(($focusParam >> ${blockIndexBits * lvl}) & $blockMask) = ${disp(lvl - 1)}"
         }
-        q"""
-            ..${assertions(q"0 < $depthParam", q"$depthParam <= this.$depth")}
-            ${matchOnInt(q"$depthParam", 1 to 6, d => stabilizeFromLevel(d - 1))}
-         """
+        stabilizeDisplayPathFromLevel(1)
     }
 
 
-    private[vectorpointer] def cleanTopCode(cutIndex: TermName) = {
+    private[vectorpointer] def cleanTopTakeCode(cutIndex: TermName) = {
         def cleanLevelAndGoDown(lvl: Int): Tree =
             q"""
                 if (($cutIndex >> ${lvl * blockIndexBits}) == 0) {
@@ -394,30 +622,51 @@ trait VectorPointerCodeGen {
                     ${if (lvl == 1) q"this.$depth = 1" else cleanLevelAndGoDown(lvl - 1)}
                 } else this.$depth = ${lvl + 1}
              """
-        matchOnInt(q"this.$depth", 2 to 6, d => cleanLevelAndGoDown(d - 1))
+        matchOnInt(q"this.$depth", 2 to maxTreeDepth, d => cleanLevelAndGoDown(d - 1))
+    }
+
+    private[vectorpointer] def cleanTopDropCode(cutIndex: TermName) = {
+        def cleanLevelAndGoDown(lvl: Int): Tree =
+            q"""
+                if (($cutIndex >> ${lvl * blockIndexBits}) == ${displayAt(lvl)}.length - ${1 + blockInvariants}) {
+                    ${displayAt(lvl)} = null
+                    ${if (lvl == 1) q"this.$depth = 1" else cleanLevelAndGoDown(lvl - 1)}
+                } else this.$depth = ${lvl + 1}
+             """
+        matchOnInt(q"this.$depth", 2 to maxTreeDepth, d => cleanLevelAndGoDown(d - 1))
     }
 
     def copyDisplaysCode(depthParam: Tree, focusParam: TermName) = {
-        def copyDisplaysDepth(depths: Seq[Int]): Tree = {
-            val idx = TermName(s"idx")
-            def copyDisplay(i: Int) = {
-                val indexVal = q"($focusParam >> ${blockIndexBits * i}) & $blockMask"
-                val indexSet =
-                    if (i == 1) q"var $idx = $indexVal" else q"$idx = $indexVal"
-                val updateWithCopy = q"${displayAt(i)} = $copyOf(${displayAt(i)}, $idx + 1, $idx + 2)"
-                Seq(indexSet, updateWithCopy)
-            }
-            q"..${depths flatMap copyDisplay}"
 
+        def copyDisplayAtDepth(dep: Int): Tree = {
+            val idx = TermName("idx" + (dep - 1))
+            q"""
+                if($dep <= $depthParam) {
+                    ..${if (dep < maxTreeDepth) copyDisplayAtDepth(dep + 1) :: Nil else Nil}
+                    val $idx = (($focusParam >> ${blockIndexBits * (dep - 1)}) & $blockMask) + 1
+                    ${displayNameAt(dep - 1)} = $copyOf(${displayNameAt(dep - 1)}, $idx, $idx + 1)
+                }
+             """
         }
-        depthParam match {
-            case q"${n: Int}" =>
-                if (0 <= n && n <= 6) copyDisplaysDepth(Seq(n))
-                else throw new IllegalArgumentException
-            case _ => matchOnInt(depthParam, 1 to 6, d => copyDisplaysDepth(1 until d))
-        }
-
+        copyDisplayAtDepth(2)
     }
+
+    def copyDisplaysAndNullFocusedBranchCode(depthParam: TermName, focusParam: TermName) = {
+        matchOnInt(q"$depthParam", 2 to maxTreeDepth, dep => q"..${1 until dep map (lvl => q"${displayAt(lvl)} = $copyOfAndNull(${displayAt(lvl)}, ($focusParam >> ${blockIndexBits * lvl}) & $blockMask)")}")
+    }
+
+    def copyDisplaysAndStabilizeDisplayPathCode(depthParam: TermName, focusParam: TermName) = {
+        def disp(l: Int) = q"${TermName("d" + l)}"
+        matchOnInt(q"$depthParam", 1 to maxTreeDepth, dep => q"..${
+            1 until dep flatMap { lvl =>
+                val q"{ ..$stats }" = q"val ${disp(lvl)}: Array[AnyRef] = $copyOf(${displayAt(lvl)})"
+                stats :::
+                  q"${disp(lvl)}(($focusParam >> ${blockIndexBits * lvl}) & $blockMask) = ${if (lvl > 1) disp(lvl - 1) else displayAt(0)}" ::
+                  q"${displayAt(lvl)} = ${disp(lvl)}" :: Nil
+            }
+        }")
+    }
+
 
     def copyDisplaysTopCode(currentDepth: TermName, focusRelaxParam: TermName) = {
         def copyDisplayAndCut(lvl: Int) =
@@ -428,29 +677,73 @@ trait VectorPointerCodeGen {
         q"""
             var _currentDepth = currentDepth
             while (_currentDepth < this.$depth) {
-                ${matchOnInt(q"_currentDepth", 2 to 6, d => copyDisplayAndCut(d - 1), Some(q"throw new IllegalStateException"))}
+                ${matchOnInt(q"_currentDepth", 2 to maxTreeDepth, d => copyDisplayAndCut(d - 1), Some(q"throw new IllegalStateException"))}
                 _currentDepth += 1
             }
          """
     }
 
-    private[vectorpointer] def copyOfCode(array: Tree, numElements: Tree, newSize: Tree) = {
+    private[vectorpointer] def copyOfCode(array: Tree) = {
         val newArray = TermName("newArray")
         q"""
-            ..${assertions(q"$array!=null", q"$numElements <= $newSize", q"$numElements <= $array.length")}
-            val $newArray = new Array[AnyRef]($newSize)
-            Platform.arraycopy($array, 0, $newArray, 0, $numElements)
+            ..${assertions(q"$array!=null")}
+            val len = $array.length
+            val $newArray = new Array[AnyRef](len)
+            System.arraycopy($array, 0, $newArray, 0, len)
             $newArray
         """
     }
 
+    private[vectorpointer] def copyOfCode(array: Tree, numElements: Tree, newSize: Tree) = {
+        val newArray = TermName("newArray")
+        q"""
+            ..${assertions(q"$array!=null", q"0 <= $numElements", q"$numElements <= $newSize", q"$numElements <= $array.length")}
+            val $newArray = new Array[AnyRef]($newSize)
+            System.arraycopy($array, 0, $newArray, 0, $numElements)
+            $newArray
+        """
+    }
+
+    private[vectorpointer] def copyOfAndNullCode(array: TermName, nullIndex: TermName) = {
+        val newArray = TermName("newArray")
+        q"""
+            ..${assertions(q"$array!=null", q"0 <= $nullIndex", q"$nullIndex <= $array.length")}
+            val len = $array.length
+            val $newArray = new Array[AnyRef](len)
+            System.arraycopy($array, 0, $newArray, 0, len - 1)
+            $newArray($nullIndex) = null
+            val sizes = $array(len - 1).asInstanceOf[Array[Int]]
+            if (sizes != null) {
+                $newArray(len - 1) = $makeTransientSizes(sizes, $nullIndex)
+            }
+            $newArray
+        """
+    }
+
+
+    protected def debugToStringCode(others: Tree*) = {
+        q"""
+            val sb = new StringBuilder
+            sb append "RRBVector (\n"
+            ..${0 to maxTreeLevel map (lvl => q"""sb append ("\t" + ${"display" + lvl} + " = " + ${displayAt(lvl)} + " " + (if(${displayAt(lvl)} != null) ${displayAt(lvl)}.mkString("[", ", ", "]") else "") + "\n")""")}
+            sb append ("\tdepth = " + $depth + "\n")
+            sb append ("\tendIndex = " + $endIndex + "\n")
+            sb append ("\tfocus = " + $focus + "\n")
+            sb append ("\tfocusStart = " + $focusStart + "\n")
+            sb append ("\tfocusEnd = " + $focusEnd + "\n")
+            sb append ("\tfocusRelax = " + $focusRelax + "\n")
+            ..${others map (other => q"sb append ($other)")}
+            sb append ")"
+            sb.toString
+         """
+    }
 
     // Helper code
 
     protected def displayAt(level: Int) = q"${displayNameAt(level)}"
 
     protected def displayNameAt(level: Int) = {
-        if (0 <= level && level < 6) TermName("display" + level)
+        if (0 <= level && level <= maxTreeLevel) TermName("display" + level)
         else throw new IllegalArgumentException(level.toString)
     }
 
@@ -516,4 +809,6 @@ trait VectorPointerCodeGen {
             q"if (${indexIsInLevel(xor, q"$currentLevel")}) $ifClause else $elseClause"
         }
     }
+
+
 }

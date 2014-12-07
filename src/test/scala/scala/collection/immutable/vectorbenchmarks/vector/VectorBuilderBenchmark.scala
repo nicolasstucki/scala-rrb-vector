@@ -5,23 +5,16 @@ import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
 abstract class VectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with VectorBenchmark[A] {
-    def buildVector(n: Int, elems: Int): Int = {
+    def buildVector(n: Int): Int = {
         var i = 0
-        var sum = 0
         var b = Vector.newBuilder[A]
         val e = element(0)
-        while (i < elems) {
-            val m = math.min(n, elems - i)
-            var j = 0
-            while (j < m) {
-                b += e
-                i += 1
-                j += 1
-            }
-            sum = b.result().length
-            b.clear()
+        while (i < n) {
+            b += e
+            i += 1
+
         }
-        sum
+        b.result().length
     }
 }
 

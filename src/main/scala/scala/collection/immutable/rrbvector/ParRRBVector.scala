@@ -33,7 +33,7 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
 
     override def toVector: Vector[T] = vector.toVector
 
-    class ParRRBVectorSplitter(_start: Int, _end: Int) extends RRBVectorIterator[T](_start, _end) with SeqSplitter[T] {
+    class ParRRBVectorSplitter(val _start: Int, val _end: Int) extends RRBVectorIterator[T](_start, _end) with SeqSplitter[T] {
         override def remaining: Int = super.remaining
 
         def dup: SeqSplitter[T] = {
@@ -45,26 +45,20 @@ class ParRRBVector[+T](private[this] val vector: RRBVector[T])
         def split: Seq[ParRRBVectorSplitter] = {
             val rem = remaining
             if (rem >= 2) {
-                val splitSize =
-                    if (rem < 32) 1
-                    else if (rem < 1024) 1 << 5
-                    else if (rem < 32768) 1 << 10
-                    else if (rem < 1048576) 1 << 15
-                    else if (rem < 33554432) 1 << 20
+                val _half = rem / 2
+                val _splitModulo =
+                    if (rem <= (1 << 5)) 1
+                    else if (rem <= (1 << 10)) 1 << 5
+                    else if (rem <= (1 << 15)) 1 << 10
+                    else if (rem <= (1 << 20)) 1 << 15
+                    else if (rem <= (1 << 25)) 1 << 20
                     else 1 << 25
-                val splitted = new ArrayBuffer[ParRRBVectorSplitter]
-                var currentPos = _end - remaining
-                while (currentPos < rem) {
-                    val pit = new ParRRBVectorSplitter(currentPos, math.min(currentPos + splitSize, _end))
-                    pit.initIteratorFrom(this)
-                    splitted += pit
-                    currentPos += splitSize
-                }
-                splitted
+                val _halfAdjusted = if (_half > _splitModulo) _half - _half % _splitModulo else if (_splitModulo < _end) _splitModulo else _half
+                return psplit(_halfAdjusted, rem - _halfAdjusted)
+            } else {
+                return Seq(this)
             }
-            else Seq(this)
         }
-
 
         def psplit(sizes: Int*): Seq[ParRRBVectorSplitter] = {
             val splitted = new ArrayBuffer[ParRRBVectorSplitter]
@@ -89,6 +83,7 @@ object ParRRBVector extends ParFactory[ParRRBVector] {
     def newBuilder[T]: Combiner[T, ParRRBVector[T]] = newCombiner[T]
 
     def newCombiner[T]: Combiner[T, ParRRBVector[T]] = new ParRRBVectorCombiner[T]
+
 }
 
 private[immutable] class ParRRBVectorCombiner[T] extends Combiner[T, ParRRBVector[T]] {
@@ -111,12 +106,16 @@ private[immutable] class ParRRBVectorCombiner[T] extends Combiner[T, ParRRBVecto
         this
     }
 
-    def combine[U <: T, NewTo >: ParRRBVector[T]](other: Combiner[U, NewTo]) = {
-        if (other eq this) this
+    def combine[U <: T, NewTo >: ParRRBVector[T]](other: Combiner[U, NewTo]): Combiner[U, NewTo] = {
+        if (this eq other)
+            return this
         else {
-            val that = other.asInstanceOf[ParRRBVectorCombiner[T]]
-            builder ++= that.builder.result()
-            this
+            val newCombiner = new ParRRBVectorCombiner[T]
+            newCombiner ++= this.builder.result()
+            newCombiner ++= other.asInstanceOf[ParRRBVectorCombiner[T]].builder.result()
+            return newCombiner
+            // builder ++= other.asInstanceOf[ParRRBVectorCombiner[T]].builder.result()
+            // this
         }
     }
 }

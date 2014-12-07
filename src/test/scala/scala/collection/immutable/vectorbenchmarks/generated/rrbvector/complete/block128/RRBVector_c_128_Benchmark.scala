@@ -21,47 +21,31 @@ package scala {
               abstract class RRBVector_c_128_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_c_128_Benchmark[A]
 
               class RRBVector_c_128_AppendInt_Benchmark extends RRBVector_c_128_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def append(vec: RRBVector_c_128[Int], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_128[Int], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(0);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(0);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
               class RRBVector_c_128_AppendString_Benchmark extends RRBVector_c_128_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def append(vec: RRBVector_c_128[String], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_128[String], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(ref);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(ref);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
@@ -78,8 +62,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$33 = 0;
-                            vec.+:(x$33)
+                            val x$32 = 0;
+                            vec.+:(x$32)
                           };
                           j.+=(1)
                         }
@@ -104,8 +88,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$34 = ref;
-                            vec.+:(x$34)
+                            val x$31 = ref;
+                            vec.+:(x$31)
                           };
                           j.+=(1)
                         }
@@ -125,27 +109,17 @@ package scala {
               class RRBVector_c_128_ApplyString_Benchmark extends RRBVector_c_128_Apply_Benchmark[String] with VectorGeneratorType.StringGenerator
 
               abstract class RRBVector_c_128_Builder_Benchmark[A] extends BuilderBenchmarks[A] with RRBVector_c_128_Benchmark[A] {
-                def buildVector(n: Int, elems: Int): Int = {
+                def buildVector(n: Int): Int = {
                   var i = 0;
-                  var sum = 0;
                   var b = RRBVector_c_128.newBuilder[A];
                   val e = element(0);
-                  while (i.<(elems)) 
+                  while (i.<(n)) 
                     {
-                      val m = math.min(n, elems.-(i));
-                      var j = 0;
-                      while (j.<(m)) 
-                        {
-                          b.+=(e);
-                          i.+=(1);
-                          j.+=(1)
-                        }
-                      ;
-                      sum = b.result().length;
-                      b.clear()
+                      b.+=(e);
+                      i.+=(1)
                     }
                   ;
-                  sum
+                  b.result().length
                 }
               }
 
@@ -176,6 +150,12 @@ package scala {
               class RRBVector_c_128_SplitInt_Benchmark extends RRBVector_c_128_Split_Benchmark[Int] with VectorGeneratorType.IntGenerator
 
               class RRBVector_c_128_SplitString_Benchmark extends RRBVector_c_128_Split_Benchmark[String] with VectorGeneratorType.StringGenerator
+
+              abstract class RRBVector_c_128_ParMap_Benchmark[A] extends ParMapBenchmarks[A] with RRBVector_c_128_Benchmark[A]
+
+              class RRBVector_c_128_IntParMap_Benchmark extends RRBVector_c_128_ParMap_Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+              class RRBVector_c_128_StringParMap_Benchmark extends RRBVector_c_128_ParMap_Benchmark[String] with VectorGeneratorType.StringGenerator
             }
 
             package xunbalanced {
@@ -195,47 +175,31 @@ package scala {
               abstract class RRBVector_c_128_Append_Benchmark[A] extends AppendBenchmarks[A] with RRBVector_c_128_Benchmark[A]
 
               class RRBVector_c_128_AppendInt_Benchmark extends RRBVector_c_128_Append_Benchmark[Int] with VectorGeneratorType.IntGenerator {
-                def append(vec: RRBVector_c_128[Int], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_128[Int], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(0);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(0);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
               class RRBVector_c_128_AppendString_Benchmark extends RRBVector_c_128_Append_Benchmark[String] with VectorGeneratorType.StringGenerator {
                 val ref = "";
-                def append(vec: RRBVector_c_128[String], n: Int, times: Int): Int = {
+                def append(vec: RRBVector_c_128[String], n: Int): Int = {
+                  var v = vec;
                   var i = 0;
-                  var sum = 0;
-                  while (i.<(times)) 
+                  while (i.<(n)) 
                     {
-                      var v = vec;
-                      var j = 0;
-                      while (j.<(n)) 
-                        {
-                          v = vec.:+(ref);
-                          j.+=(1)
-                        }
-                      ;
-                      sum.+=(v.length);
+                      v = vec.:+(ref);
                       i.+=(1)
                     }
                   ;
-                  sum
+                  v.length
                 }
               }
 
@@ -252,8 +216,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$35 = 0;
-                            vec.+:(x$35)
+                            val x$34 = 0;
+                            vec.+:(x$34)
                           };
                           j.+=(1)
                         }
@@ -278,8 +242,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$36 = ref;
-                            vec.+:(x$36)
+                            val x$33 = ref;
+                            vec.+:(x$33)
                           };
                           j.+=(1)
                         }
@@ -299,27 +263,17 @@ package scala {
               class RRBVector_c_128_ApplyString_Benchmark extends RRBVector_c_128_Apply_Benchmark[String] with VectorGeneratorType.StringGenerator
 
               abstract class RRBVector_c_128_Builder_Benchmark[A] extends BuilderBenchmarks[A] with RRBVector_c_128_Benchmark[A] {
-                def buildVector(n: Int, elems: Int): Int = {
+                def buildVector(n: Int): Int = {
                   var i = 0;
-                  var sum = 0;
                   var b = RRBVector_c_128.newBuilder[A];
                   val e = element(0);
-                  while (i.<(elems)) 
+                  while (i.<(n)) 
                     {
-                      val m = math.min(n, elems.-(i));
-                      var j = 0;
-                      while (j.<(m)) 
-                        {
-                          b.+=(e);
-                          i.+=(1);
-                          j.+=(1)
-                        }
-                      ;
-                      sum = b.result().length;
-                      b.clear()
+                      b.+=(e);
+                      i.+=(1)
                     }
                   ;
-                  sum
+                  b.result().length
                 }
               }
 
@@ -350,6 +304,12 @@ package scala {
               class RRBVector_c_128_SplitInt_Benchmark extends RRBVector_c_128_Split_Benchmark[Int] with VectorGeneratorType.IntGenerator
 
               class RRBVector_c_128_SplitString_Benchmark extends RRBVector_c_128_Split_Benchmark[String] with VectorGeneratorType.StringGenerator
+
+              abstract class RRBVector_c_128_ParMap_Benchmark[A] extends ParMapBenchmarks[A] with RRBVector_c_128_Benchmark[A]
+
+              class RRBVector_c_128_IntParMap_Benchmark extends RRBVector_c_128_ParMap_Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+              class RRBVector_c_128_StringParMap_Benchmark extends RRBVector_c_128_ParMap_Benchmark[String] with VectorGeneratorType.StringGenerator
             }
           }
         }

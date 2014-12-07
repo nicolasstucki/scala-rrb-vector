@@ -25,39 +25,27 @@ trait VectorBenchmarksGen {
                     abstract class ${vectorBenchmarkClassName("Append")}[A] extends AppendBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
                     class ${vectorBenchmarkClassName("AppendInt")} extends ${vectorBenchmarkClassName("Append")}[Int] with VectorGeneratorType.IntGenerator {
 
-                        def append(vec: $vectorClassName[Int], n: Int, times: Int): Int = {
+                        def append(vec: $vectorClassName[Int], n: Int): Int = {
+                            var v = vec
                             var i = 0
-                            var sum = 0
-                            while (i < times) {
-                                var v = vec
-                                var j = 0
-                                while (j<n) {
-                                    v = vec :+ 0
-                                    j += 1
-                                }
-                                sum += v.length
+                            while (i<n) {
+                                v = vec :+ 0
                                 i += 1
                             }
-                            sum
+                            v.length
                         }
                     }
                     class ${vectorBenchmarkClassName("AppendString")} extends ${vectorBenchmarkClassName("Append")}[String] with VectorGeneratorType.StringGenerator {
                         val ref = ""
 
-                        def append(vec: $vectorClassName[String], n: Int, times: Int): Int = {
+                        def append(vec: $vectorClassName[String], n: Int): Int = {
+                            var v = vec
                             var i = 0
-                            var sum = 0
-                            while (i < times) {
-                                var v = vec
-                                var j = 0
-                                while (j<n) {
-                                    v = vec :+ ref
-                                    j += 1
-                                }
-                                sum += v.length
+                            while (i<n) {
+                                v = vec :+ ref
                                 i += 1
                             }
-                            sum
+                            v.length
                         }
                     }
 
@@ -105,45 +93,41 @@ trait VectorBenchmarksGen {
                     class ${vectorBenchmarkClassName("ApplyString")} extends ${vectorBenchmarkClassName("Apply")}[String] with VectorGeneratorType.StringGenerator
 
                     abstract class ${vectorBenchmarkClassName("Builder")}[A] extends BuilderBenchmarks[A] with $vectorBaseBenchmarkClassName[A] {
-                        def buildVector(n: Int, elems: Int): Int = {
+                        def buildVector(n: Int): Int = {
                             var i = 0
-                            var sum = 0
                             var b = $vectorObjectName.newBuilder[A]
                             val e = element(0)
-                            while (i < elems) {
-                                val m = math.min(n, elems - i)
-                                var j = 0
-                                while (j < m) {
-                                    b += e
-                                    i += 1
-                                    j += 1
-                                }
-                                sum = b.result().length
-                                b.clear()
+                            while (i < n) {
+                                b += e
+                                i += 1
                             }
-                            sum
+                            b.result().length
                         }
                     }
                     class ${vectorBenchmarkClassName("BuilderInt")} extends ${vectorBenchmarkClassName("Builder")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("BuilderString")} extends ${vectorBenchmarkClassName("Builder")}[String] with VectorGeneratorType.StringGenerator
 
 
-                    abstract class ${vectorBenchmarkClassName("Concatenation")}[A] extends ConcatenationBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("Concatenation")}[A] extends ConcatenationBenchmarks[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("ConcatenationInt")} extends ${vectorBenchmarkClassName("Concatenation")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("ConcatenationString")} extends ${vectorBenchmarkClassName("Concatenation")}[String] with VectorGeneratorType.StringGenerator
 
 
-                    abstract class ${vectorBenchmarkClassName("Iteration")}[A] extends IterationBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("Iteration")}[A] extends IterationBenchmarks[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("IterationInt")} extends ${vectorBenchmarkClassName("Iteration")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("IterationString")} extends ${vectorBenchmarkClassName("Iteration")}[String] with VectorGeneratorType.StringGenerator
 
-                    abstract class ${vectorBenchmarkClassName("MemoryAllocation")}[A] extends MemoryAllocation[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("MemoryAllocation")}[A] extends MemoryAllocation[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("IntMemoryAllocation")} extends ${vectorBenchmarkClassName("MemoryAllocation")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("StringMemoryAllocation")} extends ${vectorBenchmarkClassName("MemoryAllocation")}[String] with VectorGeneratorType.StringGenerator
 
-                    abstract class ${vectorBenchmarkClassName("Split")}[A] extends SplitBenchmarks[A] with $vectorBaseBenchmarkClassName[A]
+                    abstract class ${vectorBenchmarkClassName("Split")}[A] extends SplitBenchmarks[A] with $vectorBaseBenchmarkClassName[$A]
                     class ${vectorBenchmarkClassName("SplitInt")} extends ${vectorBenchmarkClassName("Split")}[Int] with VectorGeneratorType.IntGenerator
                     class ${vectorBenchmarkClassName("SplitString")} extends ${vectorBenchmarkClassName("Split")}[String] with VectorGeneratorType.StringGenerator
+
+                    abstract class ${vectorBenchmarkClassName("ParMap")}[A] extends ParMapBenchmarks[$A] with $vectorBaseBenchmarkClassName[$A]
+                    class ${vectorBenchmarkClassName("IntParMap")} extends ${vectorBenchmarkClassName("ParMap")}[Int] with VectorGeneratorType.IntGenerator
+                    class ${vectorBenchmarkClassName("StringParMap")} extends ${vectorBenchmarkClassName("ParMap")}[String] with VectorGeneratorType.StringGenerator
                 }
              """
         }
