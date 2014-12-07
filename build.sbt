@@ -21,4 +21,4 @@ parallelExecution in Test := false
 
 addCompilerPlugin("org.scala-miniboxing.plugins" %% "miniboxing-plugin" % "0.4-SNAPSHOT")
 
-scalacOptions += "-optimize"
+scalacOptions ++= Seq("-optimize", "-P:minibox:warn")
