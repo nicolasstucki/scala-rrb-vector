@@ -1633,25 +1633,25 @@ private[immutable] trait RRBVectorPointer[A] {
         focusOn(0)
     }
 
-    private[immutable] final def initFromDisplays[U](display0: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: Array[AnyRef]): Unit = {
         this.depth = 1
         this.display0 = display0
     }
 
-    private[immutable] final def initFromDisplays[U](display0: Array[AnyRef], display1: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: Array[AnyRef], display1: Array[AnyRef]): Unit = {
         this.depth = 2
         this.display0 = display0
         this.display1 = display1
     }
 
-    private[immutable] final def initFromDisplays[U](display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef]): Unit = {
         this.depth = 3
         this.display0 = display0
         this.display1 = display1
         this.display2 = display2
     }
 
-    private[immutable] final def initFromDisplays[U](display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef]): Unit = {
         this.depth = 4
         this.display0 = display0
         this.display1 = display1
@@ -1659,7 +1659,7 @@ private[immutable] trait RRBVectorPointer[A] {
         this.display3 = display3
     }
 
-    private[immutable] final def initFromDisplays[U](display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef]): Unit = {
         this.depth = 5
         this.display0 = display0
         this.display1 = display1
@@ -1668,7 +1668,7 @@ private[immutable] trait RRBVectorPointer[A] {
         this.display4 = display4
     }
 
-    private[immutable] final def initFromDisplays[U](display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef], display5: Array[AnyRef]): Unit = {
+    private[immutable] final def initFromDisplays(display0: Array[AnyRef], display1: Array[AnyRef], display2: Array[AnyRef], display3: Array[AnyRef], display4: Array[AnyRef], display5: Array[AnyRef]): Unit = {
         this.depth = 6
         this.display0 = display0
         this.display1 = display1
