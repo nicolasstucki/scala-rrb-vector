@@ -2,7 +2,7 @@ name := "scala-rrb-vector"
 
 version := "0.1"
 
-scalaVersion := "2.11.2"
+scalaVersion := "2.11.4"
 
 resolvers ++= Seq(Resolver.sonatypeRepo("releases"),
                   Resolver.sonatypeRepo("snapshots"))
