@@ -3,7 +3,8 @@ package vectorutils
 
 
 import scala.util.Random
-import rrbvector._
+import scala.collection.immutable.rrbvector._
+import scala.collection.immutable.rrbvector.mb._
 
 trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
 
@@ -56,7 +57,6 @@ object BaseVectorGenerator {
 
         final def vectorClassName: String = "Vector"
 
-
         override final def newBuilder() = Vector.newBuilder[A]
 
         override final def tabulatedVector(n: Int): Vector[A] = Vector.tabulate(n)(element)
@@ -95,7 +95,6 @@ object BaseVectorGenerator {
 
         override final def emptyVector: RRBVector[A] = RRBVector.empty[A]
 
-
         override def iterator(vec: RRBVector[A], start: Int, end: Int) = {
             val it = new RRBVectorIterator[A](start, end)
             it.initIteratorFrom(vec)
@@ -113,6 +112,35 @@ object BaseVectorGenerator {
         override final def drop(vec: RRBVector[A], n: Int): RRBVector[A] = vec.drop(n)
     }
 
+    trait MbRRBVectorGenerator[A] extends BaseVectorGenerator[A] {
+        override type Vec = MbRRBVector[A]
+
+        final def vectorClassName: String = "MbRRBVector"
+
+        override final def newBuilder() = MbRRBVector.newBuilder[A]
+
+        override final def tabulatedVector(n: Int): MbRRBVector[A] = MbRRBVector.tabulate(n)(element)
+
+        override final def rangedVector(start: Int, end: Int): MbRRBVector[A] = MbRRBVector.range(start, end) map element
+
+        override final def emptyVector: MbRRBVector[A] = MbRRBVector.empty[A]
+
+        override def iterator(vec: MbRRBVector[A], start: Int, end: Int) = {
+            val it = new MbRRBVectorIterator[A](start, end)
+            it.initIteratorFrom(vec)
+            it
+        }
+
+        override final def plus(vec: MbRRBVector[A], elem: A): MbRRBVector[A] = vec :+ elem
+
+        override final def plus(elem: A, vec: Vec): MbRRBVector[A] = elem +: vec
+
+        override final def plusPlus(vec1: MbRRBVector[A], vec2: MbRRBVector[A]): MbRRBVector[A] = vec1 ++ vec2
+
+        override final def take(vec: MbRRBVector[A], n: Int): MbRRBVector[A] = vec.take(n)
+
+        override final def drop(vec: MbRRBVector[A], n: Int): MbRRBVector[A] = vec.drop(n)
+    }
 }
 
 
