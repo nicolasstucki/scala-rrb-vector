@@ -24,7 +24,7 @@ object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVecto
     private[immutable] final val emptyTransientBlock = new Array[AnyRef](2)
 }
 
-final class MbRRBVector[ /* @miniboxed */ +A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, MbRRBVector] with scala.collection.IndexedSeqLike[A, MbRRBVector[A]] with MbRRBVectorPointer[A@uncheckedVariance] with Serializable {
+final class MbRRBVector[ /* TODO @miniboxed */ +A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, MbRRBVector] with scala.collection.IndexedSeqLike[A, MbRRBVector[A]] with MbRRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
 
     override def par = new ParMbRRBVector[A](this)
@@ -566,10 +566,10 @@ final class MbRRBVector[ /* @miniboxed */ +A] private[immutable](override privat
     }
 }
 
-final class MbRRBVectorBuilder[ /* @miniboxed */ A] extends mutable.Builder[A, MbRRBVector[A]] /*with MbRRBVectorPointer[A] */ {
+final class MbRRBVectorBuilder[ /* TODO @miniboxed */ A] extends mutable.Builder[A, MbRRBVector[A]] /*with MbRRBVectorPointer[A] */ {
 
-    private final type Elem = AnyRef
-    private final type ElemsArray = Array[Elem]
+    private final type Elem = AnyRef // TODO: A
+    private final type ElemsArray = Array[Elem] // TODO: MbArray[Elem]
 
     private final var display0: ElemsArray = new Array[AnyRef](32)
     private final var display1: Array[AnyRef] = _
@@ -880,7 +880,7 @@ final class MbRRBVectorBuilder[ /* @miniboxed */ A] extends mutable.Builder[A, M
     }
 }
 
-class MbRRBVectorIterator[ /* @miniboxed */ +A](startIndex: Int, override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
+class MbRRBVectorIterator[ /* TODO @miniboxed */ +A](startIndex: Int, override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
     /* Index in the vector of the first element of current block, i.e. current display0 */
     private final var blockIndex: Int = _
     /* Index in current block, i.e. current display0 */
@@ -962,7 +962,7 @@ class MbRRBVectorIterator[ /* @miniboxed */ +A](startIndex: Int, override privat
 
 }
 
-class MbRRBVectorReverseIterator[ /* @miniboxed */ +A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
+class MbRRBVectorReverseIterator[ /* TODO @miniboxed */ +A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
     private final var lastIndexOfBlock: Int = _
     private final var lo: Int = _
     private final var endLo: Int = _
@@ -1027,8 +1027,8 @@ class MbRRBVectorReverseIterator[ /* @miniboxed */ +A](startIndex: Int, final ov
 
 private[immutable] trait MbRRBVectorPointer[AA] {
 
-    private final type Elem = AnyRef
-    private final type ElemsArray = Array[Elem]
+    private final type Elem = AnyRef  // TODO: AA
+    private final type ElemsArray = Array[Elem]  // TODO: MbArray[Elem]
 
     private[immutable] final var display0: ElemsArray = _
     private[immutable] final var display1: Array[AnyRef] = _
