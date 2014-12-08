@@ -1,17 +1,19 @@
 package scala
 package collection
 package immutable
-package rrbvector.mb
-
-import scala.collection.parallel.immutable.rrbvector.mb.ParMbRRBVector
+package mbrrbvector
 
 import scala.annotation.unchecked.uncheckedVariance
-
 import scala.collection.generic._
-import scala.compat.Platform
+import scala.collection.parallel.immutable.mbrrbvector.ParMbRRBVector
+import scala.collection.{GenTraversableOnce, mutable}
 
 object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVector] {
-    def newBuilder[@miniboxed A]: mutable.Builder[A, MbRRBVector[A]] = new MbRRBVectorBuilder[A]()
+    def newBuilder[@miniboxed A]: mutable.Builder[A, MbRRBVector[A]] = {
+        val b = new MbRRBVectorBuilder[A]()
+        b.init()
+        b
+    }
 
     @inline private[immutable] final val compileAssertions = false
 
@@ -113,7 +115,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
             return super.:+(elem)(bf)
         }
 
-    private[rrbvector] final def focusOnFirstBlock(): Unit = {
+    private[mbrrbvector] final def focusOnFirstBlock(): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         if (focusStart != 0 || (focus & -32) != 0) {
             /* the current focused block is not on the left most leaf block of the vector */
@@ -121,7 +123,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         }
     }
 
-    private[rrbvector] final def focusOnLastBlock(_endIndex: Int): Unit = {
+    private[mbrrbvector] final def focusOnLastBlock(_endIndex: Int): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
             normalizeAndFocusOn(_endIndex - 1)
@@ -558,15 +560,13 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
     }
 }
 
-final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVector[A]] /*with MbRRBVectorPointer[A] */ {
+final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVector[A]] with MbRRBVectorPointer[A] {
 
-    private final var display0: MbArray[A] = MbArray.empty[A](32)
-    private final var display1: Array[AnyRef] = _
-    private final var display2: Array[AnyRef] = _
-    private final var display3: Array[AnyRef] = _
-    private final var display4: Array[AnyRef] = _
-    private final var display5: Array[AnyRef] = _
-    private final var depth = 1
+    def init() {
+        display0 = newElemsArray(32)
+        depth = 1
+    }
+
     private final var blockIndex = 0
     private final var lo = 0
 
