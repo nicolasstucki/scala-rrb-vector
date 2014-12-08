@@ -4,7 +4,7 @@ package immutable.vectorutils
 /**
  * Created by nicolasstucki on 06/10/2014.
  */
-trait VectorOps[A] {
+trait VectorOps[@miniboxed A] {
     type Vec <: IndexedSeq[A]
 
     def element(n: Int): A

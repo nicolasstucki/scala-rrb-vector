@@ -4,7 +4,7 @@ import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.BuilderBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
-abstract class RRBVectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with RRBVectorAbstractBenchmark[A] {
+abstract class RRBVectorAbstractBuilderBenchmark[@miniboxed A] extends BuilderBenchmarks[A] with RRBVectorAbstractBenchmark[A] {
     def buildVector(n: Int): Int = {
         var i = 0
         var b = RRBVector.newBuilder[A]

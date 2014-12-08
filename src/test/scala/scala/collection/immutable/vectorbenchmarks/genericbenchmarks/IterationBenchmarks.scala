@@ -5,7 +5,7 @@ import org.scalameter.Key
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 
-abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class IterationBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
 
     override val maxHeight: Int = 4
 

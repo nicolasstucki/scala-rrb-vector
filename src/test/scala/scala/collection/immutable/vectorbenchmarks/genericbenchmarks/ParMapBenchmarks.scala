@@ -4,7 +4,7 @@ import org.scalameter.{Key, PerformanceTest}
 
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
-abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class ParMapBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
     override val maxHeight: Int = 4

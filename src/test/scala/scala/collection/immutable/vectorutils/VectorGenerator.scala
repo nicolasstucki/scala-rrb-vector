@@ -6,7 +6,7 @@ import scala.util.Random
 import scala.collection.immutable.rrbvector._
 import scala.collection.immutable.rrbvector.mb._
 
-trait BaseVectorGenerator[A] extends VectorOps[A] with VectorGeneratorType[A] {
+trait BaseVectorGenerator[@miniboxed A] extends VectorOps[A] with VectorGeneratorType[A] {
 
     def vectorClassName: String
 
@@ -52,7 +52,7 @@ object BaseVectorGenerator {
 
     case class Config(rnd: Random, maxSplitSize: Int)
 
-    trait VectorGenerator[A] extends BaseVectorGenerator[A] {
+    trait VectorGenerator[@miniboxed A] extends BaseVectorGenerator[A] {
         override final type Vec = Vector[A]
 
         final def vectorClassName: String = "Vector"
@@ -82,7 +82,7 @@ object BaseVectorGenerator {
         override final def drop(vec: Vec, n: Int): Vec = vec.drop(n)
     }
 
-    trait RRBVectorGenerator[A] extends BaseVectorGenerator[A] {
+    trait RRBVectorGenerator[@miniboxed A] extends BaseVectorGenerator[A] {
         override type Vec = RRBVector[A]
 
         final def vectorClassName: String = "RRBVector"
@@ -112,7 +112,7 @@ object BaseVectorGenerator {
         override final def drop(vec: RRBVector[A], n: Int): RRBVector[A] = vec.drop(n)
     }
 
-    trait MbRRBVectorGenerator[A] extends BaseVectorGenerator[A] {
+    trait MbRRBVectorGenerator[@miniboxed A] extends BaseVectorGenerator[A] {
         override type Vec = MbRRBVector[A]
 
         final def vectorClassName: String = "MbRRBVector"

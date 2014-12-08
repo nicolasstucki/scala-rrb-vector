@@ -4,7 +4,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAlloc
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class VectorAbstractMemoryAllocation[A] extends MemoryAllocation[A] with VectorBenchmark[A]
+abstract class VectorAbstractMemoryAllocation[@miniboxed A] extends MemoryAllocation[A] with VectorBenchmark[A]
 
 class VectorIntMemoryAllocation extends VectorAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
 

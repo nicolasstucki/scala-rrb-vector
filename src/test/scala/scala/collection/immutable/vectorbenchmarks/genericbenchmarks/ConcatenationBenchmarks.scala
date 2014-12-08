@@ -4,7 +4,7 @@ import org.scalameter.Key
 
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
-abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class ConcatenationBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
     // Used in immutable.vector to bound the sizes
     def to(n: Int): Int = n
 

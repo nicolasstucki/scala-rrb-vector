@@ -5,7 +5,7 @@ import org.scalameter._
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 
-abstract class MemoryAllocation[A] extends BaseVectorBenchmark[A] {
+abstract class MemoryAllocation[@miniboxed A] extends BaseVectorBenchmark[A] {
 
     override def measurer = new Executor.Measurer.MemoryFootprint
 

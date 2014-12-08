@@ -5,7 +5,7 @@ import org.scalameter.{Key, PerformanceTest}
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 
-abstract class PrependBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class PrependBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
     def prepend(vec: Vec, n: Int, times: Int): Int

@@ -7,7 +7,7 @@ import org.scalatest._
 import scala.collection.immutable.vectorutils.{VectorGeneratorType, BaseVectorGenerator}
 
 
-abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with VectorGeneratorType[A] {
+abstract class VectorSpec[@miniboxed A] extends WordSpec with BaseVectorGenerator[A] with VectorGeneratorType[A] {
 
     def isRRBVectorImplementation: Boolean = true
 

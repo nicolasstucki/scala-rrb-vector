@@ -11,15 +11,15 @@ import scala.collection.generic._
 import scala.compat.Platform
 
 object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVector] {
-    def newBuilder[A]: mutable.Builder[A, MbRRBVector[A]] = new MbRRBVectorBuilder[A]()
+    def newBuilder[@miniboxed A]: mutable.Builder[A, MbRRBVector[A]] = new MbRRBVectorBuilder[A]()
 
     @inline private[immutable] final val compileAssertions = false
 
-    implicit def canBuildFrom[A]: scala.collection.generic.CanBuildFrom[Coll, A, MbRRBVector[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
+    implicit def canBuildFrom[@miniboxed A]: scala.collection.generic.CanBuildFrom[Coll, A, MbRRBVector[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
     lazy private val EMPTY_VECTOR = new MbRRBVector[Nothing](0)
 
-    override def empty[A]: MbRRBVector[A] = EMPTY_VECTOR
+    override def empty[@miniboxed A]: MbRRBVector[A] = EMPTY_VECTOR
 
     private[immutable] final val emptyTransientBlock = new Array[AnyRef](2)
 }
@@ -88,14 +88,14 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         }
     }
 
-    private def createSingletonVector[B](elem: B): MbRRBVector[B] = {
+    private def createSingletonVector[@miniboxed B](elem: B): MbRRBVector[B] = {
         val resultVector = new MbRRBVector[B](1)
         resultVector.initSingleton(elem)
         if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
         resultVector
     }
 
-    override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[MbRRBVector[A], B, That]): That =
+    override def :+[@miniboxed B >: A, That](elem: B)(implicit bf: CanBuildFrom[MbRRBVector[A], B, That]): That =
         if (bf.eq(IndexedSeq.ReusableCBF)) {
             val _endIndex = this.endIndex
             if (_endIndex != 0) {
@@ -137,7 +137,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         focusOn(index)
     }
 
-    override final def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[MbRRBVector[A], B, That]): That =
+    override final def +:[@miniboxed B >: A, That](elem: B)(implicit bf: CanBuildFrom[MbRRBVector[A], B, That]): That =
         if (bf.eq(IndexedSeq.ReusableCBF)) {
             val _endIndex = this.endIndex
             if (_endIndex != 0) {
@@ -215,7 +215,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
 
     override def splitAt(n: Int): (MbRRBVector[A], MbRRBVector[A]) = (take(n), drop(n))
 
-    override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[MbRRBVector[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
+    override def ++[@miniboxed B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[MbRRBVector[A], B, That]): That = if (bf.eq(IndexedSeq.ReusableCBF))
         if (that.isEmpty)
             return this.asInstanceOf[That]
         else {
@@ -876,7 +876,7 @@ class MbRRBVectorIterator[@miniboxed +A](startIndex: Int, override private[immut
     private final var endLo: Int = _
     private final var _hasNext: Boolean = _
 
-    private[collection] final def initIteratorFrom(that: MbRRBVectorPointer[_]): Unit = {
+    private[collection] final def initIteratorFrom[@miniboxed B >: A](that: MbRRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that.asInstanceOf[MbRRBVectorPointer[A]])
         _hasNext = startIndex < endIndex
         if (_hasNext) {
@@ -955,7 +955,7 @@ class MbRRBVectorReverseIterator[@miniboxed +A](startIndex: Int, final override 
     private final var endLo: Int = _
     private final var _hasNext: Boolean = _
 
-    private[collection] final def initIteratorFrom(that: MbRRBVectorPointer[_]): Unit = {
+    private[collection] final def initIteratorFrom[@miniboxed B >: A](that: MbRRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that.asInstanceOf[MbRRBVectorPointer[A]])
         _hasNext = startIndex < endIndex
         if (_hasNext) {
@@ -969,7 +969,7 @@ class MbRRBVectorReverseIterator[@miniboxed +A](startIndex: Int, final override 
             lastIndexOfBlock = 0
             lo = 0
             endLo = 0
-            display0 = newElemsArray(1) //.asInstanceOf[Array[A]]
+            display0 = newElemsArray(1)
         }
     }
 
@@ -1012,7 +1012,7 @@ class MbRRBVectorReverseIterator[@miniboxed +A](startIndex: Int, final override 
     }
 }
 
-private[immutable] trait MbRRBVectorPointer[AA] {
+private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
 
     private[immutable] final var display0: MbArray[AA] = _
     private[immutable] final var display1: Array[AnyRef] = _

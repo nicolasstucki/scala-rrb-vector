@@ -1,7 +1,7 @@
 package scala.collection.immutable.vectorutils
 
 
-trait VectorGeneratorType[A] {
+trait VectorGeneratorType[@miniboxed A] {
     def element(n: Int): A
 
     def vectorTypeName: String

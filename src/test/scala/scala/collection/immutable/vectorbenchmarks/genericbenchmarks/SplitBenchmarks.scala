@@ -5,7 +5,7 @@ import org.scalameter.Key
 
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
-abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class SplitBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)

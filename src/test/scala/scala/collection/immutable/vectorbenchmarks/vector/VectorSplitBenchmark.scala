@@ -4,7 +4,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.SplitBenchm
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class VectorAbstractSplitBenchmark[A] extends SplitBenchmarks[A] with VectorBenchmark[A]
+abstract class VectorAbstractSplitBenchmark[@miniboxed A] extends SplitBenchmarks[A] with VectorBenchmark[A]
 
 class VectorSplitIntBenchmark extends VectorAbstractSplitBenchmark[Int] with VectorGeneratorType.IntGenerator
 

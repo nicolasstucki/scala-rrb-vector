@@ -4,7 +4,7 @@ import scala.collection.immutable.vectortests.VectorSpec
 import scala.collection.immutable.vectorutils.{VectorGeneratorType, BaseVectorGenerator}
 
 
-abstract class RRBVectorTest[A] extends VectorSpec[A] with BaseVectorGenerator.RRBVectorGenerator[A]
+abstract class RRBVectorTest[@miniboxed A] extends VectorSpec[A] with BaseVectorGenerator.RRBVectorGenerator[A]
 
 class IntRRBVectorTest extends RRBVectorTest[Int] with VectorGeneratorType.IntGenerator
 

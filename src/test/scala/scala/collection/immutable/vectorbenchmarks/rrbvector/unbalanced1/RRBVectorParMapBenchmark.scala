@@ -4,7 +4,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ParMapBench
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class RRBVectorAbstractParMapBenchmark[A] extends ParMapBenchmarks[A] with RRBVectorAbstractBenchmark[A]
+abstract class RRBVectorAbstractParMapBenchmark[@miniboxed A] extends ParMapBenchmarks[A] with RRBVectorAbstractBenchmark[A]
 
 class RRBVectorParMapIntBenchmark extends RRBVectorAbstractParMapBenchmark[Int] with VectorGeneratorType.IntGenerator
 
