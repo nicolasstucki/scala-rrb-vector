@@ -5,7 +5,7 @@ import org.scalameter.Key
 
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
-abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class BuilderBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
 
     override def minHeight: Int = 1
 

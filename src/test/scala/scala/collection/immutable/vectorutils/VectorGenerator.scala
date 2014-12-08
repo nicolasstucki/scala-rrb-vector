@@ -2,9 +2,10 @@ package scala.collection.immutable
 package vectorutils
 
 
+import scala.collection.immutable.mbrrbvector.{MbRRBVectorIterator, MbRRBVector}
 import scala.util.Random
 import scala.collection.immutable.rrbvector._
-import scala.collection.immutable.rrbvector.mb._
+import scala.collection.immutable.mbrrbvector._
 
 trait BaseVectorGenerator[@miniboxed A] extends VectorOps[A] with VectorGeneratorType[A] {
 

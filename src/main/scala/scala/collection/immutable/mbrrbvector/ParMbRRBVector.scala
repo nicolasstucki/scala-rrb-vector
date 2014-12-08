@@ -1,14 +1,12 @@
-package scala
-package collection
-package parallel.immutable
-package rrbvector.mb
+package scala.collection
+package parallel
+package immutable
+package mbrrbvector
 
-import scala.collection.generic.{GenericParTemplate, CanCombineFrom, ParFactory}
-import scala.collection.parallel.{ParSeqLike, Combiner, SeqSplitter}
-import mutable.ArrayBuffer
-import immutable.rrbvector.mb.MbRRBVector
-import immutable.rrbvector.mb.MbRRBVectorBuilder
-import immutable.rrbvector.mb.MbRRBVectorIterator
+import scala.collection.immutable.mbrrbvector._
+
+import generic.{CanCombineFrom, GenericParTemplate, ParFactory}
+import scala.collection.mutable.ArrayBuffer
 
 class ParMbRRBVector[@miniboxed +T](private[this] val vector: MbRRBVector[T])
   extends ParSeq[T]

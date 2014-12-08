@@ -5,7 +5,7 @@ import org.scalameter.{Key, PerformanceTest}
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 
-abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
+abstract class AppendBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
     self: PerformanceTest =>
 
     def append(vec: Vec, n: Int): Int

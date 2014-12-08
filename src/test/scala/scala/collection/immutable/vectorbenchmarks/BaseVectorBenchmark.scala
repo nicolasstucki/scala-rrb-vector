@@ -7,7 +7,7 @@ import org.scalameter.{Gen, Key}
 import scala.collection.immutable.vectorutils.BaseVectorGenerator
 
 
-trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGenerator[A] {
+trait BaseVectorBenchmark[@miniboxed A] extends OfflineRegressionReport with BaseVectorGenerator[A] {
 
     /* config */
 
@@ -23,7 +23,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     def sizes(from: Int, to: Int, by: Int) = Gen.range("size")(from, to, by)
 
-    def sized[T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
+    def sized[@miniboxed T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
 
     /* sequences */
 
