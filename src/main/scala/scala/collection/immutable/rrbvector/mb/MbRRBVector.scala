@@ -113,7 +113,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
             return super.:+(elem)(bf)
         }
 
-    private final def focusOnFirstBlock(): Unit = {
+    private[rrbvector] final def focusOnFirstBlock(): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         if (focusStart != 0 || (focus & -32) != 0) {
             /* the current focused block is not on the left most leaf block of the vector */
@@ -121,7 +121,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         }
     }
 
-    private final def focusOnLastBlock(_endIndex: Int): Unit = {
+    private[rrbvector] final def focusOnLastBlock(_endIndex: Int): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         if /* vector focus is not focused block of the last element */ (((focusStart + focus) ^ (_endIndex - 1)) >= 32) {
             normalizeAndFocusOn(_endIndex - 1)
