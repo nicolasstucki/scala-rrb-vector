@@ -3,7 +3,7 @@ package scala.collection.immutable.vectorbenchmarks.vector
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
-abstract class VectorAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with VectorBenchmark[A] {
+abstract class VectorAbstractConcatenationBenchmark[@miniboxed A] extends ConcatenationBenchmarks[A] with VectorBenchmark[A] {
     // Used in immutable.vector to bound the sizes
     override def to(n: Int): Int = math.min(n, 16000)
 }

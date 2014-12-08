@@ -4,7 +4,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.PrependBenc
 import scala.collection.immutable.vectorutils._
 
 
-abstract class VectorAbstractPrependBenchmark[A] extends PrependBenchmarks[A] with VectorBenchmark[A]
+abstract class VectorAbstractPrependBenchmark[@miniboxed A] extends PrependBenchmarks[A] with VectorBenchmark[A]
 
 class VectorPrependIntBenchmark extends VectorAbstractPrependBenchmark[Int] with VectorGeneratorType.IntGenerator {
 

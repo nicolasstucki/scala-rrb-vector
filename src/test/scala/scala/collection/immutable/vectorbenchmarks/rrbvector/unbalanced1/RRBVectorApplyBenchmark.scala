@@ -4,7 +4,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ApplyBenchm
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class RRBVectorAbstractApplyBenchmark[A] extends ApplyBenchmarks[A] with RRBVectorAbstractBenchmark[A]
+abstract class RRBVectorAbstractApplyBenchmark[@miniboxed A] extends ApplyBenchmarks[A] with RRBVectorAbstractBenchmark[A]
 
 class RRBVectorApplyIntBenchmark extends RRBVectorAbstractApplyBenchmark[Int] with VectorGeneratorType.IntGenerator
 

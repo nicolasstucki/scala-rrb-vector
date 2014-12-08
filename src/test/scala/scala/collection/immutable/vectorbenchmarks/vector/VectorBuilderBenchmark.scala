@@ -4,7 +4,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.BuilderBenc
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class VectorAbstractBuilderBenchmark[A] extends BuilderBenchmarks[A] with VectorBenchmark[A] {
+abstract class VectorAbstractBuilderBenchmark[@miniboxed A] extends BuilderBenchmarks[A] with VectorBenchmark[A] {
     def buildVector(n: Int): Int = {
         var i = 0
         var b = Vector.newBuilder[A]

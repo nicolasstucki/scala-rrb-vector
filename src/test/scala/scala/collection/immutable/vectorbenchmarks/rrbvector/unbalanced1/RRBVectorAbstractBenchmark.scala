@@ -4,7 +4,7 @@ import scala.collection.immutable.rrbvector.RRBVector
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 import scala.collection.immutable.vectorutils.BaseVectorGenerator.RRBVectorGenerator
 
-trait RRBVectorAbstractBenchmark[A] extends BaseVectorBenchmark[A] with RRBVectorGenerator[A] {
+trait RRBVectorAbstractBenchmark[@miniboxed A] extends BaseVectorBenchmark[A] with RRBVectorGenerator[A] {
     override def minHeight = 3
 
     override def generateVectors(from: Int, to: Int, by: Int) = {

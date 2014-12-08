@@ -7,7 +7,7 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.AppendBench
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class VectorAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with VectorBenchmark[A]
+abstract class VectorAbstractAppendBenchmark[@miniboxed A] extends AppendBenchmarks[A] with VectorBenchmark[A]
 
 class VectorAppendIntBenchmark extends VectorAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
 

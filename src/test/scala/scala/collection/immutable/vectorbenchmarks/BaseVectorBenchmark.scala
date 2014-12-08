@@ -23,7 +23,7 @@ trait BaseVectorBenchmark[@miniboxed A] extends OfflineRegressionReport with Bas
 
     def sizes(from: Int, to: Int, by: Int) = Gen.range("size")(from, to, by)
 
-    def sized[@miniboxed T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
+    def sized[@miniboxed T, @miniboxed Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
 
     /* sequences */
 
