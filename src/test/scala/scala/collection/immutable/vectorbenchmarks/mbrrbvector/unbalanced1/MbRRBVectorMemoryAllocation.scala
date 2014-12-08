@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.mbrrbvector.unbalanced1
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAllocation
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class MbRRBVectorAbstractMemoryAllocation[@miniboxed A] extends MemoryAllocation[A] with MbRRBVectorAbstractBenchmark[A]
+
+class MbRRBVectorIntMemoryAllocation extends MbRRBVectorAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
+
+class MbRRBVectorStringMemoryAllocation extends MbRRBVectorAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator

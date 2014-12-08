@@ -1,0 +1,12 @@
+package scala.collection.immutable.vectorbenchmarks.mbrrbvector.xunbalanced
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.SplitBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class MbRRBVectorAbstractSplitBenchmark[@miniboxed A] extends SplitBenchmarks[A] with MbRRBVectorAbstractBenchmark[A]
+
+class MbRRBVectorSplitIntBenchmark extends MbRRBVectorAbstractSplitBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class MbRRBVectorSplitStringBenchmark extends MbRRBVectorAbstractSplitBenchmark[String] with VectorGeneratorType.StringGenerator
+

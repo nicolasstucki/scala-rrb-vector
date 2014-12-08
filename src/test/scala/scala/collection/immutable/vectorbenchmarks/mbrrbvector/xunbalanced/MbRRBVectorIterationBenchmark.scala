@@ -1,0 +1,10 @@
+package scala.collection.immutable.vectorbenchmarks.mbrrbvector.xunbalanced
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.IterationBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+abstract class MbRRBVectorAbstractIterationBenchmark[@miniboxed A] extends IterationBenchmarks[A] with MbRRBVectorAbstractBenchmark[A]
+
+class MbRRBVectorIterationIntBenchmark extends MbRRBVectorAbstractIterationBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class MbRRBVectorIterationStringBenchmark extends MbRRBVectorAbstractIterationBenchmark[String] with VectorGeneratorType.StringGenerator
