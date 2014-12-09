@@ -89,6 +89,27 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
+    override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]) = {
+        val vec = new RRBVector[B](endIndex)
+        if (index < focusStart || focusEnd <= index || ((index - focusStart) & -32) != 0) {
+            vec.normalizeAndFocusOn(index)
+        }
+        vec.makeTransientIfNeeded()
+        val d0 = copyOf(vec.display0)
+        d0((index - vec.focusStart) & 31) = elem.asInstanceOf[AnyRef]
+        vec.display0 = d0
+        vec.asInstanceOf[That]
+    }
+
+    def insertedAt[B >: A, That](elem: B, index: Int)(implicit bf: CanBuildFrom[RRBVector[A], B, That]) = {
+        // Could be optimized for small vectors
+        val (left, right) = splitAt(index)
+        left.:+[B, RRBVector[B]](elem).++(right).asInstanceOf[That]
+    }
+
+    @scala.deprecatedOverriding("Immutable indexed sequences should do nothing on toIndexedSeq except cast themselves as an indexed sequence.") override
+    def toIndexedSeq = super.toIndexedSeq
+
     private def createSingletonVector[B](elem: B): RRBVector[B] = {
         val resultVector = new RRBVector[B](1)
         resultVector.initSingleton(elem)
