@@ -37,7 +37,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     def performanceOfVectors(benchmarks: Int => Unit): Unit = {
         for (memoryInHeap <- memoryInHeapSeq) {
-            performance of s"vector benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
+            performance of s"$vectorName benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
               Key.exec.benchRuns -> benchRuns,
               Key.exec.independentSamples -> independentSamples,
               Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining" "-XX:+PrintCompilation",
