@@ -84,7 +84,11 @@ object ParMbRRBVector extends ParFactory[ParMbRRBVector] {
 
 private[immutable] class ParMbRRBVectorCombiner[@miniboxed T] extends Combiner[T, ParMbRRBVector[T]] {
 
-    private[immutable] val builder: MbRRBVectorBuilder[T] = new MbRRBVectorBuilder[T]
+    private[immutable] val builder: MbRRBVectorBuilder[T] = {
+        val b = new MbRRBVectorBuilder[T]
+        b.init()
+        b
+    }
 
     override def size = builder.endIndex
 

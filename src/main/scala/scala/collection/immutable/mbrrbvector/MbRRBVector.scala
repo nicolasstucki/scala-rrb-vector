@@ -15,11 +15,11 @@ object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVecto
         b
     }
 
-    @inline private[immutable] final val compileAssertions = false
+    @inline private[immutable] final val compileAssertions = true
 
     implicit def canBuildFrom[@miniboxed A]: scala.collection.generic.CanBuildFrom[Coll, A, MbRRBVector[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
-    lazy private[mbrrbvector /* should be just private */] val EMPTY_VECTOR = new MbRRBVector[Nothing](0)
+    lazy private[mbrrbvector /* should be just private */ ] val EMPTY_VECTOR = new MbRRBVector[Nothing](0)
 
     override def empty[@miniboxed A]: MbRRBVector[A] = EMPTY_VECTOR
 
@@ -90,7 +90,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         }
     }
 
-    private[mbrrbvector /* should be just private */] def createSingletonVector[@miniboxed B](elem: B): MbRRBVector[B] = {
+    private[mbrrbvector /* should be just private */ ] def createSingletonVector[@miniboxed B](elem: B): MbRRBVector[B] = {
         val resultVector = new MbRRBVector[B](1)
         resultVector.initSingleton(elem)
         if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
@@ -231,13 +231,14 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                         val newVec = new MbRRBVector[B](thisVecLen + thatVecLen)
                         newVec.initWithFocusFrom(this.asInstanceOf[MbRRBVector[B]])
                         newVec.transient = this.transient
-                        if (1024 < thisVecLen && thatVecLen <= 32) {
-                            /* appending a small amount of elements to a large vector */
-                            focusOnLastBlock(thisVecLen)
-                            newVec.appendAll(thisVecLen, thatVec.display0)
-                        } else {
-                            newVec.concatenate(thisVecLen, thatVec)
-                        }
+                        // FIXME
+                        // if (1024 < thisVecLen && thatVecLen <= 32) {
+                        //      /* appending a small amount of elements to a large vector */
+                        //      focusOnLastBlock(thisVecLen)
+                        //      newVec.appendAll(thisVecLen, thatVec.display0)
+                        // } else {
+                        newVec.concatenate(thisVecLen, thatVec)
+                        // }
                         return newVec.asInstanceOf[That]
                     }
                 case _ =>
@@ -269,7 +270,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
             throw new UnsupportedOperationException("empty.init")
     }
 
-    private[mbrrbvector /* should be just private */] final def takeFront0(n: Int): MbRRBVector[A] = {
+    private[mbrrbvector /* should be just private */ ] final def takeFront0(n: Int): MbRRBVector[A] = {
         if (transient) {
             normalize(depth)
             transient = false
@@ -282,7 +283,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
             val d0len = (vec.focus & 31) + 1
             if (d0len != 32) {
                 val d0 = newElemsArray(d0len)
-                System.arraycopy(vec.display0, 0, d0, 0, d0len)
+                MbArray.arraycopy(vec.display0, 0, d0, 0, d0len)
                 vec.display0 = d0
             }
 
@@ -331,7 +332,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
             return vec
         } else if ( /* depth==1 && */ n != 32) {
             val d0 = newElemsArray(n)
-            System.arraycopy(vec.display0, 0, d0, 0, n)
+            MbArray.arraycopy(vec.display0, 0, d0, 0, n)
             vec.display0 = d0
             vec.initFocus(0, 0, n, 1, 0)
             if (MbRRBVector.compileAssertions) vec.assertVectorInvariant()
@@ -339,7 +340,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         vec
     }
 
-    private[mbrrbvector /* should be just private */] final def dropFront0(n: Int): MbRRBVector[A] = {
+    private[mbrrbvector /* should be just private */ ] final def dropFront0(n: Int): MbRRBVector[A] = {
         if (transient) {
             normalize(depth)
             transient = false
@@ -354,7 +355,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
             if (d0Start != 0) {
                 val d0len = vec.display0.length - d0Start
                 val d0 = newElemsArray(d0len)
-                System.arraycopy(vec.display0, d0Start, d0, 0, d0len)
+                MbArray.arraycopy(vec.display0, d0Start, d0, 0, d0len)
                 vec.display0 = d0
             }
 
@@ -398,7 +399,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
         } else {
             val newLen = vec.display0.length - n
             val d0 = newElemsArray(newLen)
-            System.arraycopy(vec.display0, n, d0, 0, newLen)
+            MbArray.arraycopy(vec.display0, n, d0, 0, newLen)
             vec.display0 = d0
             vec.initFocus(0, 0, newLen, 1, 0)
             if (MbRRBVector.compileAssertions) vec.assertVectorInvariant()
@@ -492,25 +493,25 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
 
                             var i = 0
                             while (i < sizes.length - 1) {
-                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
+                                checkSizes(node(i), currentDepth - 1, sizes(i) - (if (i == 0) 0 else sizes(i - 1)))
                                 i += 1
                             }
-                            checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, if (sizes.length > 1) sizes(sizes.length - 1) - sizes(sizes.length - 2) else sizes(sizes.length - 1))
+                            checkSizes(node(node.length - 2), currentDepth - 1, if (sizes.length > 1) sizes(sizes.length - 1) - sizes(sizes.length - 2) else sizes(sizes.length - 1))
                         } else {
                             var i = 0
                             while (i < node.length - 2) {
-                                checkSizes(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1, 1 << (5 * (currentDepth - 1)))
+                                checkSizes(node(i), currentDepth - 1, 1 << (5 * (currentDepth - 1)))
                                 i += 1
                             }
                             val expectedLast = _endIndex - (1 << (5 * (currentDepth - 1))) * (node.length - 2)
                             assert(1 <= expectedLast && expectedLast <= (1 << (5 * currentDepth)))
-                            checkSizes(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, expectedLast)
+                            checkSizes(node(node.length - 2), currentDepth - 1, expectedLast)
                         }
                     } else {
                         assert(transient)
                     }
                 } else if (_node != null) {
-                    assert(_node.asInstanceOf[Array[A]].length == _endIndex)
+                    assert(_node.asInstanceOf[MbArray[A]].length == _endIndex)
                 } else {
                     assert(transient)
                 }
@@ -563,14 +564,15 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
 final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVector[A]] with MbRRBVectorPointer[A] {
 
     def init() {
+        // This is a workarround for some limitations of miniboxing field initalization
         display0 = newElemsArray(32)
         depth = 1
     }
 
-    private[mbrrbvector /* should be just private */] final var blockIndex = 0
-    private[mbrrbvector /* should be just private */] final var lo = 0
+    private[mbrrbvector /* should be just private */ ] final var blockIndex = 0
+    private[mbrrbvector /* should be just private */ ] final var lo = 0
 
-    private[mbrrbvector /* should be just private */] final var acc: MbRRBVector[A] = null
+    private[mbrrbvector /* should be just private */ ] final var acc: MbRRBVector[A] = null
 
     private[collection] final def endIndex = {
         var sz = blockIndex + lo
@@ -615,7 +617,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
         this
     }
 
-    private[mbrrbvector /* should be just private */] final def resultCurrent(): MbRRBVector[A] = {
+    private[mbrrbvector /* should be just private */ ] final def resultCurrent(): MbRRBVector[A] = {
         val _lo = lo
         val size = blockIndex + _lo
         if (size == 0) {
@@ -625,7 +627,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
             var d0 = display0
             if (_lo != 32) {
                 val d0_truncated = MbArray.empty[A](_lo)
-                System.arraycopy(d0, 0, d0_truncated, 0, _lo)
+                MbArray.arraycopy(d0, 0, d0_truncated, 0, _lo)
                 d0 = d0_truncated
             }
             resultVector.focusEnd = size
@@ -634,6 +636,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
             val lastIndex = size - 1
             _depth match {
                 case 1 =>
+                    resultVector.initFromDisplays(d0)
                     resultVector.initFromDisplays(d0)
                     if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
                     return resultVector
@@ -705,7 +708,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
         }
     }
 
-    private[mbrrbvector /* should be just private */] final def copyOfAndStabilize(array: Array[AnyRef], lastChild: AnyRef, indexOfLastChild: Int) = {
+    private[mbrrbvector /* should be just private */ ] final def copyOfAndStabilize(array: Array[AnyRef], lastChild: AnyRef, indexOfLastChild: Int) = {
         if (MbRRBVector.compileAssertions) {
             assert(array != null)
             assert(0 <= indexOfLastChild && indexOfLastChild < array.length, (indexOfLastChild, array.length))
@@ -724,12 +727,12 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
         resultVector
     }
 
-    private[mbrrbvector /* should be just private */] final def resultWithAcc() = {
+    private[mbrrbvector /* should be just private */ ] final def resultWithAcc() = {
         acc ++ resultCurrent()
     }
 
-    private[mbrrbvector /* should be just private */] final def clearCurrent(): Unit = {
-        display0 = MbArray.empty[A](32)
+    private[mbrrbvector /* should be just private */ ] final def clearCurrent(): Unit = {
+        display0 = newElemsArray(32)
         display1 = null
         display2 = null
         display3 = null
@@ -745,7 +748,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
         acc = null
     }
 
-    private[mbrrbvector /* should be just private */] final def gotoNextBlockStartWritable(xor: Int): Unit = {
+    private[mbrrbvector /* should be just private */ ] final def gotoNextBlockStartWritable(xor: Int): Unit = {
         if (xor < 1024) {
             def gotoNextBlockStartWritable() = {
                 val d1: Array[AnyRef] =
@@ -758,7 +761,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
                     } else {
                         display1
                     }
-                val d0 = MbArray.empty[A](32)
+                val d0 = newElemsArray(32)
                 display0 = d0
                 d1((blockIndex >> 5) & 31) = d0
             }
@@ -774,7 +777,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
                         display2 = d2
                         d2
                     } else display2
-                val d0 = MbArray.empty[A](32)
+                val d0 = newElemsArray(32)
                 val d1 = new Array[AnyRef](33)
                 display0 = d0
                 display1 = d1
@@ -794,7 +797,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
                         display3 = d3
                         d3
                     } else display3
-                val d0 = MbArray.empty[A](32)
+                val d0 = newElemsArray(32)
                 val d1 = new Array[AnyRef](33)
                 val d2 = new Array[AnyRef](33)
                 display0 = d0
@@ -817,7 +820,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
                         display4 = d4
                         d4
                     } else display4
-                val d0 = MbArray.empty[A](32)
+                val d0 = newElemsArray(32)
                 val d1 = new Array[AnyRef](33)
                 val d2 = new Array[AnyRef](33)
                 val d3 = new Array[AnyRef](33)
@@ -843,7 +846,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
                         display5 = d5
                         d5
                     } else display5
-                val d0 = MbArray.empty[A](32)
+                val d0 = newElemsArray(32)
                 val d1 = new Array[AnyRef](33)
                 val d2 = new Array[AnyRef](33)
                 val d3 = new Array[AnyRef](33)
@@ -869,12 +872,12 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
 
 class MbRRBVectorIterator[@miniboxed +A](startIndex: Int, override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
     /* Index in the vector of the first element of current block, i.e. current display0 */
-    private[mbrrbvector /* should be just private */] final var blockIndex: Int = _
+    private[mbrrbvector /* should be just private */ ] final var blockIndex: Int = _
     /* Index in current block, i.e. current display0 */
-    private[mbrrbvector /* should be just private */] final var lo: Int = _
+    private[mbrrbvector /* should be just private */ ] final var lo: Int = _
     /* End index (or length) of current block, i.e. current display0 */
-    private[mbrrbvector /* should be just private */] final var endLo: Int = _
-    private[mbrrbvector /* should be just private */] final var _hasNext: Boolean = _
+    private[mbrrbvector /* should be just private */ ] final var endLo: Int = _
+    private[mbrrbvector /* should be just private */ ] final var _hasNext: Boolean = _
 
     private[collection] final def initIteratorFrom[@miniboxed B >: A](that: MbRRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that.asInstanceOf[MbRRBVectorPointer[A]])
@@ -908,7 +911,7 @@ class MbRRBVectorIterator[@miniboxed +A](startIndex: Int, override private[immut
         res
     }
 
-    private[mbrrbvector /* should be just private */] final def gotoNextBlock(): Unit = {
+    private[mbrrbvector /* should be just private */ ] final def gotoNextBlock(): Unit = {
         if (MbRRBVector.compileAssertions) {
             assert(lo == endLo)
         }
@@ -950,10 +953,10 @@ class MbRRBVectorIterator[@miniboxed +A](startIndex: Int, override private[immut
 }
 
 class MbRRBVectorReverseIterator[@miniboxed +A](startIndex: Int, final override private[immutable] val endIndex: Int) extends AbstractIterator[A] with Iterator[A] with MbRRBVectorPointer[A@uncheckedVariance] {
-    private[mbrrbvector /* should be just private */] final var lastIndexOfBlock: Int = _
-    private[mbrrbvector /* should be just private */] final var lo: Int = _
-    private[mbrrbvector /* should be just private */] final var endLo: Int = _
-    private[mbrrbvector /* should be just private */] final var _hasNext: Boolean = _
+    private[mbrrbvector /* should be just private */ ] final var lastIndexOfBlock: Int = _
+    private[mbrrbvector /* should be just private */ ] final var lo: Int = _
+    private[mbrrbvector /* should be just private */ ] final var endLo: Int = _
+    private[mbrrbvector /* should be just private */ ] final var _hasNext: Boolean = _
 
     private[collection] final def initIteratorFrom[@miniboxed B >: A](that: MbRRBVectorPointer[B]): Unit = {
         initWithFocusFrom(that.asInstanceOf[MbRRBVectorPointer[A]])
@@ -989,7 +992,7 @@ class MbRRBVectorReverseIterator[@miniboxed +A](startIndex: Int, final override 
             throw new NoSuchElementException("reached iterator end")
     }
 
-    private[mbrrbvector /* should be just private */] final def gotoPrevBlock(): Unit = {
+    private[mbrrbvector /* should be just private */ ] final def gotoPrevBlock(): Unit = {
         val newBlockIndex = lastIndexOfBlock - 32
         if (focusStart <= newBlockIndex) {
             val _focusStart = focusStart
@@ -1195,10 +1198,13 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
     private[immutable] final def getElementFromRoot(index: Int): AA = {
         if (MbRRBVector.compileAssertions) {
             assert(0 <= index)
-            assert(1 < depth && depth <= 6, depth.toString)
+            assert(1 <= depth && depth <= 6, depth.toString)
         }
         var indexInSubTree = index
         var currentDepth = depth
+        if (currentDepth == 1) {
+            return getElem0(display0, index)
+        }
         var display: Array[AnyRef] = currentDepth match {
             case 2 => display1
             case 3 => display2
@@ -1233,7 +1239,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         }
     }
 
-    @inline private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */] final def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
+    @inline private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def getIndexInSizes(sizes: Array[Int], indexInSubTree: Int): Int = {
         if (MbRRBVector.compileAssertions) {
             assert(0 <= indexInSubTree && indexInSubTree < sizes(sizes.length - 1))
         }
@@ -1315,7 +1321,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         newSizes
     }
 
-    private[mbrrbvector /* should be just private */] final def makeNewRoot0(node: Array[AnyRef]): Array[AnyRef] = {
+    private[mbrrbvector /* should be just private */ ] final def makeNewRoot0(node: Array[AnyRef]): Array[AnyRef] = {
         val newRoot = new Array[AnyRef](3)
         newRoot(0) = node
         val dLen = node.length
@@ -1330,7 +1336,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         newRoot
     }
 
-    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */] final def makeNewRoot1(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def makeNewRoot1(node: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
         val dSize = treeSize(node, currentDepth - 1)
         val newRootSizes = new Array[Int](2)
         /* newRootSizes(0) = 0 */
@@ -1341,7 +1347,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         newRoot
     }
 
-    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */] final def copyAndIncRightRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
+    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def copyAndIncRightRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
         val len = node.length
         val newRoot = copyOf(node, len - 1, len + 1)
         val oldSizes = node(len - 1).asInstanceOf[Array[Int]]
@@ -1359,7 +1365,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         newRoot
     }
 
-    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */] final def copyAndIncLeftRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
+    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def copyAndIncLeftRoot(node: Array[AnyRef], transient: Boolean, currentLevel: Int): Array[AnyRef] = {
         val len = node.length
         val newRoot = new Array[AnyRef](len + 1)
         System.arraycopy(node, 0, newRoot, 1, len - 1)
@@ -1381,7 +1387,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                 newSizes(i) = acc
                 i += 1
             }
-            newSizes(i) = acc + treeSize(node(node.length - 2).asInstanceOf[Array[AnyRef]], currentLevel)
+            newSizes(i) = acc + treeSize(node(node.length - 2), currentLevel)
         }
         newRoot(len) = newSizes
         newRoot
@@ -1606,22 +1612,22 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         else throw new IllegalArgumentException(xor.toString)
     }
 
-    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */]final def getElem0(display: MbArray[AA], index: Int): AA =
+    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def getElem0(display: MbArray[AA], index: Int): AA =
         display(index & 31).asInstanceOf[AA]
 
-    private[mbrrbvector /* should be just private */] final def getElem1(display: Array[AnyRef], index: Int): AA =
+    private[mbrrbvector /* should be just private */ ] final def getElem1(display: Array[AnyRef], index: Int): AA =
         display((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
-    private[mbrrbvector /* should be just private */] final def getElem2(display: Array[AnyRef], index: Int): AA =
+    private[mbrrbvector /* should be just private */ ] final def getElem2(display: Array[AnyRef], index: Int): AA =
         display((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
-    private[mbrrbvector /* should be just private */] final def getElem3(display: Array[AnyRef], index: Int): AA =
+    private[mbrrbvector /* should be just private */ ] final def getElem3(display: Array[AnyRef], index: Int): AA =
         display((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
-    private[mbrrbvector /* should be just private */] final def getElem4(display: Array[AnyRef], index: Int): AA =
+    private[mbrrbvector /* should be just private */ ] final def getElem4(display: Array[AnyRef], index: Int): AA =
         display((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
-    private[mbrrbvector /* should be just private */] final def getElem5(display: Array[AnyRef], index: Int): AA =
+    private[mbrrbvector /* should be just private */ ] final def getElem5(display: Array[AnyRef], index: Int): AA =
         display((index >> 25) & 31).asInstanceOf[Array[AnyRef]]((index >> 20) & 31).asInstanceOf[Array[AnyRef]]((index >> 15) & 31).asInstanceOf[Array[AnyRef]]((index >> 10) & 31).asInstanceOf[Array[AnyRef]]((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
 
     private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
@@ -1850,7 +1856,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         }
     }
 
-    private[mbrrbvector /* should be just private */] final def copyDisplaysAndStabilizeDisplayPath(_depth: Int, _focus: Int): Unit = {
+    private[mbrrbvector /* should be just private */ ] final def copyDisplaysAndStabilizeDisplayPath(_depth: Int, _focus: Int): Unit = {
         _depth match {
             case 1 =>
                 return
@@ -2178,7 +2184,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
             assert(0 <= numElements && numElements <= newSize && numElements <= array.length, (numElements, newSize, array.length))
         }
         val newArray = MbArray.empty[AA](newSize)
-        System.arraycopy(array, 0, newArray, 0, numElements)
+        MbArray.arraycopy(array, 0, newArray, 0, numElements)
         newArray
     }
 
@@ -2228,7 +2234,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         if (oldSizes != null) {
             val newSizes = new Array[Int](end)
 
-            val delta = treeSize(node(branchToUpdate).asInstanceOf[Array[AnyRef]], currentDepth - 1)
+            val delta = treeSize(node(branchToUpdate), currentDepth - 1)
             if (branchToUpdate > 0)
                 System.arraycopy(oldSizes, 0, newSizes, 0, branchToUpdate)
             var i = branchToUpdate
@@ -2252,7 +2258,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         if (end > 1) {
             val sizes = new Array[Int](end)
             while (i < end) {
-                acc += treeSize(node(i).asInstanceOf[Array[AnyRef]], currentDepth - 1)
+                acc += treeSize(node(i), currentDepth - 1)
                 sizes(i) = acc
                 i += 1
             }
@@ -2291,7 +2297,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         node
     }
 
-    @inline private[mbrrbvector /* should be just private */] final def notBalanced(node: Array[AnyRef], sizes: Array[Int], currentDepth: Int, end: Int): Boolean = {
+    @inline private[mbrrbvector /* should be just private */ ] final def notBalanced(node: Array[AnyRef], sizes: Array[Int], currentDepth: Int, end: Int): Boolean = {
         if (MbRRBVector.compileAssertions) {
             assert(end > 1)
         }
@@ -2303,21 +2309,29 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
           )
     }
 
-    private[mbrrbvector /* should be just private */] final def treeSize(node: Array[AnyRef], currentDepth: Int): Int = {
-        def treeSizeRec(node: Array[AnyRef], currentDepth: Int, acc: Int): Int = {
-            if (currentDepth == 1) {
-                return acc + node.length
-            } else {
-                val treeSizes = node(node.length - 1).asInstanceOf[Array[Int]]
-                if (treeSizes != null)
-                    return acc + treeSizes(treeSizes.length - 1)
-                else {
-                    val len = node.length
-                    return treeSizeRec(node(len - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, acc + (len - 2) * (1 << (5 * (currentDepth - 1))))
+    private[mbrrbvector /* should be just private */ ] final def treeSize(node: AnyRef, currentDepth: Int): Int = {
+        if (MbRRBVector.compileAssertions) {
+            assert(node.isInstanceOf[Array[AnyRef]] || node.isInstanceOf[MbArray[AA]])
+        }
+        def treeSizeRec(_node: Array[AnyRef], currentDepth: Int, acc: Int): Int = {
+            val node = _node.asInstanceOf[Array[AnyRef]]
+            val treeSizes = node(node.length - 1).asInstanceOf[Array[Int]]
+            if (treeSizes != null)
+                return acc + treeSizes(treeSizes.length - 1)
+            else {
+                val len = node.length
+                val newAcc = acc + (len - 2) * (1 << (5 * (currentDepth - 1)))
+                if (currentDepth > 2) {
+                    return treeSizeRec(node(len - 2).asInstanceOf[Array[AnyRef]], currentDepth - 1, newAcc)
+                } else {
+                    return newAcc + node(len - 2).asInstanceOf[MbArray[AA]].length()
                 }
             }
         }
-        treeSizeRec(node, currentDepth, 0)
+        if (currentDepth > 1)
+            treeSizeRec(node.asInstanceOf[Array[AnyRef]], currentDepth, 0)
+        else
+            node.asInstanceOf[MbArray[AA]].length()
     }
 
 
@@ -2333,7 +2347,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         }
     }
 
-    private[mbrrbvector /* should be just private */] final def appendOnCurrentBlock(elem: AA, elemIndexInBlock: Int): Unit = {
+    private[mbrrbvector /* should be just private */ ] final def appendOnCurrentBlock(elem: AA, elemIndexInBlock: Int): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         focusEnd = endIndex
         val d0 = copyOf0(display0, elemIndexInBlock, elemIndexInBlock + 1)
@@ -2342,7 +2356,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         makeTransientIfNeeded()
     }
 
-    private[mbrrbvector /* should be just private */] final def appendBackNewBlock(elem: AA, _endIndex: Int) = {
+    private[mbrrbvector /* should be just private */ ] final def appendBackNewBlock(elem: AA, _endIndex: Int) = {
         val oldDepth = depth
         val newRelaxedIndex = _endIndex - focusStart + focusRelax
         val focusJoined = focus | focusRelax
@@ -2423,8 +2437,8 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
             if /* if next element will go in current block position */ (elemIndexInBlock != 0) {
                 val batchSize = math.min(32 - elemIndexInBlock, arrLen - i)
                 val d0 = newElemsArray(elemIndexInBlock + batchSize)
-                System.arraycopy(display0, 0, d0, 0, elemIndexInBlock)
-                System.arraycopy(that, i, d0, elemIndexInBlock, batchSize)
+                MbArray.arraycopy(display0, 0, d0, 0, elemIndexInBlock)
+                MbArray.arraycopy(that, i, d0, elemIndexInBlock, batchSize)
                 display0 = d0
                 _endIndex += batchSize
                 focusEnd = _endIndex
@@ -2437,12 +2451,12 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         }
     }
 
-    private[mbrrbvector /* should be just private */] final def prependOnCurrentBlock(elem: AA, oldD0: MbArray[AA]): Unit = {
+    private[mbrrbvector /* should be just private */ ] final def prependOnCurrentBlock(elem: AA, oldD0: MbArray[AA]): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
         def shiftedCopyOf(array: MbArray[AA], newLen: Int): MbArray[AA] = {
             // extracted to keep method size under 35 bytes, so that it can be JIT-inlined
             val newArray = MbArray.empty[AA](newLen) //.asInstanceOf[Array[AA]]
-            System.arraycopy(array, 0, newArray, 1, newLen - 1)
+            MbArray.arraycopy(array, 0, newArray, 1, newLen - 1)
             newArray
         }
         val newLen = oldD0.length + 1
@@ -2537,7 +2551,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
     }
 
 
-    private[mbrrbvector /* should be just private */] final def makeTransientIfNeeded() = {
+    private[mbrrbvector /* should be just private */ ] final def makeTransientIfNeeded() = {
         val _depth = depth
         if (_depth > 1 && !transient) {
             copyDisplaysAndNullFocusedBranch(_depth, focus | focusRelax)
@@ -2563,7 +2577,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         math.max(thisDepth, thatDepth) match {
             case 1 =>
                 if (endIndex <= 32) initFromLeaf(mergedLeafs(display0, that.display0))
-                else initFromRoot(rebalancedLeafs(display0, that.display0), 2)
+                else initFromRoot(rebalanced0(display0, that.display0), 2)
                 return
             case 2 =>
                 var d0: MbArray[AA] = null
@@ -2575,13 +2589,13 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                     if (that.display1 != null) d1 = that.display1
                     if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
-                var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
-                concat = rebalanced(this.display1, concat, that.display1, 2)
-                if (concat.length == 2) {
-                    initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 2)
+                val concat0: Array[AnyRef] = rebalanced0(this.display0, d0)
+                val concat1 = rebalanced1(this.display1, concat0, that.display1)
+                if (concat1.length == 2) {
+                    initFromRoot(concat1(0).asInstanceOf[Array[AnyRef]], 2)
                     return
                 } else {
-                    initFromRoot(withComputedSizes(concat, 3), 3)
+                    initFromRoot(withComputedSizes(concat1, 3), 3)
                     return
                 }
             case 3 =>
@@ -2598,8 +2612,8 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
                     if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
-                var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
-                concat = rebalanced(this.display1, concat, d1, 2)
+                var concat: Array[AnyRef] = rebalanced0(this.display0, d0)
+                concat = rebalanced1(this.display1, concat, d1)
                 concat = rebalanced(this.display2, concat, that.display2, 3)
                 if (concat.length == 2) {
                     initFromRoot(concat(0).asInstanceOf[Array[AnyRef]], 3)
@@ -2624,8 +2638,8 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
                     if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
-                var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
-                concat = rebalanced(this.display1, concat, d1, 2)
+                var concat: Array[AnyRef] = rebalanced0(this.display0, d0)
+                concat = rebalanced1(this.display1, concat, d1)
                 concat = rebalanced(this.display2, concat, d2, 3)
                 concat = rebalanced(this.display3, concat, that.display3, 4)
                 if (concat.length == 2) {
@@ -2655,8 +2669,8 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
                     if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
-                var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
-                concat = rebalanced(this.display1, concat, d1, 2)
+                var concat: Array[AnyRef] = rebalanced0(this.display0, d0)
+                concat = rebalanced1(this.display1, concat, d1)
                 concat = rebalanced(this.display2, concat, d2, 3)
                 concat = rebalanced(this.display3, concat, d3, 4)
                 concat = rebalanced(this.display4, concat, that.display4, 5)
@@ -2689,8 +2703,8 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                     if (d2 == null) d1 = that.display1 else d1 = d2(0).asInstanceOf[Array[AnyRef]]
                     if (d1 == null) d0 = that.display0 else d0 = d1(0).asInstanceOf[MbArray[AA]]
                 }
-                var concat: Array[AnyRef] = rebalancedLeafs(this.display0, d0)
-                concat = rebalanced(this.display1, concat, d1, 2)
+                var concat: Array[AnyRef] = rebalanced0(this.display0, d0)
+                concat = rebalanced1(this.display1, concat, d1)
                 concat = rebalanced(this.display2, concat, d2, 3)
                 concat = rebalanced(this.display3, concat, d3, 4)
                 concat = rebalanced(this.display4, concat, d4, 5)
@@ -2707,9 +2721,98 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
 
     }
 
-    private[mbrrbvector /* should be just private */] def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+
+    private[mbrrbvector /* should be just private */ ] def rebalanced1(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef]): Array[AnyRef] = {
         val leftLength = if (displayLeft == null) 0 else displayLeft.length - 1
-        val concatLength = if (concat == null) 0 else concat.length - 1
+        val concatLength = concat.length - 1
+        val rightLength = if (displayRight == null) 0 else displayRight.length - 1
+        val branching = computeBranching(displayLeft, concat, displayRight, 2)
+        val top = new Array[AnyRef]((branching >> 10) + (if ((branching & 1023) == 0) 1 else 2))
+        var mid = new Array[AnyRef](if ((branching >> 10) == 0) ((branching + 31) >> 5) + 1 else 33)
+        var bot: MbArray[AA] = null
+        var iSizes = 0
+        var iTop = 0
+        var iMid = 0
+        var iBot = 0
+        var i = 0
+        var j = 0
+        var d = 0
+        var currentDisplay: Array[AnyRef] = null
+        var displayEnd = 0
+        do {
+            d match {
+                case 0 =>
+                    if (displayLeft != null) {
+                        currentDisplay = displayLeft
+                        displayEnd = leftLength - 1
+                    }
+                case 1 =>
+                    currentDisplay = concat
+                    displayEnd = concatLength
+                    i = 0
+                case 2 =>
+                    if (displayRight != null) {
+                        currentDisplay = displayRight
+                        displayEnd = rightLength
+                        i = 1
+                    }
+            }
+            while (i < displayEnd) {
+                val displayValue = currentDisplay(i).asInstanceOf[MbArray[AA]]
+                val displayValueEnd = displayValue.length
+                if /* the current block in displayValue can be used directly (no copies) */ ((iBot | j) == 0 && displayValueEnd == 32) {
+                    mid(iMid) = displayValue
+                    i += 1
+                    iMid += 1
+                    iSizes += 1
+                } else {
+                    val numElementsToCopy = java.lang.Math.min(displayValueEnd - j, 32 - iBot)
+                    if (iBot == 0) {
+                        bot = newElemsArray(java.lang.Math.min(branching - (iTop << 10) - (iMid << 5), 32))
+                        mid(iMid) = bot
+                    }
+                    MbArray.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
+                    j += numElementsToCopy
+                    iBot += numElementsToCopy
+                    if (j == displayValueEnd) {
+                        i += 1
+                        j = 0
+                    }
+
+                    if (iBot == 32) {
+                        iMid += 1
+                        iBot = 0
+                        iSizes += 1
+                    }
+                }
+                if (iMid == 32) {
+                    top(iTop) = withComputedSizes(mid, 2)
+                    iTop += 1
+                    iMid = 0
+                    val remainingBranches = branching - ((iTop << 10) | (iMid << 5) | iBot)
+                    if (remainingBranches > 0)
+                        mid = new Array[AnyRef](if ((remainingBranches >> 10) == 0) (remainingBranches + 63) >> 5 else 33)
+                    else
+                        mid = null
+                }
+
+            }
+            d += 1
+        }
+        while (d < 3)
+
+        if (mid != null)
+            top(iTop) = withComputedSizes(mid, 2)
+
+        top
+    }
+
+    private[mbrrbvector /* should be just private */ ] def rebalanced(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int): Array[AnyRef] = {
+        if (MbRRBVector.compileAssertions) {
+            assert(currentDepth > 2)
+        }
+        val leftLength = if (displayLeft == null) 0 else displayLeft.length - 1
+        val concatLength = concat.length - 1
         val rightLength = if (displayRight == null) 0 else displayRight.length - 1
         val branching = computeBranching(displayLeft, concat, displayRight, currentDepth)
         val top = new Array[AnyRef]((branching >> 10) + (if ((branching & 1023) == 0) 1 else 2))
@@ -2729,26 +2832,22 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                 case 0 =>
                     if (displayLeft != null) {
                         currentDisplay = displayLeft
-                        displayEnd = if (concat == null) leftLength else leftLength - 1
+                        displayEnd = leftLength - 1
                     }
                 case 1 =>
-                    if (concat == null)
-                        displayEnd = 0
-                    else {
-                        currentDisplay = concat
-                        displayEnd = concatLength
-                    }
+                    currentDisplay = concat
+                    displayEnd = concatLength
                     i = 0
                 case 2 =>
                     if (displayRight != null) {
                         currentDisplay = displayRight
                         displayEnd = rightLength
-                        i = if (concat == null) 0 else 1
+                        i = 1
                     }
             }
             while (i < displayEnd) {
                 val displayValue = currentDisplay(i).asInstanceOf[Array[AnyRef]]
-                val displayValueEnd = if (currentDepth == 2) displayValue.length else displayValue.length - 1
+                val displayValueEnd = displayValue.length - 1
                 if /* the current block in displayValue can be used directly (no copies) */ ((iBot | j) == 0 && displayValueEnd == 32) {
                     if (currentDepth != 2 && bot != null) {
                         withComputedSizes(bot, currentDepth - 1)
@@ -2761,12 +2860,11 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                 } else {
                     val numElementsToCopy = java.lang.Math.min(displayValueEnd - j, 32 - iBot)
                     if (iBot == 0) {
-                        if (currentDepth != 2 && bot != null)
+                        if (bot != null)
                             withComputedSizes(bot, currentDepth - 1)
-                        bot = new Array[AnyRef](java.lang.Math.min(branching - (iTop << 10) - (iMid << 5), 32) + (if (currentDepth == 2) 0 else 1))
+                        bot = new Array[AnyRef](java.lang.Math.min(branching - (iTop << 10) - (iMid << 5), 32) + 1)
                         mid(iMid) = bot
                     }
-
                     System.arraycopy(displayValue, j, bot, iBot, numElementsToCopy)
                     j += numElementsToCopy
                     iBot += numElementsToCopy
@@ -2779,13 +2877,13 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
                         iMid += 1
                         iBot = 0
                         iSizes += 1
-                        if (currentDepth != 2 && bot != null)
+                        if (bot != null)
                             withComputedSizes(bot, currentDepth - 1)
                     }
 
                 }
                 if (iMid == 32) {
-                    top(iTop) = if (currentDepth == 1) withComputedSizes1(mid) else withComputedSizes(mid, currentDepth)
+                    top(iTop) = withComputedSizes(mid, currentDepth)
                     iTop += 1
                     iMid = 0
                     val remainingBranches = branching - ((iTop << 10) | (iMid << 5) | iBot)
@@ -2799,25 +2897,25 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
             d += 1
         }
         while (d < 3)
-        if (currentDepth != 2 && bot != null)
+        if (bot != null)
             withComputedSizes(bot, currentDepth - 1)
 
         if (mid != null)
-            top(iTop) = if (currentDepth == 1) withComputedSizes1(mid) else withComputedSizes(mid, currentDepth)
+            top(iTop) = withComputedSizes(mid, currentDepth)
 
         top
     }
 
-    private[mbrrbvector /* should be just private */] final def mergedLeafs(displayLeft: MbArray[AA], displayRight: MbArray[AA]): MbArray[AA] = {
+    private[mbrrbvector /* should be just private */ ] final def mergedLeafs(displayLeft: MbArray[AA], displayRight: MbArray[AA]): MbArray[AA] = {
         val leftLength = displayLeft.length
         val rightLength = displayRight.length
         val mergedDisplay = MbArray.empty[AA](leftLength + rightLength)
-        System.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
-        System.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
+        MbArray.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
+        MbArray.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
         mergedDisplay
     }
 
-    private[mbrrbvector /* should be just private */] final def rebalancedLeafs(displayLeft: MbArray[AA], displayRight: MbArray[AA]): Array[AnyRef] = {
+    private[mbrrbvector /* should be just private */ ] final def rebalanced0(displayLeft: MbArray[AA], displayRight: MbArray[AA]): Array[AnyRef] = {
         val leftLength = displayLeft.length
         val rightLength = displayRight.length
         if (leftLength == 32) {
@@ -2827,8 +2925,8 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
             return top
         } else if (leftLength + rightLength <= 32) {
             val mergedDisplay = MbArray.empty[AA](leftLength + rightLength)
-            System.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
-            System.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
+            MbArray.arraycopy(displayLeft, 0, mergedDisplay, 0, leftLength)
+            MbArray.arraycopy(displayRight, 0, mergedDisplay, leftLength, rightLength)
             val top = new Array[AnyRef](2)
             top(0) = mergedDisplay
             return top
@@ -2838,14 +2936,14 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
             val arr1 = MbArray.empty[AA](leftLength + rightLength - 32)
             top(0) = arr0
             top(1) = arr1
-            System.arraycopy(displayLeft, 0, arr0, 0, leftLength)
-            System.arraycopy(displayRight, 0, arr0, leftLength, 32 - leftLength)
-            System.arraycopy(displayRight, 32 - leftLength, arr1, 0, rightLength - 32 + leftLength)
+            MbArray.arraycopy(displayLeft, 0, arr0, 0, leftLength)
+            MbArray.arraycopy(displayRight, 0, arr0, leftLength, 32 - leftLength)
+            MbArray.arraycopy(displayRight, 32 - leftLength, arr1, 0, rightLength - 32 + leftLength)
             return top
         }
     }
 
-    private[mbrrbvector /* should be just private */] final def computeBranching(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int) = {
+    private[mbrrbvector /* should be just private */ ] final def computeBranching(displayLeft: Array[AnyRef], concat: Array[AnyRef], displayRight: Array[AnyRef], currentDepth: Int) = {
         val leftLength = if (displayLeft == null) 0 else displayLeft.length - 1
         val concatLength = if (concat == null) 0 else concat.length - 1
         val rightLength = if (displayRight == null) 0 else displayRight.length - 1
@@ -2859,17 +2957,20 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         } else {
             var i = 0
             while (i < leftLength - 1) {
-                branching += displayLeft(i).asInstanceOf[Array[AnyRef]].length
+                if (currentDepth == 2) branching += displayLeft(i).asInstanceOf[MbArray[AA]].length
+                else branching += displayLeft(i).asInstanceOf[Array[AnyRef]].length
                 i += 1
             }
             i = 0
             while (i < concatLength) {
-                branching += concat(i).asInstanceOf[Array[AnyRef]].length
+                if (currentDepth == 2) branching += concat(i).asInstanceOf[MbArray[AA]].length
+                else branching += concat(i).asInstanceOf[Array[AnyRef]].length
                 i += 1
             }
             i = 1
             while (i < rightLength) {
-                branching += displayRight(i).asInstanceOf[Array[AnyRef]].length
+                if (currentDepth == 2) branching += displayRight(i).asInstanceOf[MbArray[AA]].length
+                else branching += displayRight(i).asInstanceOf[Array[AnyRef]].length
                 i += 1
             }
             if (currentDepth != 2) {
