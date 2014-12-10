@@ -2,7 +2,7 @@ package scala.collection.immutable.vectorbenchmarks
 
 import org.scalameter.PerformanceTest
 
-class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunAppendBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorAppendIntBenchmark]
 
@@ -27,7 +27,7 @@ class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunApplyBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorApplyIntBenchmark]
 
@@ -52,7 +52,7 @@ class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunBuilderBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorBuilderIntBenchmark]
 
@@ -65,7 +65,7 @@ class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunConcatenationBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorConcatenationIntBenchmark]
 
@@ -95,7 +95,7 @@ class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport
 
 }
 
-class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunIterationBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorIterationIntBenchmark]
 
@@ -120,7 +120,7 @@ class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunPrependBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunPrependBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorPrependIntBenchmark]
 
@@ -145,7 +145,7 @@ class RunPrependBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunSplitBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorSplitIntBenchmark]
 
@@ -170,7 +170,7 @@ class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
+class RunMemoryAllocation extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorIntMemoryAllocation]
 
@@ -191,7 +191,7 @@ class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
 }
 
 
-class RunParMapBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunParMapBenchmarks extends PerformanceTest.Microbenchmark {
 
     include[vector.VectorParMapIntBenchmark]
 
