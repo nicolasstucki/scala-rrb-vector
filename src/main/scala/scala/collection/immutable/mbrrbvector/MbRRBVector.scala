@@ -15,7 +15,7 @@ object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVecto
         b
     }
 
-    @inline private[immutable] final val compileAssertions = true
+    @inline private[immutable] final val compileAssertions = false
 
     implicit def canBuildFrom[@miniboxed A]: scala.collection.generic.CanBuildFrom[Coll, A, MbRRBVector[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
@@ -107,6 +107,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                 resultVector.focusOnLastBlock(_endIndex)
                 resultVector.append(elem, _endIndex)
                 if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                //println("MbRRBVector.:+().display0" + resultVector.display0)
                 return resultVector.asInstanceOf[That]
             } else {
                 return createSingletonVector(elem.asInstanceOf[A]).asInstanceOf[That]
@@ -149,8 +150,10 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                 resultVector.focusOnFirstBlock()
                 resultVector.prepend(elem)
                 if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
+                //println("MbRRBVector.+:().display0" + resultVector.display0)
                 return resultVector.asInstanceOf[That]
             } else {
+
                 return createSingletonVector(elem).asInstanceOf[That]
             }
         } else
@@ -239,6 +242,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                         // } else {
                         newVec.concatenate(thisVecLen, thatVec)
                         // }
+                        //println("MbRRBVector.++().display0" + newVec.display0)
                         return newVec.asInstanceOf[That]
                     }
                 case _ =>
@@ -724,6 +728,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
             if (acc == null) resultCurrent()
             else resultWithAcc()
         if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
+        //println("MbRRBVectorBuilder.result().display0" + resultVector.display0)
         resultVector
     }
 

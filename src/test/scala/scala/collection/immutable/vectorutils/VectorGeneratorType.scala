@@ -6,11 +6,11 @@ trait VectorGeneratorType[@miniboxed A] {
 
     def vectorTypeName: String
 
-    protected final def mapBenchFunCompute(x: Int): Int = {
+    protected def mapBenchFunCompute(x: Int): Int = {
         Math.cos(3.1415 + Math.cos(1.0 + Math.sin(2.0 + Math.cos(Math.sin(Math.sin(Math.cos(x + 1.0))))))).toInt
     }
 
-    protected final def mapBenchFun2Compute(x: Int): Int = {
+    protected def mapBenchFun2Compute(x: Int): Int = {
         // This is a inefficient implementation of prime testing
         // that aims to generate unbalanced workloads
         assert(x >= 0)
