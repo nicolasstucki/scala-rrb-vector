@@ -5,7 +5,7 @@ version := "0.1"
 scalaVersion := "2.11.4"
 
 resolvers ++= Seq(Resolver.sonatypeRepo("releases"),
-                  Resolver.sonatypeRepo("snapshots"))
+    Resolver.sonatypeRepo("snapshots"))
 
 libraryDependencies ++= Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test",
@@ -22,4 +22,4 @@ libraryDependencies += "org.scala-miniboxing.plugins" %% "miniboxing-runtime" % 
 
 addCompilerPlugin("org.scala-miniboxing.plugins" %% "miniboxing-plugin" % "0.4-SNAPSHOT")
 
-scalacOptions ++= Seq("-P:minibox:warn", /* "-P:minibox:mark-all", */  /* temporary */ "-P:minibox:Yrewire-functionX-application")
+scalacOptions ++= Seq("-P:minibox:warn", /*"-P:minibox:mark-all", */  /* temporary */ "-P:minibox:Yrewire-functionX-application")

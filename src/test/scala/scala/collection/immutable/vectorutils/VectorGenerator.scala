@@ -122,9 +122,15 @@ object BaseVectorGenerator {
 
         override final def tabulatedVector(n: Int): MbRRBVector[A] = MbRRBVector.tabulate(n)(element)
 
+        final def tabulatedIntVector(n: Int): MbRRBVector[Int] = MbRRBVector.range(0, n)
+
         override final def rangedVector(start: Int, end: Int): MbRRBVector[A] = MbRRBVector.range(start, end) map element
 
+        final def rangedIntVector(start: Int, end: Int): MbRRBVector[Int] = MbRRBVector.range(start, end)
+
         override final def emptyVector: MbRRBVector[A] = MbRRBVector.empty[A]
+
+        final def emptyIntVector: MbRRBVector[Int] = MbRRBVector.empty[Int]
 
         override def iterator(vec: MbRRBVector[A], start: Int, end: Int) = {
             val it = new MbRRBVectorIterator[A](start, end)
@@ -142,6 +148,7 @@ object BaseVectorGenerator {
 
         override final def drop(vec: MbRRBVector[A], n: Int): MbRRBVector[A] = vec.drop(n)
     }
+
 }
 
 

@@ -9,7 +9,7 @@ import scala.collection.parallel.immutable.mbrrbvector.ParMbRRBVector
 import scala.collection.{GenTraversableOnce, mutable}
 
 object MbRRBVector extends scala.collection.generic.IndexedSeqFactory[MbRRBVector] {
-    def newBuilder[@miniboxed A]: mutable.Builder[A, MbRRBVector[A]] = {
+    def newBuilder[@miniboxed A]: MbRRBVectorBuilder[A] = {
         val b = new MbRRBVectorBuilder[A]()
         b.init()
         b
@@ -107,7 +107,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                 resultVector.focusOnLastBlock(_endIndex)
                 resultVector.append(elem, _endIndex)
                 if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
-                //println("MbRRBVector.:+().display0" + resultVector.display0)
+                //println("MbRRBVector.:+().display0 " + resultVector.display0)
                 return resultVector.asInstanceOf[That]
             } else {
                 return createSingletonVector(elem.asInstanceOf[A]).asInstanceOf[That]
@@ -150,7 +150,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                 resultVector.focusOnFirstBlock()
                 resultVector.prepend(elem)
                 if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
-                //println("MbRRBVector.+:().display0" + resultVector.display0)
+                //println("MbRRBVector.+:().display0 " + resultVector.display0)
                 return resultVector.asInstanceOf[That]
             } else {
 
@@ -242,7 +242,7 @@ final class MbRRBVector[@miniboxed +A] private[immutable](override private[immut
                         // } else {
                         newVec.concatenate(thisVecLen, thatVec)
                         // }
-                        //println("MbRRBVector.++().display0" + newVec.display0)
+                        //println("MbRRBVector.++().display0 " + newVec.display0)
                         return newVec.asInstanceOf[That]
                     }
                 case _ =>
@@ -586,6 +586,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
     }
 
     final def +=(elem: A): this.type = {
+//        throw new Exception(display0.toString)
         def nextBlock() = {
             val _blockIndex = blockIndex
             val newBlockIndex = _blockIndex + 32
@@ -728,7 +729,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
             if (acc == null) resultCurrent()
             else resultWithAcc()
         if (MbRRBVector.compileAssertions) resultVector.assertVectorInvariant()
-        //println("MbRRBVectorBuilder.result().display0" + resultVector.display0)
+        //println("MbRRBVectorBuilder.result().display0 " + resultVector.display0)
         resultVector
     }
 
@@ -1617,8 +1618,10 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
         else throw new IllegalArgumentException(xor.toString)
     }
 
-    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def getElem0(display: MbArray[AA], index: Int): AA =
-        display(index & 31).asInstanceOf[AA]
+    private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def getElem0(display: MbArray[AA], index: Int): AA = {
+//                throw new Exception
+        display(index & 31)
+    }
 
     private[mbrrbvector /* should be just private */ ] final def getElem1(display: Array[AnyRef], index: Int): AA =
         display((index >> 5) & 31).asInstanceOf[MbArray[AA]](index & 31)
