@@ -26,7 +26,7 @@ abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
             performance of s"build vectors of n elements" in {
 
                 performance of s"Height $height" in {
-                    using(sizes(from, to, by)) setUp { size => System.gc()} curve vectorName in { n =>
+                    using(sizes(from, to, by, "sizes")) setUp { size => System.gc()} curve vectorName in { n =>
                         sideeffect = buildVector(n)
                     }
                 }

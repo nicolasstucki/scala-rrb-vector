@@ -7,7 +7,7 @@ trait VectorBenchmarksGen {
     self: VectorProperties =>
 
     def generateVectorBenchmarkClasses() = {
-        def testSet(vecGen: Tree, pack: TermName, variant: String) ={
+        def testSet(vecGen: Tree => Tree, pack: TermName, variant: String) = {
             q"""
                 package $pack {
                     import scala.collection.immutable.vectorbenchmarks.genericbenchmarks._
@@ -16,9 +16,16 @@ trait VectorBenchmarksGen {
                     import scala.collection.immutable.generated.$subpackage._
 
                     trait $vectorBaseBenchmarkClassName[A] extends BaseVectorBenchmark[A] with $vectorGeneratorClassName[A] {
-                        override def generateVectors(from: Int, to: Int, by: Int): org.scalameter.Gen[$vectorClassName[A]] = for {
-                            size <- sizes(from, to, by)
-                        } yield $vecGen
+                        override def generateVectors(from: Int, to: Int, by: Int, sizesName: String): org.scalameter.Gen[$vectorClassName[A]] = for {
+                            size <- sizes(from, to, by, sizesName)
+                        } yield ${vecGen(q"size")}
+                        def generateVectors2(from: Int, to: Int, by: Int): org.scalameter.Gen[($vectorClassName[A],$vectorClassName[A])] = {
+                            for {
+                                size1 <- sizes(from, to, by, "size1")
+                                size2 <- sizes(from, to, by, "size2")
+                            } yield (${vecGen(q"size1")}, ${vecGen(q"size2")})
+                        }
+
                         override def vectorName: String = super.vectorName + $variant
                     }
 
@@ -136,8 +143,8 @@ trait VectorBenchmarksGen {
             s"scala.collection.immutable.vectorbenchmarks.generated".split('.'),
             q"""
                 package $subpackage {
-                    ${testSet(q"tabulatedVector(size)", TermName("balanced"), "Balanced")}
-                    ${testSet(q"randomVectorOfSize(size)(defaultVectorConfig(111))", TermName("xunbalanced"), "XUnbalanced")}
+                    ${testSet(size => q"tabulatedVector($size)", TermName("balanced"), "Balanced")}
+                    ${testSet(size => q"randomVectorOfSize($size)(defaultVectorConfig(111))", TermName("xunbalanced"), "XUnbalanced")}
                 }
              """)
 

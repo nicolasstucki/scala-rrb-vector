@@ -12,22 +12,25 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
     /* config */
 
     def minHeight = 1
+
     def maxHeight = 3
+
     def points = 16
     def independentSamples = 32
     def benchRunsPerSample = 32
     def benchRuns = independentSamples * benchRunsPerSample
-    def memoryInHeapSeq = Seq("16g")//, "512m")
+
+    def memoryInHeapSeq = Seq("16g") //, "512m")
 
     /* data */
 
-    def sizes(from: Int, to: Int, by: Int) = Gen.range("size")(from, to, by)
+    def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(from, to, by)
 
     def sized[T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
 
     /* sequences */
 
-    def generateVectors(from: Int, to: Int, by: Int): Gen[Vec]
+    def generateVectors(from: Int, to: Int, by: Int, sizesName: String = "sizes"): Gen[Vec]
 
     def fromToBy(height: Int) = (
       math.pow(32, height - 1).toInt + 1,
@@ -39,7 +42,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
         for (memoryInHeap <- memoryInHeapSeq) {
             performance of s"$vectorName benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
               Key.exec.benchRuns -> benchRuns,
-              Key.verbose -> false,
+              //              Key.verbose -> false,
               Key.exec.independentSamples -> independentSamples,
               Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining" "-XX:+PrintCompilation",
               ) in {

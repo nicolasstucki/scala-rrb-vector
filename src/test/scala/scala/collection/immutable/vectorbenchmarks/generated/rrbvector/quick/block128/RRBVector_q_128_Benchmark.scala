@@ -14,7 +14,8 @@ package scala {
               import scala.collection.immutable.generated.rrbvector.quick.block128._
 
               trait RRBVector_q_128_Benchmark[A] extends BaseVectorBenchmark[A] with RRBVectorGenerator_q_128[A] {
-                override def generateVectors(from: Int, to: Int, by: Int): org.scalameter.Gen[RRBVector_q_128[A]] = sizes(from, to, by).map(((size) => tabulatedVector(size)));
+                override def generateVectors(from: Int, to: Int, by: Int, sizesName: String): org.scalameter.Gen[RRBVector_q_128[A]] = sizes(from, to, by, sizesName).map(((size) => tabulatedVector(size)));
+                def generateVectors2(from: Int, to: Int, by: Int): org.scalameter.Gen[scala.Tuple2[RRBVector_q_128[A], RRBVector_q_128[A]]] = sizes(from, to, by, "size1").flatMap(((size1) => sizes(from, to, by, "size2").map(((size2) => scala.Tuple2(tabulatedVector(size1), tabulatedVector(size2))))));
                 override def vectorName: String = super.vectorName.+("Balanced")
               }
 
@@ -62,8 +63,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$70 = 0;
-                            vec.+:(x$70)
+                            val x$69 = 0;
+                            vec.+:(x$69)
                           };
                           j.+=(1)
                         }
@@ -88,8 +89,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$69 = ref;
-                            vec.+:(x$69)
+                            val x$70 = ref;
+                            vec.+:(x$70)
                           };
                           j.+=(1)
                         }
@@ -168,7 +169,8 @@ package scala {
               import scala.collection.immutable.generated.rrbvector.quick.block128._
 
               trait RRBVector_q_128_Benchmark[A] extends BaseVectorBenchmark[A] with RRBVectorGenerator_q_128[A] {
-                override def generateVectors(from: Int, to: Int, by: Int): org.scalameter.Gen[RRBVector_q_128[A]] = sizes(from, to, by).map(((size) => randomVectorOfSize(size)(defaultVectorConfig(111))));
+                override def generateVectors(from: Int, to: Int, by: Int, sizesName: String): org.scalameter.Gen[RRBVector_q_128[A]] = sizes(from, to, by, sizesName).map(((size) => randomVectorOfSize(size)(defaultVectorConfig(111))));
+                def generateVectors2(from: Int, to: Int, by: Int): org.scalameter.Gen[scala.Tuple2[RRBVector_q_128[A], RRBVector_q_128[A]]] = sizes(from, to, by, "size1").flatMap(((size1) => sizes(from, to, by, "size2").map(((size2) => scala.Tuple2(randomVectorOfSize(size1)(defaultVectorConfig(111)), randomVectorOfSize(size2)(defaultVectorConfig(111)))))));
                 override def vectorName: String = super.vectorName.+("XUnbalanced")
               }
 
@@ -216,8 +218,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$72 = 0;
-                            vec.+:(x$72)
+                            val x$71 = 0;
+                            vec.+:(x$71)
                           };
                           j.+=(1)
                         }
@@ -242,8 +244,8 @@ package scala {
                       while (j.<(n)) 
                         {
                           v = {
-                            val x$71 = ref;
-                            vec.+:(x$71)
+                            val x$72 = ref;
+                            vec.+:(x$72)
                           };
                           j.+=(1)
                         }

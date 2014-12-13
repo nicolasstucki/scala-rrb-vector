@@ -1,12 +1,20 @@
 package scala.collection.immutable.vectorbenchmarks.genericbenchmarks
 
-import org.scalameter.Key
+import org.scalameter.{Gen, Key}
 
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
     // Used in immutable.vector to bound the sizes
     def to(n: Int): Int = n
+
+    override def minHeight = 3
+
+    override def maxHeight = 3
+
+    override def points = super.points / 2
+
+    def generateVectors2(from: Int, to: Int, by: Int): Gen[(Vec, Vec)]
 
     performanceOfVectors { height =>
         // To avoid benchmarking vector concatenation on big immutable.Vector (too slow)
@@ -18,28 +26,17 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         performance of "concatenation" config(
           Key.exec.minWarmupRuns -> warmups,
-          Key.exec.maxWarmupRuns -> warmups
+          Key.exec.maxWarmupRuns -> 2 * warmups
           ) in {
-            for (otherSize <- Seq(10000, 100)) {
-                val otherVector = tabulatedVector(otherSize)
-                performance of s"Vector_$otherSize ++ vector" in {
-                    performance of s"Height $height" in {
-                        using(generateVectors(from, to(to_), by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
-                            val v = plusPlus(otherVector, vec)
-                            sideeffect = v.length
-                        }
-                    }
-                }
-
-                performance of s"vector ++ Vector$otherSize" in {
-                    performance of s"Height $height" in {
-                        using(generateVectors(from, to(to_), by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
-                            val v = plusPlus(vec, otherVector)
-                            sideeffect = v.length
-                        }
+            performance of s"vector1 ++ vector2" in {
+                performance of s"Height $height" in {
+                    using(generateVectors2(from, to_, by)) curve vectorName setUp { x: (Vec, Vec) => System.gc()} in { vecs =>
+                        val v = plusPlus(vecs._1, vecs._2)
+                        sideeffect = v.length
                     }
                 }
             }
+
         }
     }
 
