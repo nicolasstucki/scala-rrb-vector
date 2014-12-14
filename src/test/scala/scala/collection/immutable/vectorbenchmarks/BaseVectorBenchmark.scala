@@ -16,8 +16,11 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
     def maxHeight = 3
 
     def points = 16
+
     def independentSamples = 32
+
     def benchRunsPerSample = 32
+
     def benchRuns = independentSamples * benchRunsPerSample
 
     def memoryInHeapSeq = Seq("16g") //, "512m")
@@ -42,7 +45,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
         for (memoryInHeap <- memoryInHeapSeq) {
             performance of s"$vectorName benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
               Key.exec.benchRuns -> benchRuns,
-              //              Key.verbose -> false,
+              Key.verbose -> false,
               Key.exec.independentSamples -> independentSamples,
               Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining" "-XX:+PrintCompilation",
               ) in {
