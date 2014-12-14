@@ -15,9 +15,9 @@ trait BaseVectorBenchmark[@miniboxed A] extends OfflineRegressionReport with Bas
 
     def maxHeight = 3
 
-    def points = 8
+    def points = 16
 
-    def independentSamples = 16
+    def independentSamples = 32
 
     def benchRunsPerSample = 32
 
