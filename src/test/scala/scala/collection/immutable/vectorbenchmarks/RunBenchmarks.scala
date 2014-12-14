@@ -1,8 +1,9 @@
 package scala.collection.immutable.vectorbenchmarks
 
-import org.scalameter.PerformanceTest
+import org.scalameter.PerformanceTest.{Microbenchmark => Benchmark}
+//import org.scalameter.PerformanceTest.{OfflineReport => Benchmark}
 
-class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunAppendBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorAppendIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorAppendIntBenchmark]
@@ -15,7 +16,7 @@ class RunAppendBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorAppendIntBenchmark]
 }
 
-class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunApplyBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorApplyIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorApplyIntBenchmark]
@@ -29,7 +30,7 @@ class RunApplyBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunBuilderBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorBuilderIntBenchmark]
     include[rrbvector.balanced.RRBVectorBuilderIntBenchmark]
@@ -37,7 +38,7 @@ class RunBuilderBenchmarks extends PerformanceTest.OfflineRegressionReport {
 
 }
 
-class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunConcatenationBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorConcatenationIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorConcatenationIntBenchmark]
@@ -50,7 +51,7 @@ class RunConcatenationBenchmarks extends PerformanceTest.OfflineRegressionReport
     include[vector.VectorConcatenationIntBenchmark]
 }
 
-class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunIterationBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorIterationIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorIterationIntBenchmark]
@@ -63,7 +64,7 @@ class RunIterationBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorIterationIntBenchmark]
 }
 
-class RunPrependBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunPrependBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorPrependIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorPrependIntBenchmark]
@@ -76,7 +77,7 @@ class RunPrependBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorPrependIntBenchmark]
 }
 
-class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunSplitBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorSplitIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorSplitIntBenchmark]
@@ -89,7 +90,7 @@ class RunSplitBenchmarks extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorSplitIntBenchmark]
 }
 
-class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
+class RunMemoryAllocation extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorIntMemoryAllocation]
     include[mbrrbvector.unbalanced1.MbRRBVectorIntMemoryAllocation]
@@ -102,8 +103,7 @@ class RunMemoryAllocation extends PerformanceTest.OfflineRegressionReport {
     include[vector.VectorIntMemoryAllocation]
 }
 
-
-class RunParMapBenchmarks extends PerformanceTest.OfflineRegressionReport {
+class RunParMapBenchmarks extends Benchmark {
 
     include[mbrrbvector.balanced.MbRRBVectorParMapIntBenchmark]
     include[mbrrbvector.unbalanced1.MbRRBVectorParMapIntBenchmark]

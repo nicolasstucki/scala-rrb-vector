@@ -13,5 +13,14 @@ trait MbRRBVectorAbstractBenchmark[@miniboxed A] extends BaseVectorBenchmark[A] 
         }
     }
 
+    def generateIntVectors(from: Int, to: Int, by: Int) = sizes(from, to, by).map((size) => {
+        val vecBuilder = MbRRBVector.newBuilder[Int]
+        (0 until (size / 2)) foreach (vecBuilder += _)
+        val v1 = vecBuilder.result()
+        vecBuilder.clear()
+        ((size / 2) until size) foreach (vecBuilder += _)
+        v1 ++ vecBuilder.result()
+    })
+
     override def vectorName: String = if (MbRRBVector.compileAssertions) throw new IllegalStateException("MbRRBVector.compileAssertions must be false to run benchmarks.") else super.vectorName.+("Unbalanced1")
 }

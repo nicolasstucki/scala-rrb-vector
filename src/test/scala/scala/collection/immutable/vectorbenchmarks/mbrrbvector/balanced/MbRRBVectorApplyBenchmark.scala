@@ -51,33 +51,21 @@ class MbRRBVectorApplyIntBenchmark extends BaseVectorBenchmark[Int] with MbRRBVe
                 }
             }
 
-            def benchmarkFunctionPseudoRandom(vec: MbRRBVector[Int], seed: Int) = {
-                val rnd = new scala.util.Random(seed)
-                var i = 0
-                var sum = vec(0)
-                val len = vec.length
-                while (i < 10000) {
-                    sum = vec.apply(rnd.nextInt(len))
-                    i += 1
-                }
-                sideeffect = sum.hashCode()
-            }
-
             performance of "10k pseudo-random indices (seed=42)" in {
                 performance of s"Height $height" in {
-                    using(vectors) curve vectorName in (benchmarkFunctionPseudoRandom(_, 42))
+                    using(generateVectors(from, to, by)) curve vectorName in {vec=>sideeffect = benchmarkFunctionPseudoRandom(vec, 42)}
                 }
             }
 
             performance of "10k pseudo-random indices (seed=274181)" in {
                 performance of s"Height $height" in {
-                    using(vectors) curve vectorName in (benchmarkFunctionPseudoRandom(_, 274181))
+                    using(generateVectors(from, to, by)) curve vectorName in{vec=>sideeffect = benchmarkFunctionPseudoRandom(vec, 274181)}
                 }
             }
 
             performance of "10k pseudo-random indices (seed=53426)" in {
                 performance of s"Height $height" in {
-                    using(vectors) curve vectorName in (benchmarkFunctionPseudoRandom(_, 53426))
+                    using(generateVectors(from, to, by)) curve vectorName in {vec=>sideeffect = benchmarkFunctionPseudoRandom(vec, 53426)}
                 }
             }
         }

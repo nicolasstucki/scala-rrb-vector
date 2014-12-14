@@ -81,6 +81,18 @@ object BaseVectorGenerator {
         override final def take(vec: Vec, n: Int): Vec = vec.take(n)
 
         override final def drop(vec: Vec, n: Int): Vec = vec.drop(n)
+
+        def benchmarkFunctionPseudoRandom(vec: Vector[Int], seed: Int): Int = {
+            val rnd = new scala.util.Random(seed)
+            var i = 0
+            var sum = vec(0)
+            val len = vec.length
+            while (i < 10000) {
+                sum = vec.apply(rnd.nextInt(len))
+                i += 1
+            }
+            sum.hashCode()
+        }
     }
 
     trait RRBVectorGenerator[@miniboxed A] extends BaseVectorGenerator[A] {
@@ -111,6 +123,18 @@ object BaseVectorGenerator {
         override final def take(vec: RRBVector[A], n: Int): RRBVector[A] = vec.take(n)
 
         override final def drop(vec: RRBVector[A], n: Int): RRBVector[A] = vec.drop(n)
+
+        def benchmarkFunctionPseudoRandom(vec: RRBVector[Int], seed: Int): Int = {
+            val rnd = new scala.util.Random(seed)
+            var i = 0
+            var sum = vec(0)
+            val len = vec.length
+            while (i < 10000) {
+                sum = vec.apply(rnd.nextInt(len))
+                i += 1
+            }
+            sum.hashCode()
+        }
     }
 
     trait MbRRBVectorGenerator[@miniboxed A] extends BaseVectorGenerator[A] {
@@ -147,6 +171,18 @@ object BaseVectorGenerator {
         override final def take(vec: MbRRBVector[A], n: Int): MbRRBVector[A] = vec.take(n)
 
         override final def drop(vec: MbRRBVector[A], n: Int): MbRRBVector[A] = vec.drop(n)
+
+        def benchmarkFunctionPseudoRandom(vec: MbRRBVector[Int], seed: Int): Int = {
+            val rnd = new scala.util.Random(seed)
+            var i = 0
+            var sum = vec(0)
+            val len = vec.length
+            while (i < 10000) {
+                sum = vec.apply(rnd.nextInt(len))
+                i += 1
+            }
+            sum.hashCode()
+        }
     }
 
 }

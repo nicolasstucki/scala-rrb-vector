@@ -7,5 +7,11 @@ import scala.collection.immutable.vectorutils.BaseVectorGenerator.MbRRBVectorGen
 trait MbRRBVectorAbstractBenchmark[@miniboxed A] extends BaseVectorBenchmark[A] with MbRRBVectorGenerator[A] {
     override def generateVectors(from: Int, to: Int, by: Int) = sizes(from, to, by).map(((size) => tabulatedVector(size)));
 
+    def generateIntVectors(from: Int, to: Int, by: Int) = sizes(from, to, by).map((size) => {
+        val vecBuilder = MbRRBVector.newBuilder[Int]
+        (0 until size) foreach (vecBuilder += _)
+        vecBuilder.result()
+    })
+
     override def vectorName: String = if (MbRRBVector.compileAssertions) throw new IllegalStateException("MbRRBVector.compileAssertions must be false to run benchmarks.") else super.vectorName.+("Balanced")
 }

@@ -4,16 +4,16 @@ import org.scalameter.{Key, PerformanceTest}
 
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
-abstract class ParMapBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
+abstract class ParMapBenchmarks extends BaseVectorBenchmark[Int] {
     self: PerformanceTest =>
 
     override val maxHeight: Int = 4
 
-    def mapSelfFun(x: A): A
+    def mapSelfFun(x: Int): Int
 
-    def mapBenchFun(x: A): A
+    def mapBenchFun(x: Int): Int
 
-    def mapBenchFun2(x: A): A
+    def mapBenchFun2(x: Int): Int
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)
@@ -69,28 +69,6 @@ abstract class ParMapBenchmarks[@miniboxed A] extends BaseVectorBenchmark[A] {
             }
 
 
-//            measure method "map" in {
-//                performance of s"map into mapBencFun2" in {
-//                    performance of s"Height $height" in {
-//                        using(generateVectors(from, to, by)) curve vectorName in { vec =>
-//                            sideeffect = (vec map mapBenchFun2).length
-//                        }
-//                    }
-//                }
-//                for (threadPoolSize <- Seq(1, 2, 4, 8)) {
-//                    performance of s"par.map into mapBencFun2" in {
-//                        performance of s"$threadPoolSize threads in pool" in {
-//                            performance of s"Height $height" in {
-//                                using(generateVectors(from, to, by)) curve vectorName in { vec =>
-//                                    val parvec = vec.par
-//                                    parvec.tasksupport = ParSupport.getTaskSupport(threadPoolSize)
-//                                    sideeffect = (parvec map mapBenchFun2).length
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
         }
     }
 }

@@ -1,11 +1,20 @@
 package scala.collection.immutable.vectorbenchmarks.rrbvector.unbalanced1
 
-import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAllocation
+import org.scalameter.Executor
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
+class RRBVectorIntMemoryAllocation extends RRBVectorAbstractBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
-abstract class RRBVectorAbstractMemoryAllocation[@miniboxed A] extends MemoryAllocation[A] with RRBVectorAbstractBenchmark[A]
+    override def measurer = new Executor.Measurer.MemoryFootprint
 
-class RRBVectorIntMemoryAllocation extends RRBVectorAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
+    performanceOfVectors { height =>
 
-class RRBVectorStringMemoryAllocation extends RRBVectorAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator
+        val (from, to, by) = fromToBy(height)
+
+        performance of "MemoryFootprint (KB not ms)" in {
+            performance of s"Height $height" in {
+                using(generateVectors(from, to, by)) curve vectorName in { vec => vec}
+            }
+        }
+    }
+}

@@ -586,7 +586,7 @@ final class MbRRBVectorBuilder[@miniboxed A] extends mutable.Builder[A, MbRRBVec
     }
 
     final def +=(elem: A): this.type = {
-//        throw new Exception(display0.toString)
+        //        throw new Exception(display0.toString)
         def nextBlock() = {
             val _blockIndex = blockIndex
             val newBlockIndex = _blockIndex + 32
@@ -907,7 +907,9 @@ class MbRRBVectorIterator[@miniboxed +A](startIndex: Int, override private[immut
     final def hasNext = _hasNext
 
     final def next(): A = {
+        //        throw new Exception(display0.toString)
         // keep method size under 35 bytes, so that it can be JIT-inlined
+        // NOTE: After miniboxing transformation this is not the case anymore
         var _lo = lo
         val res: A = display0(_lo).asInstanceOf[A]
         _lo += 1
@@ -1619,7 +1621,7 @@ private[immutable] trait MbRRBVectorPointer[@miniboxed AA] {
     }
 
     private[mbrrbvector /* should be just private[mbrrbvector /* should be just private */] */ ] final def getElem0(display: MbArray[AA], index: Int): AA = {
-//                throw new Exception
+        // throw new Exception(display0.toString)
         display(index & 31)
     }
 

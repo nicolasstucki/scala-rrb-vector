@@ -12,12 +12,18 @@ trait BaseVectorBenchmark[@miniboxed A] extends OfflineRegressionReport with Bas
     /* config */
 
     def minHeight = 1
+
     def maxHeight = 3
+
     def points = 8
-    def independentSamples = 4
+
+    def independentSamples = 16
+
     def benchRunsPerSample = 32
+
     def benchRuns = independentSamples * benchRunsPerSample
-    def memoryInHeapSeq = Seq("16g")//, "512m")
+
+    def memoryInHeapSeq = Seq("16g") //, "512m")
 
     /* data */
 
@@ -40,6 +46,7 @@ trait BaseVectorBenchmark[@miniboxed A] extends OfflineRegressionReport with Bas
             performance of s"vector benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
               Key.exec.benchRuns -> benchRuns,
               Key.exec.independentSamples -> independentSamples,
+              Key.verbose -> false,
               Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining" "-XX:+PrintCompilation",
               ) in {
                 for (height <- maxHeight to minHeight by -1) {

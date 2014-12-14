@@ -1,11 +1,48 @@
 package scala.collection.immutable.vectorbenchmarks.rrbvector.balanced
 
-import scala.collection.immutable.vectorbenchmarks._
-import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.IterationBenchmarks
+import org.scalameter.Key
+
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
-abstract class RRBVectorAbstractIterationBenchmark[@miniboxed A] extends IterationBenchmarks[A] with RRBVectorAbstractBenchmark[A]
+class RRBVectorIterationIntBenchmark extends RRBVectorAbstractBenchmark[Int] with VectorGeneratorType.IntGenerator {
+    override val maxHeight: Int = 4
 
-class RRBVectorIterationIntBenchmark extends RRBVectorAbstractIterationBenchmark[Int] with VectorGeneratorType.IntGenerator
+    performanceOfVectors { height =>
+        val (from, to, by) = fromToBy(height)
 
-class RRBVectorIterationStringBenchmark extends RRBVectorAbstractIterationBenchmark[String] with VectorGeneratorType.StringGenerator
+        var sideeffect = 0
+
+        val warmups = if (height == 1) 500 else if (height == 2) 300 else if (height == 3) 150 else 20
+        performance of "iteration" config(
+          Key.exec.minWarmupRuns -> warmups,
+          Key.exec.minWarmupRuns -> warmups
+          ) in {
+
+            performance of "iterator: iterate through all elements" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                        val it = vec.iterator
+                        var sum = 0
+                        while (it.hasNext) {
+                            sum += it.next()
+                        }
+                        sideeffect = sum
+                    }
+                }
+            }
+
+            performance of "reverseIterator: iterate through all elements" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
+                        val it = vec.reverseIterator
+                        var sum = 0
+                        while (it.hasNext) {
+                            sum += it.next()
+                        }
+                        sideeffect = sum
+                    }
+                }
+            }
+        }
+    }
+}
