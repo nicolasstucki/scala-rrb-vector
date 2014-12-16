@@ -12,7 +12,9 @@ abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        measure method "take" in {
+        measure method "take" config(
+          Key.exec.minWarmupRuns -> 500,
+          Key.exec.maxWarmupRuns -> 1000) in {
 
             performance of s"take half" in {
                 performance of s"Height $height" in {
@@ -33,7 +35,9 @@ abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
         }
 
 
-        measure method "drop" in {
+        measure method "drop" config(
+          Key.exec.minWarmupRuns -> 500,
+          Key.exec.maxWarmupRuns -> 1000) in {
 
             performance of s"drop half" in {
                 performance of s"Height $height" in {
