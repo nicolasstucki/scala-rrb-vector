@@ -32,6 +32,22 @@ abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
                 }
             }
 
+            performance of s"take third" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                        sideeffect = take(vec, vec.length / 3).length
+                    }
+                }
+            }
+
+            performance of s"take seventh" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                        sideeffect = take(vec, vec.length / 7).length
+                    }
+                }
+            }
+
         }
 
 
@@ -51,6 +67,22 @@ abstract class SplitBenchmarks[A] extends BaseVectorBenchmark[A] {
                 performance of s"Height $height" in {
                     using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
                         sideeffect = drop(vec, vec.length / 4).length
+                    }
+                }
+            }
+
+            performance of s"drop third" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                        sideeffect = drop(vec, vec.length / 3).length
+                    }
+                }
+            }
+
+            performance of s"drop seventh" in {
+                performance of s"Height $height" in {
+                    using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
+                        sideeffect = drop(vec, vec.length / 7).length
                     }
                 }
             }
