@@ -17,7 +17,7 @@ abstract class PrependBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         measure method "prepend" in {
             val elems = 256
-            val warmups = if (height == 1) (100 * 256) / elems else if (height == 2) (30 * 256) / elems else 50
+            val warmups = 500
             performance of s"prepend $elems elements" config(
               Key.exec.minWarmupRuns -> warmups,
               Key.exec.maxWarmupRuns -> warmups
