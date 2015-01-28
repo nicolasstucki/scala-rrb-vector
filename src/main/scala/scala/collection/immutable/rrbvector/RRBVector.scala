@@ -9,6 +9,8 @@ import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic._
 
+/** Companion object to the RRBVector class
+  */
 object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     def newBuilder[A]: mutable.Builder[A, RRBVector[A]] = new RRBVectorBuilder[A]()
 
@@ -23,9 +25,37 @@ object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     private[immutable] final val emptyTransientBlock = new Array[AnyRef](2)
 }
 
+// in principle, most members should be private. however, access privileges must
+// be carefully chosen to not prevent method inlining
+
+/** RRBVector is a general-purpose, immutable data structure.  It provides random access, updates, concatenations, insertions and splits
+  * in effectively constant time, as well as amortized constant time append, prepend and local updates.  It is backed by a little
+  * endian bit-mapped vector trie with a branching factor of 32.  Locality is very good, but not
+  * contiguous, which is good for very large sequences.
+  *
+  *
+  * @tparam A the element type
+  *
+  * @define Coll `RRBVector`
+  * @define coll vector
+  * @define thatinfo the class of the returned collection. In the standard library configuration,
+  *         `That` is always `RRBVector[B]` because an implicit of type `CanBuildFrom[RRBVector, B, That]`
+  *         is defined in object `RRBVector`.
+  * @define bfinfo an implicit value of class `CanBuildFrom` which determines the
+  *         result class `That` from the current representation type `Repr`
+  *         and the new element type `B`. This is usually the `canBuildFrom` value
+  *         defined in object `RRBVector`.
+  * @define orderDependent
+  * @define orderDependentFold
+  * @define mayNotTerminateInf
+  * @define willNotTerminateInf
+  */
 final class RRBVector[+A] private[immutable](override private[immutable] val endIndex: Int) extends scala.collection.AbstractSeq[A] with scala.collection.immutable.IndexedSeq[A] with scala.collection.generic.GenericTraversableTemplate[A, RRBVector] with scala.collection.IndexedSeqLike[A, RRBVector[A]] with RRBVectorPointer[A@uncheckedVariance] with Serializable {
     self =>
 
+    /**
+     *
+     */
     private[immutable] var transient: Boolean = false
 
     override def par = new ParRRBVector[A](this)
@@ -60,6 +90,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         it
     }
 
+
     def apply(index: Int): A = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
 
@@ -89,6 +120,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
     }
 
+    // SeqLike api
+
     override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]) = {
         val vec = new RRBVector[B](endIndex)
         if (index < focusStart || focusEnd <= index || ((index - focusStart) & -32) != 0) {
@@ -102,9 +135,19 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     def insertedAt[B >: A, That](elem: B, index: Int)(implicit bf: CanBuildFrom[RRBVector[A], B, That]) = {
-        // Could be optimized for small vectors
+        //// Could be optimized for small vectors
+        //        val _endIndex = endIndex
+        //        if (_endIndex > 1024) {
         val (left, right) = splitAt(index)
         left.:+[B, RRBVector[B]](elem).++(right).asInstanceOf[That]
+        //        } else {
+        //            val b = RRBVector.newBuilder[B]
+        //            val it = iterator
+        //            (0 until index).foreach(_ => b += it.next)
+        //            b += elem
+        //            (index until _endIndex).foreach(_ => b += it.next)
+        //            b.result()
+        //        }
     }
 
     @scala.deprecatedOverriding("Immutable indexed sequences should do nothing on toIndexedSeq except cast themselves as an indexed sequence.") override
@@ -150,6 +193,8 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
         }
 
     }
+
+    // semi-private api
 
     private final def focusOnFirstBlock(): Unit = {
         // keep method size under 35 bytes, so that it can be JIT-inlined
