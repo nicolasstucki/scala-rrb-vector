@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.fingertree
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAllocation
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class FingerTreeAbstractMemoryAllocation[A] extends MemoryAllocation[A] with FingerTreeBenchmark[A]
+
+class FingerTreeIntMemoryAllocation extends FingerTreeAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
+
+class FingerTreeStringMemoryAllocation extends FingerTreeAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator

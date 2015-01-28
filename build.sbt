@@ -9,9 +9,11 @@ resolvers += "Sonatype OSS Snapshots" at
 
 libraryDependencies ++= Seq(
     "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test",
-    "com.storm-enroute" %% "scalameter" % "0.6"
+    "com.storm-enroute" %% "scalameter" % "0.6",
+    "de.sciss" %% "fingertree" % "1.5.2+"
 )
 
 testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework")
 
 parallelExecution in Test := false
+

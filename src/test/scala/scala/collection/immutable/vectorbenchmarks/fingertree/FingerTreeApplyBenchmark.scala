@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.fingertree
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ApplyBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class FingerTreeAbstractApplyBenchmark[A] extends ApplyBenchmarks[A] with FingerTreeBenchmark[A]
+
+class FingerTreeApplyIntBenchmark extends FingerTreeAbstractApplyBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class FingerTreeApplyStringBenchmark extends FingerTreeAbstractApplyBenchmark[String] with VectorGeneratorType.StringGenerator

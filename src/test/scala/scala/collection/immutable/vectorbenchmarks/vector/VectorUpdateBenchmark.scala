@@ -1,0 +1,12 @@
+package scala.collection.immutable.vectorbenchmarks.vector
+
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.UpdateBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class VectorAbstractUpdateBenchmark[A] extends UpdateBenchmarks[A] with VectorBenchmark[A]
+
+class VectorUpdateIntBenchmark extends VectorAbstractUpdateBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class VectorUpdateStringBenchmark extends VectorAbstractUpdateBenchmark[String] with VectorGeneratorType.StringGenerator
