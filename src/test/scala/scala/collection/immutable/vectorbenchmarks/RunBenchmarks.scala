@@ -76,11 +76,11 @@ class RunBuilderBenchmarks2 extends Benchmark {
 }
 
 class RunConcatenationBenchmarks extends Benchmark {
-//    include[vector.VectorConcatenationIntBenchmark]
+    //    include[vector.VectorConcatenationIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorConcatenationIntBenchmark]
-//    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
-//    include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
+    //    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
+    //    include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
 
     include[fingertree.FingerTreeConcatenationIntBenchmark]
 }
@@ -238,14 +238,14 @@ class RunParMapBenchmarks2 extends Benchmark {
     include[generated.rrbvector.complete.block256.xunbalanced.RRBVector_c_256_IntParMap_Benchmark]
 }
 
-//class RunUpdateBenchmarks extends Benchmark {
-//
-//    include[vector.VectorUpdateIntBenchmark]
-//
-//    include[rrbvector.balanced.RRBVectorUpdateIntBenchmark]
-//    include[rrbvector.unbalanced1.RRBVectorUpdateIntBenchmark]
-//    include[rrbvector.xunbalanced.RRBVectorUpdateIntBenchmark]
+class RunUpdateBenchmarks extends Benchmark {
 
-// Not implemented as core operation
-//    include[fingertree.FingerTreeUpdateIntBenchmark]
-//}
+    include[vector.VectorUpdateIntBenchmark]
+
+    include[rrbvector.balanced.RRBVectorUpdateIntBenchmark]
+    include[rrbvector.unbalanced1.RRBVectorUpdateIntBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorUpdateIntBenchmark]
+
+    // Not implemented as core operation
+    //    include[fingertree.FingerTreeUpdateIntBenchmark]
+}

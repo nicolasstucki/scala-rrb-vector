@@ -90,6 +90,13 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                 s"return the i-th element of Vector.tabulate($n)(i => element(i)) should be i when apply is invoked" in {
                     for (i <- 0 until n) assertResult(element(i))(vector(i))
                 }
+                s"update the i-th element of Vector.tabulate($n)(i => element(i))" in {
+                    for (i <- 0 until n) {
+                        val vector2 = vector.updated(i, element(i + 1))
+                        for (j <- 0 until n if j != i) assertResult(element(j))(vector2(j))
+                        assertResult(element(i + 1))(vector2(i))
+                    }
+                }
                 "reverseIterator yields the correct sequence of elements" in {
                     val it = vector.reverseIterator
                     for (i <- 0 until n) {
@@ -97,6 +104,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                         assertResult(element(n - i - 1))(it.next())
                     }
                 }
+
             }
         }
         "two vectors are concatenated" when {
@@ -150,8 +158,15 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                 s"vector of size $n (rnd $seed)" should {
                     val vector = randomVectorOfSize(n)(BaseVectorGenerator.defaultVectorConfig(111))
                     testNonEmptyVectorProperties(vector, n)
-                    s"return the i-th element of Vector.tabulate($n)(i => element(i)) should be i when apply is invoked" in {
+                    s"return the i-th element of Vector.randomVectorOfSize($n)(i => element(i)) should be i when apply is invoked" in {
                         for (i <- 0 until n) assertResult(element(i))(vector(i))
+                    }
+                    s"update the i-th element of Vector.randomVectorOfSize($n)(i => element(i))" in {
+                        for (i <- 0 until n) {
+                            val vector2 = vector.updated(i, element(i + 1))
+                            for (j <- 0 until n if j != i) assertResult(element(j))(vector2(j))
+                            assertResult(element(i + 1))(vector2(i))
+                        }
                     }
                 }
             }

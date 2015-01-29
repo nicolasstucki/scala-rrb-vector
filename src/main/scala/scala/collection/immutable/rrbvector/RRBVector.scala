@@ -124,7 +124,10 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
 
     override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[RRBVector[A], B, That]) = {
         val vec = new RRBVector[B](endIndex)
-        if (index < focusStart || focusEnd <= index || ((index - focusStart) & -32) != 0) {
+        vec.transient = this.transient
+        vec.initWithFocusFrom(this)
+        if (index < focusStart || focusEnd <= index || ((index - focusStart) & ~31) != (focus & ~31)) {
+            if (index < 0 || endIndex <= index) throw new IndexOutOfBoundsException(index.toString)
             vec.normalizeAndFocusOn(index)
         }
         vec.makeTransientIfNeeded()
@@ -911,6 +914,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private final def takeFront0(n: Int): RRBVector[A] = {
+        // TODO: drop from transient leaf if n and focus are in the last leaf.
+        // This would amortize takes that drop few elements like 'init()'
+
         if (transient) {
             normalize(depth)
             transient = false
@@ -981,6 +987,9 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
     }
 
     private final def dropFront0(n: Int): RRBVector[A] = {
+        // TODO: drop from transient leaf if n and focus are in the first leaf
+        // This would amortize drops that drop few elements like 'tail()'
+
         if (transient) {
             normalize(depth)
             transient = false
