@@ -162,7 +162,7 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                         for (i <- 0 until n) assertResult(element(i))(vector(i))
                     }
                     s"update the i-th element of Vector.randomVectorOfSize($n)(i => element(i))" in {
-                        for (i <- 0 until n) {
+                        for (i <- 0 until n by (n / 100 + 1)) {
                             val vector2 = vector.updated(i, element(i + 1))
                             for (j <- 0 until n if j != i) assertResult(element(j))(vector2(j))
                             assertResult(element(i + 1))(vector2(i))
@@ -170,11 +170,10 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                     }
                 }
             }
-
-
         }
 
     }
+
 
     def testNonEmptyVectorProperties(vector: => Vec, n: Int) = {
         s"have size $n" in assertResult(n)(vector.size)
@@ -241,7 +240,8 @@ abstract class VectorSpec[A] extends WordSpec with BaseVectorGenerator[A] with V
                 }
 
                 if (isRRBVectorImplementation) {
-                    for (start <- seq if start < n; end <- seq if start < end && end <= n) {
+                    for (start <- seq if start < n;
+                         end <- seq if start < end && end <= n) {
                         s"iterating from $start" when {
                             s"iterating from $end" should {
                                 "yield all elements of in that range of the vector and then stop" in {

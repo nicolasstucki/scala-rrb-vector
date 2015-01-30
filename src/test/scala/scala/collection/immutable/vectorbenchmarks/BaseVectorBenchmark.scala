@@ -11,13 +11,13 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     /* config */
 
-    def minHeight = 1
+    def minHeight = 3
 
     def maxHeight = 3
 
-    def points = 16
+    def points = 8
 
-    def independentSamples = 32
+    def independentSamples = 1
 
     def benchRunsPerSample = 32
 

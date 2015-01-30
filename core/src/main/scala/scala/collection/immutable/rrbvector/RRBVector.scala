@@ -14,7 +14,7 @@ import scala.collection.generic._
 object RRBVector extends scala.collection.generic.IndexedSeqFactory[RRBVector] {
     def newBuilder[A]: mutable.Builder[A, RRBVector[A]] = new RRBVectorBuilder[A]()
 
-    @inline private[immutable] final val compileAssertions = false
+    @inline private[immutable] final val compileAssertions = true
 
     implicit def canBuildFrom[A]: scala.collection.generic.CanBuildFrom[Coll, A, RRBVector[A]] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
 
@@ -2847,7 +2847,8 @@ private[immutable] trait RRBVectorPointer[A] {
     protected final def withRecomputeSizes(node: Array[AnyRef], currentDepth: Int, branchToUpdate: Int): Array[AnyRef] = {
         if (RRBVector.compileAssertions) {
             assert(node != null)
-            assert(currentDepth > 1)
+            assert(currentDepth > 1, currentDepth.toString)
+            assert(node.length > 1, node.length.toString)
         }
         val end = node.length - 1
         val oldSizes = node(end).asInstanceOf[Array[Int]]
@@ -2919,9 +2920,9 @@ private[immutable] trait RRBVectorPointer[A] {
 
     @inline private final def notBalanced(node: Array[AnyRef], sizes: Array[Int], currentDepth: Int, end: Int): Boolean = {
         if (RRBVector.compileAssertions) {
-            assert(end > 1)
+            assert(end > 0, s"$end")
         }
-        (sizes(end - 2) != ((end - 1) << (5 * (currentDepth - 1)))) || (
+        (end == 1 || sizes(end - 2) != ((end - 1) << (5 * (currentDepth - 1)))) || (
           (currentDepth > 2) && {
               val last = node(end - 1).asInstanceOf[Array[AnyRef]]
               last(last.length - 1) != null
