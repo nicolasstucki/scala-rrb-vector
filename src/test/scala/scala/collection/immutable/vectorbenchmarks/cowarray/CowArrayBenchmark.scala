@@ -1,15 +1,14 @@
-package scala.collection.immutable.vectorbenchmarks.fingertree
+package scala.collection.immutable.vectorbenchmarks.cowarray
 
 import org.scalameter.Gen
 
-import scala.collection.immutable.fingertree._
+import scala.collection.immutable.cowarray._
 import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
-import scala.collection.immutable.vectorutils.BaseVectorGenerator
-import scala.collection.immutable.redblack._
+import scala.collection.immutable.vectorutils._
 
-trait FingerTreeBenchmark[A] extends BaseVectorBenchmark[A] with FingerTreeSeqGenerator[A] {
+trait CowArrayBenchmark[A] extends BaseVectorBenchmark[A] with CowArrayGenerator[A] {
 
-    override def generateVectors(from: Int, to: Int, by: Int, sizesName: String): Gen[FingerTreeSeq[A]] =
+    override def generateVectors(from: Int, to: Int, by: Int, sizesName: String): Gen[CowArray[A]] =
         for {
             size <- sizes(from, to, by, sizesName)
         } yield tabulatedVector(size)
@@ -24,27 +23,24 @@ trait FingerTreeBenchmark[A] extends BaseVectorBenchmark[A] with FingerTreeSeqGe
 
 }
 
-trait FingerTreeSeqGenerator[A] extends BaseVectorGenerator[A] {
-    override final type Vec = FingerTreeSeq[A]
+trait CowArrayGenerator[A] extends BaseVectorGenerator[A] {
+    override final type Vec = CowArray[A]
 
-    final def vectorClassName: String = "FingerTreeSeq"
+    final def vectorClassName: String = "CowArray"
 
 
-    override final def newBuilder() = FingerTreeSeq.newBuilder[A]
+    override final def newBuilder() = CowArray.newBuilder[A]
 
     override final def tabulatedVector(n: Int): Vec =
-        FingerTreeSeq.tabulate(n)(element)
+        CowArray.tabulate(n)(element)
 
     override final def rangedVector(start: Int, end: Int): Vec =
-        FingerTreeSeq.range(start, end) map element
+        CowArray.range(start, end) map element
 
-    override final def emptyVector: Vec = FingerTreeSeq.empty[A]
+    override final def emptyVector: Vec = CowArray.empty[A]
 
     override def iterator(vec: Vec, start: Int, end: Int) = {
         ???
-        //        val it = new VectorIterator[A](start, end)
-        //        vec.initIterator(it)
-        //        it
     }
 
     override def plus(vec: Vec, elem: A): Vec = vec :+ elem
@@ -57,6 +53,3 @@ trait FingerTreeSeqGenerator[A] extends BaseVectorGenerator[A] {
 
     override final def drop(vec: Vec, n: Int): Vec = vec.drop(n)
 }
-
-
-

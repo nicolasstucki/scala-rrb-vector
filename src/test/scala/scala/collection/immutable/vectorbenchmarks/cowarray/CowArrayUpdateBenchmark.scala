@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.cowarray
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.UpdateBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class CowArrayAbstractUpdateBenchmark[A] extends UpdateBenchmarks[A] with CowArrayBenchmark[A]
+
+class CowArrayUpdateIntBenchmark extends CowArrayAbstractUpdateBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class CowArrayUpdateStringBenchmark extends CowArrayAbstractUpdateBenchmark[String] with VectorGeneratorType.StringGenerator

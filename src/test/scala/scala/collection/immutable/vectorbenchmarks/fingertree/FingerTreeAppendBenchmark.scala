@@ -2,13 +2,13 @@ package scala.collection.immutable.vectorbenchmarks.fingertree
 
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.AppendBenchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
-
+import scala.collection.immutable.fingertree.FingerTreeSeq
 
 abstract class FingerTreeAbstractAppendBenchmark[A] extends AppendBenchmarks[A] with FingerTreeBenchmark[A]
 
 class FingerTreeAppendIntBenchmark extends FingerTreeAbstractAppendBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
-    def append(vec: FingerTree[Int], n: Int): Int = {
+    def append(vec: FingerTreeSeq[Int], n: Int): Int = {
         var v = vec
         var i = 0
         while (i < n) {
@@ -23,7 +23,7 @@ class FingerTreeAppendIntBenchmark extends FingerTreeAbstractAppendBenchmark[Int
 class FingerTreeAppendStringBenchmark extends FingerTreeAbstractAppendBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
 
-    def append(vec: FingerTree[String], n: Int): Int = {
+    def append(vec: FingerTreeSeq[String], n: Int): Int = {
         var v = vec
         var i = 0
         while (i < n) {

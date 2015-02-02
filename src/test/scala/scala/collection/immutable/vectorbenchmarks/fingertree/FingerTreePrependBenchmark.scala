@@ -2,15 +2,15 @@ package scala.collection.immutable.vectorbenchmarks.fingertree
 
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.PrependBenchmarks
 import scala.collection.immutable.vectorutils._
-
+import scala.collection.immutable.fingertree.FingerTreeSeq
 
 abstract class FingerTreeAbstractPrependBenchmark[A] extends PrependBenchmarks[A] with FingerTreeBenchmark[A]
 
 class FingerTreePrependIntBenchmark extends FingerTreeAbstractPrependBenchmark[Int] with VectorGeneratorType.IntGenerator {
 
-    def prepend(vec: FingerTree[Int], n: Int, times: Int): Int = {
+    def prepend(vec: FingerTreeSeq[Int], n: Int, times: Int): Int = {
         var i = 0
-        var v: FingerTree[Int] = vec
+        var v: FingerTreeSeq[Int] = vec
         var sum = 0
         while (i < times) {
             v = vec
@@ -30,9 +30,9 @@ class FingerTreePrependIntBenchmark extends FingerTreeAbstractPrependBenchmark[I
 class FingerTreePrependStringBenchmark extends FingerTreeAbstractPrependBenchmark[String] with VectorGeneratorType.StringGenerator {
     val ref = ""
 
-    def prepend(vec: FingerTree[String], n: Int, times: Int): Int = {
+    def prepend(vec: FingerTreeSeq[String], n: Int, times: Int): Int = {
         var i = 0
-        var v: FingerTree[String] = null
+        var v: FingerTreeSeq[String] = null
         var sum = 0
         while (i < times) {
             v = vec

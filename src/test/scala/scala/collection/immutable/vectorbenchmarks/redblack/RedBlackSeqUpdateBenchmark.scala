@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.redblack
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.UpdateBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class RedBlackSeqAbstractUpdateBenchmark[A] extends UpdateBenchmarks[A] with RedBlackSeqBenchmark[A]
+
+class RedBlackSeqUpdateIntBenchmark extends RedBlackSeqAbstractUpdateBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class RedBlackSeqUpdateStringBenchmark extends RedBlackSeqAbstractUpdateBenchmark[String] with VectorGeneratorType.StringGenerator

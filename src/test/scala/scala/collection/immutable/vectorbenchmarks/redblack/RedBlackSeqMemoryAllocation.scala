@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.redblack
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAllocation
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class RedBlackSeqAbstractMemoryAllocation[A] extends MemoryAllocation[A] with RedBlackSeqBenchmark[A]
+
+class RedBlackSeqIntMemoryAllocation extends RedBlackSeqAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
+
+class RedBlackSeqStringMemoryAllocation extends RedBlackSeqAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator

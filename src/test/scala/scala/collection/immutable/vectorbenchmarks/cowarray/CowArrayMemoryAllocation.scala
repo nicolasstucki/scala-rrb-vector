@@ -1,0 +1,11 @@
+package scala.collection.immutable.vectorbenchmarks.cowarray
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.MemoryAllocation
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class CowArrayAbstractMemoryAllocation[A] extends MemoryAllocation[A] with CowArrayBenchmark[A]
+
+class CowArrayIntMemoryAllocation extends CowArrayAbstractMemoryAllocation[Int] with VectorGeneratorType.IntGenerator
+
+class CowArrayStringMemoryAllocation extends CowArrayAbstractMemoryAllocation[String] with VectorGeneratorType.StringGenerator

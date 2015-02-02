@@ -4,6 +4,7 @@ import org.scalameter.PerformanceTest.{OfflineReport => Benchmark}
 
 class RunAppendBenchmarks extends Benchmark {
 
+    include[cowarray.CowArrayAppendIntBenchmark]
     include[vector.VectorAppendIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorAppendIntBenchmark]
@@ -11,6 +12,7 @@ class RunAppendBenchmarks extends Benchmark {
     include[rrbvector.xunbalanced.RRBVectorAppendIntBenchmark]
 
     include[fingertree.FingerTreeAppendIntBenchmark]
+    include[redblack.RedBlackSeqAppendIntBenchmark]
 }
 
 class RunAppendBenchmarks2 extends Benchmark {
@@ -40,6 +42,8 @@ class RunApplyBenchmarks extends Benchmark {
     include[rrbvector.xunbalanced.RRBVectorApplyIntBenchmark]
 
     include[fingertree.FingerTreeApplyIntBenchmark]
+    include[redblack.RedBlackSeqApplyIntBenchmark]
+    include[cowarray.CowArrayApplyIntBenchmark]
 }
 
 class RunApplyBenchmarks2 extends Benchmark {
@@ -117,6 +121,8 @@ class RunIterationBenchmarks extends Benchmark {
     include[rrbvector.xunbalanced.RRBVectorIterationIntBenchmark]
 
     include[fingertree.FingerTreeIterationIntBenchmark]
+    include[redblack.RedBlackSeqIterationIntBenchmark]
+    include[cowarray.CowArrayIterationIntBenchmark]
 }
 
 class RunIterationBenchmarks2 extends Benchmark {
@@ -200,6 +206,8 @@ class RunMemoryAllocation extends Benchmark {
     include[rrbvector.xunbalanced.RRBVectorIntMemoryAllocation]
 
     include[fingertree.FingerTreeIntMemoryAllocation]
+    include[redblack.RedBlackSeqIntMemoryAllocation]
+    include[cowarray.CowArrayIntMemoryAllocation]
 }
 
 class RunMemoryAllocation2 extends Benchmark {
@@ -248,4 +256,6 @@ class RunUpdateBenchmarks extends Benchmark {
 
     // Not implemented as core operation
     //    include[fingertree.FingerTreeUpdateIntBenchmark]
+    include[redblack.RedBlackSeqUpdateIntBenchmark]
+    include[cowarray.CowArrayUpdateIntBenchmark]
 }
