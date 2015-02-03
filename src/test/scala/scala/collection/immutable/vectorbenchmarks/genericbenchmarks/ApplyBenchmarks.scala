@@ -21,7 +21,7 @@ abstract class ApplyBenchmarks[A] extends BaseVectorBenchmark[A] {
                         var i = 0
                         var sum = vec(0)
                         val len = vec.length
-                        val until = 1000
+                        val until = 10000
                         while (i < until) {
                             sum = vec.apply(i % len)
                             i += 1
