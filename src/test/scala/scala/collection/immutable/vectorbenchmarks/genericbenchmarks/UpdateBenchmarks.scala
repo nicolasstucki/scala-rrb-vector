@@ -54,7 +54,7 @@ abstract class UpdateBenchmarks[A] extends BaseVectorBenchmark[A] {
                 var v: IndexedSeq[A] = vec
                 val elem = vec(0)
                 val len = vec.length
-                while (i < 10000) {
+                while (i < 1000) {
                     v = v.updated(rnd.nextInt(len), elem)
                     i += 1
                 }

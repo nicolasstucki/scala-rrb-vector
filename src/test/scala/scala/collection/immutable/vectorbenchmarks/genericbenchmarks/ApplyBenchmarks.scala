@@ -34,7 +34,7 @@ abstract class ApplyBenchmarks[A] extends BaseVectorBenchmark[A] {
 //            performance of "10k reverse iteration" in {
 //                performance of s"Height $height" in {
 //                    using(generateVectors(from, to, by)) curve vectorName in { vec =>
-//                        var i = 1000
+//                        var i = 10000
 //                        var sum = vec(0)
 //                        val len = vec.length
 //                        while (i > 0) {
