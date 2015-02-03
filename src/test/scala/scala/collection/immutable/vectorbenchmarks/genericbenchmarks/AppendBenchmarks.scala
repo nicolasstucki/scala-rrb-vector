@@ -17,7 +17,7 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         measure method "append" in {
             for (elems <- Seq(256)) {
-                val warmups = if (height == 1) 1500 else 1000
+                val warmups = if (height == 1) 2000 else 1500
                 performance of s"append $elems elements" config(
                   Key.exec.minWarmupRuns -> warmups,
                   Key.exec.maxWarmupRuns -> warmups

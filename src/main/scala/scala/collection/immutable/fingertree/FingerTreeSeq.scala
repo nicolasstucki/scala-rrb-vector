@@ -5,7 +5,6 @@ import scala.collection.{GenTraversableOnce, IndexedSeqLike, AbstractSeq}
 import scala.collection.generic.{IndexedSeqFactory, CanBuildFrom, GenericCompanion, GenericTraversableTemplate}
 import scala.collection.immutable.IndexedSeq
 
-import de.sciss.fingertree.{IndexedSeq => FingerTree}
 
 /**
  * Created by nicolasstucki on 01/02/15.
@@ -20,9 +19,12 @@ final class FingerTreeSeq[+A] private[immutable](private[immutable] val fingerTr
 
     override def companion: GenericCompanion[FingerTreeSeq] = FingerTreeSeq
 
-    override def length = fingerTree.size
+    override def length = fingerTree.measure
 
-    override def apply(idx: Int) = fingerTree.apply(idx).asInstanceOf[A]
+    override def apply(idx: Int) = {
+        if (idx < 0 || idx >= size) throw new IndexOutOfBoundsException(idx.toString)
+        fingerTree.find1(_ < idx)._2.asInstanceOf[A]
+    }
 
     override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[FingerTreeSeq[A], B, That]): That =
         if (bf eq IndexedSeq.ReusableCBF)
@@ -39,6 +41,14 @@ final class FingerTreeSeq[+A] private[immutable](private[immutable] val fingerTr
             new FingerTreeSeq[B](fingerTree ++ that.asInstanceOf[FingerTreeSeq[B]].fingerTree).asInstanceOf[That]
         } else super.++(that)
     }
+
+    override def slice(from: Int, until: Int) = take(until).drop(from)
+
+
+    override def take(n: Int) = new FingerTreeSeq[A](fingerTree.takeWhile(_ <= n))
+
+    override def drop(n: Int) = new FingerTreeSeq[A](fingerTree.dropWhile(_ <= n))
+
 
     override def iterator = fingerTree.iterator map (_.asInstanceOf[A])
 
