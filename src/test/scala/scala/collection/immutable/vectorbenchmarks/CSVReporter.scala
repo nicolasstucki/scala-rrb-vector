@@ -60,7 +60,7 @@ object CSVReporter extends Reporter {
             import java.io._
             val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm")
             val dateTime = dateTimeFormat.format(Calendar.getInstance().getTime)
-            val file = new File(s"./tmp/outputs/${scopeFile.replaceFirst("W*", "")} $dateTime.csv")
+            val file = new File(s"./benchmarks_outputs/${scopeFile.replaceFirst("W*", "")} $dateTime.csv")
             val bw = new BufferedWriter(new FileWriter(file))
             bw.write(sb.result())
             bw.close()
