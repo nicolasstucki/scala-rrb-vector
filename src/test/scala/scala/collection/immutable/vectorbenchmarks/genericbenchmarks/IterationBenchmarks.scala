@@ -7,7 +7,7 @@ import scala.collection.immutable.vectorbenchmarks.BaseVectorBenchmark
 
 abstract class IterationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
-    override val maxHeight: Int = 4
+    override val maxHeight: Int = 3
 
     performanceOfVectors { height =>
         val (from, to, by) = fromToBy(height)

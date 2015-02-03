@@ -2,7 +2,8 @@ package scala.collection.immutable
 package vectorbenchmarks
 
 import org.scalameter.PerformanceTest.OfflineRegressionReport
-import org.scalameter.{Gen, Key}
+import org.scalameter._
+import org.scalameter.utils.Tree
 
 import scala.collection.immutable.vectorutils.BaseVectorGenerator
 
@@ -15,9 +16,9 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     def maxHeight = 3
 
-    def points = 8
+    def points = 16
 
-    def independentSamples = 1
+    def independentSamples = 4
 
     def benchRunsPerSample = 32
 
@@ -27,7 +28,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     /* data */
 
-    def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(from, to, by)
+    def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(to, from, -by)
 
     def sized[T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
 
@@ -45,7 +46,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
         for (memoryInHeap <- memoryInHeapSeq) {
             performance of s"$vectorName benchmarks (-Xms$memoryInHeap -Xmx$memoryInHeap)" config(
               Key.exec.benchRuns -> benchRuns,
-//              Key.verbose -> false,
+              // Key.verbose -> false,
               Key.exec.independentSamples -> independentSamples,
               Key.exec.jvmflags -> s"-Xms$memoryInHeap -Xmx$memoryInHeap" // "-XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining" "-XX:+PrintCompilation",
               ) in {
@@ -56,3 +57,4 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
         }
     }
 }
+

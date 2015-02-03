@@ -18,7 +18,6 @@ final class CowArray[+A] private[immutable](private[immutable] val array: Array[
 
     override def length = if (array == null) 0 else array.length
 
-
     override def iterator = new CowArrayIterator[A](array)
 
     override def apply(idx: Int) = {

@@ -12,7 +12,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
     override def maxHeight = 3
 
-    override def points = super.points / 2
+    override def points = super.points // / 2
 
     def generateVectors2(from: Int, to: Int, by: Int): Gen[(Vec, Vec)]
 
@@ -22,7 +22,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val warmups = 3000
+        val warmups = 2200
 
         performance of "concatenation" config(
           Key.exec.minWarmupRuns -> warmups,

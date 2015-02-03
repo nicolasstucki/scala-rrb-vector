@@ -1,8 +1,14 @@
 package scala.collection.immutable.vectorbenchmarks
 
-import org.scalameter.PerformanceTest.{OfflineReport => Benchmark}
+import org.scalameter.PerformanceTest.OfflineReport
+import org.scalameter._
 
-class RunAppendBenchmarks extends Benchmark {
+trait BenchmarkRun extends OfflineReport {
+
+    override def reporter = new Reporter.Composite(CSVReporter, super.reporter)
+}
+
+class RunAppendBenchmarks extends BenchmarkRun {
 
     include[cowarray.CowArrayAppendIntBenchmark]
     include[vector.VectorAppendIntBenchmark]
@@ -15,7 +21,7 @@ class RunAppendBenchmarks extends Benchmark {
     include[redblack.RedBlackSeqAppendIntBenchmark]
 }
 
-class RunAppendBenchmarks2 extends Benchmark {
+class RunAppendBenchmarks2 extends BenchmarkRun {
 
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_AppendInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_AppendInt_Benchmark]
@@ -33,7 +39,7 @@ class RunAppendBenchmarks2 extends Benchmark {
     include[generated.rrbvector.quick.block256.xunbalanced.RRBVector_q_256_AppendInt_Benchmark]
 }
 
-class RunApplyBenchmarks extends Benchmark {
+class RunApplyBenchmarks extends BenchmarkRun {
 
     include[vector.VectorApplyIntBenchmark]
 
@@ -46,7 +52,7 @@ class RunApplyBenchmarks extends Benchmark {
     include[cowarray.CowArrayApplyIntBenchmark]
 }
 
-class RunApplyBenchmarks2 extends Benchmark {
+class RunApplyBenchmarks2 extends BenchmarkRun {
 
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_ApplyInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_ApplyInt_Benchmark]
@@ -65,31 +71,37 @@ class RunApplyBenchmarks2 extends Benchmark {
 
 }
 
-class RunBuilderBenchmarks extends Benchmark {
+class RunBuilderBenchmarks extends BenchmarkRun {
 
     include[vector.VectorBuilderIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorBuilderIntBenchmark]
 }
 
-class RunBuilderBenchmarks2 extends Benchmark {
+class RunBuilderBenchmarks2 extends BenchmarkRun {
+
+
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_BuilderInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_BuilderInt_Benchmark]
     include[generated.rrbvector.complete.block128.balanced.RRBVector_c_128_BuilderInt_Benchmark]
     include[generated.rrbvector.complete.block256.balanced.RRBVector_c_256_BuilderInt_Benchmark]
 }
 
-class RunConcatenationBenchmarks extends Benchmark {
-    //    include[vector.VectorConcatenationIntBenchmark]
+class RunConcatenationBenchmarks extends BenchmarkRun {
+
+    include[vector.VectorConcatenationIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorConcatenationIntBenchmark]
-    //    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
-    //    include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
+    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
 
     include[fingertree.FingerTreeConcatenationIntBenchmark]
+    //    include[redblack.RedBlackSeqConcatenationIntBenchmark]
+    include[cowarray.CowArrayConcatenationIntBenchmark]
 }
 
-class RunConcatenationBenchmarks2 extends Benchmark {
+class RunConcatenationBenchmarks2 extends BenchmarkRun {
+
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_ConcatenationInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_ConcatenationInt_Benchmark]
     include[generated.rrbvector.complete.block128.balanced.RRBVector_c_128_ConcatenationInt_Benchmark]
@@ -112,7 +124,7 @@ class RunConcatenationBenchmarks2 extends Benchmark {
 }
 
 
-class RunIterationBenchmarks extends Benchmark {
+class RunIterationBenchmarks extends BenchmarkRun {
 
     include[vector.VectorIterationIntBenchmark]
 
@@ -125,7 +137,7 @@ class RunIterationBenchmarks extends Benchmark {
     include[cowarray.CowArrayIterationIntBenchmark]
 }
 
-class RunIterationBenchmarks2 extends Benchmark {
+class RunIterationBenchmarks2 extends BenchmarkRun {
 
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_IterationInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_IterationInt_Benchmark]
@@ -143,7 +155,8 @@ class RunIterationBenchmarks2 extends Benchmark {
     include[generated.rrbvector.quick.block256.xunbalanced.RRBVector_q_256_IterationInt_Benchmark]
 }
 
-class RunPrependBenchmarks extends Benchmark {
+class RunPrependBenchmarks extends BenchmarkRun {
+
     include[vector.VectorPrependIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorPrependIntBenchmark]
@@ -151,9 +164,12 @@ class RunPrependBenchmarks extends Benchmark {
     include[rrbvector.xunbalanced.RRBVectorPrependIntBenchmark]
 
     include[fingertree.FingerTreePrependIntBenchmark]
+    include[redblack.RedBlackSeqPrependIntBenchmark]
+    include[cowarray.CowArrayPrependIntBenchmark]
 }
 
-class RunPrependBenchmarks2 extends Benchmark {
+class RunPrependBenchmarks2 extends BenchmarkRun {
+
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_PrependInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_PrependInt_Benchmark]
     include[generated.rrbvector.complete.block128.balanced.RRBVector_c_128_PrependInt_Benchmark]
@@ -170,16 +186,20 @@ class RunPrependBenchmarks2 extends Benchmark {
     include[generated.rrbvector.quick.block256.xunbalanced.RRBVector_q_256_PrependInt_Benchmark]
 }
 
-class RunSplitBenchmarks extends Benchmark {
+class RunSplitBenchmarks extends BenchmarkRun {
 
     include[vector.VectorSplitIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorSplitIntBenchmark]
     include[rrbvector.unbalanced1.RRBVectorSplitIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorSplitIntBenchmark]
+
+    include[fingertree.FingerTreeSplitIntBenchmark]
+    include[redblack.RedBlackSeqSplitIntBenchmark]
+    include[cowarray.CowArraySplitIntBenchmark]
 }
 
-class RunSplitBenchmarks2 extends Benchmark {
+class RunSplitBenchmarks2 extends BenchmarkRun {
 
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_SplitInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_SplitInt_Benchmark]
@@ -197,7 +217,7 @@ class RunSplitBenchmarks2 extends Benchmark {
     include[generated.rrbvector.quick.block256.xunbalanced.RRBVector_q_256_SplitInt_Benchmark]
 }
 
-class RunMemoryAllocation extends Benchmark {
+class RunMemoryAllocation extends BenchmarkRun {
 
     include[vector.VectorIntMemoryAllocation]
 
@@ -210,7 +230,7 @@ class RunMemoryAllocation extends Benchmark {
     include[cowarray.CowArrayIntMemoryAllocation]
 }
 
-class RunMemoryAllocation2 extends Benchmark {
+class RunMemoryAllocation2 extends BenchmarkRun {
 
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_IntMemoryAllocation_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_IntMemoryAllocation_Benchmark]
@@ -224,7 +244,7 @@ class RunMemoryAllocation2 extends Benchmark {
 }
 
 
-class RunParMapBenchmarks extends Benchmark {
+class RunParMapBenchmarks extends BenchmarkRun {
 
     include[vector.VectorParMapIntBenchmark]
 
@@ -233,7 +253,7 @@ class RunParMapBenchmarks extends Benchmark {
     include[rrbvector.xunbalanced.RRBVectorParMapIntBenchmark]
 }
 
-class RunParMapBenchmarks2 extends Benchmark {
+class RunParMapBenchmarks2 extends BenchmarkRun {
 
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_IntParMap_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_IntParMap_Benchmark]
@@ -246,7 +266,7 @@ class RunParMapBenchmarks2 extends Benchmark {
     include[generated.rrbvector.complete.block256.xunbalanced.RRBVector_c_256_IntParMap_Benchmark]
 }
 
-class RunUpdateBenchmarks extends Benchmark {
+class RunUpdateBenchmarks extends BenchmarkRun {
 
     include[vector.VectorUpdateIntBenchmark]
 

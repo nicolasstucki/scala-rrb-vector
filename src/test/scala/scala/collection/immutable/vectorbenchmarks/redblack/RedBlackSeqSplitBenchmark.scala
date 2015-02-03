@@ -1,0 +1,12 @@
+package scala.collection.immutable.vectorbenchmarks.redblack
+
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.SplitBenchmarks
+import scala.collection.immutable.vectorutils.VectorGeneratorType
+
+
+abstract class RedBlackSeqAbstractSplitBenchmark[A] extends SplitBenchmarks[A] with RedBlackSeqBenchmark[A]
+
+class RedBlackSeqSplitIntBenchmark extends RedBlackSeqAbstractSplitBenchmark[Int] with VectorGeneratorType.IntGenerator
+
+class RedBlackSeqSplitStringBenchmark extends RedBlackSeqAbstractSplitBenchmark[String] with VectorGeneratorType.StringGenerator
+
