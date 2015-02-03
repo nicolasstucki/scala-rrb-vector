@@ -36,8 +36,9 @@ final class CowArray[+A] private[immutable](private[immutable] val array: Array[
 
         if (bf eq IndexedSeq.ReusableCBF) {
             val newArray = new Array[AnyRef](array.length)
-            System.arraycopy(array, 0, newArray, 0, array.length)
+            System.arraycopy(array, 0, newArray, 0, idx)
             newArray(idx) = elem.asInstanceOf[AnyRef]
+            System.arraycopy(array, idx + 1, newArray, idx + 1, array.length - idx - 1)
             new CowArray[B](newArray).asInstanceOf[That]
         } else
             super.updated(idx, elem)
