@@ -84,6 +84,17 @@ final class RedBlackSeq[+A] private[immutable](private[immutable] val tree: RedB
         case _ => super.++(that)
     }
 
+    override def head = {
+        if (isEmpty) throw new UnsupportedOperationException
+        super.head
+    }
+
+    override def last = {
+        if (isEmpty) throw new UnsupportedOperationException
+        super.last
+    }
+
+    override def lengthCompare(len: Int) = length - len
 }
 
 final class RedBlackSeqBuilder[A]() extends Builder[A, RedBlackSeq[A]] {

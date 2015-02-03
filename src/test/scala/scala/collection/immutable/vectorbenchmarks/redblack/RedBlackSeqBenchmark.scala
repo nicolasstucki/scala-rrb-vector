@@ -40,7 +40,7 @@ trait RedBlackSeqGenerator[A] extends BaseVectorGenerator[A] {
     override final def emptyVector: Vec = RedBlackSeq.empty[A]
 
     override def iterator(vec: Vec, start: Int, end: Int) = {
-        ???
+        vec.take(end).drop(start).iterator
     }
 
     override def plus(vec: Vec, elem: A): Vec = vec :+ elem

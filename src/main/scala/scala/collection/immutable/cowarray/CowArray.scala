@@ -3,6 +3,8 @@ package collection
 package immutable
 package cowarray
 
+import java.util.NoSuchElementException
+
 import scala.collection.generic.{IndexedSeqFactory, CanBuildFrom, GenericCompanion, GenericTraversableTemplate}
 
 /**
@@ -34,9 +36,8 @@ final class CowArray[+A] private[immutable](private[immutable] val array: Array[
 
         if (bf eq IndexedSeq.ReusableCBF) {
             val newArray = new Array[AnyRef](array.length)
-            System.arraycopy(newArray, 0, newArray, 0, idx)
+            System.arraycopy(array, 0, newArray, 0, array.length)
             newArray(idx) = elem.asInstanceOf[AnyRef]
-            System.arraycopy(array, idx + 1, newArray, idx + 1, array.length - idx - 1)
             new CowArray[B](newArray).asInstanceOf[That]
         } else
             super.updated(idx, elem)
@@ -76,19 +77,35 @@ final class CowArray[+A] private[immutable](private[immutable] val array: Array[
         case _ => super.++(that)
     }
 
+    override def head = {
+        if (isEmpty) throw new UnsupportedOperationException
+        else array(0).asInstanceOf[A]
+    }
+
+    override def last = {
+        val len = array.length
+        if (len == 0) throw new UnsupportedOperationException
+        else array(len).asInstanceOf[A]
+    }
+
+    override def lengthCompare(len: Int) = length - len
 }
 
 final class CowArrayIterator[+A](array: Array[AnyRef])
   extends Iterator[A] {
-    var i = -1
-    var end = array.length - 1
+    var i = 0
+    var end = array.length
 
     override def hasNext = i < end
 
-    override def next() = {
-        val _i = i + 1
-        i = _i
-        array(_i).asInstanceOf[A]
+    override def next(): A = {
+        val _i = i
+        if (_i < end) {
+            i = _i + 1
+            return array(_i).asInstanceOf[A]
+        } else {
+            throw new NoSuchElementException
+        }
     }
 }
 

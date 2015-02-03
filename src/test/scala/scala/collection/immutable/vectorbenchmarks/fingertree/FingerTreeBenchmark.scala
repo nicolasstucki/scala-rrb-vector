@@ -41,10 +41,7 @@ trait FingerTreeSeqGenerator[A] extends BaseVectorGenerator[A] {
     override final def emptyVector: Vec = FingerTreeSeq.empty[A]
 
     override def iterator(vec: Vec, start: Int, end: Int) = {
-        ???
-        //        val it = new VectorIterator[A](start, end)
-        //        vec.initIterator(it)
-        //        it
+        vec.take(end).drop(start).iterator
     }
 
     override def plus(vec: Vec, elem: A): Vec = vec :+ elem
