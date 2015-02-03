@@ -76,6 +76,10 @@ class RunBuilderBenchmarks extends BenchmarkRun {
     include[vector.VectorBuilderIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorBuilderIntBenchmark]
+
+    include[fingertree.FingerTreeSeqBuilderIntBenchmark]
+    include[redblack.RedBlackSeqBuilderIntBenchmark]
+    include[cowarray.CowArrayBuilderIntBenchmark]
 }
 
 class RunBuilderBenchmarks2 extends BenchmarkRun {

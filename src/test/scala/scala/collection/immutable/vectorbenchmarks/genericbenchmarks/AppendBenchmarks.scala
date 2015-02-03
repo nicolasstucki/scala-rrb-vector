@@ -17,12 +17,11 @@ abstract class AppendBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         measure method "append" in {
             for (elems <- Seq(256)) {
-                val warmups = if (height == 1) 2000 else 1500
+                val warmups = 2000
                 performance of s"append $elems elements" config(
                   Key.exec.minWarmupRuns -> warmups,
                   Key.exec.maxWarmupRuns -> warmups
                   ) in {
-
                     performance of s"Height $height" in {
                         using(generateVectors(from, to, by)) curve vectorName setUp { x: Vec => System.gc()} in { vec =>
                             sideeffect = append(vec, elems)
