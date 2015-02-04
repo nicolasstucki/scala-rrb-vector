@@ -10,7 +10,7 @@ import scala.collection.mutable.Builder
 /**
  * Created by nicolasstucki on 01/02/15.
  */
-final class RedBlackSeq[+A] private[immutable](private[immutable] val tree: RedBlackTree.Tree[A], startIndex: Int, endIndex: Int)
+final class RedBlackSeq[+A] private[immutable](private[immutable] val tree: RedBlackTree.Tree[A], private[immutable] val startIndex: Int, private[immutable] val endIndex: Int)
   extends AbstractSeq[A]
   with IndexedSeq[A]
   with GenericTraversableTemplate[A, RedBlackSeq]
@@ -66,21 +66,42 @@ final class RedBlackSeq[+A] private[immutable](private[immutable] val tree: RedB
 
     override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[RedBlackSeq[A], B, That]): That = that match {
         case _that: RedBlackSeq[B] =>
-            val it = RedBlackTree.valuesIterator[B](_that.tree)
-            if (it.hasNext) {
-                var _endIndex = this.endIndex
-                var newTree: RedBlackTree.Tree[B] = RedBlackTree.update(tree, _endIndex, it.next(), false)
-                _endIndex += 1
-                while (it.hasNext) {
-                    newTree = RedBlackTree.update(newTree, _endIndex, it.next(), true)
+            if (this.length < _that.length) {
+                // prepend elements
+                val it = RedBlackTree.valuesIterator[B](this.tree)
+                if (it.hasNext) {
+                    val newStart = _that.startIndex - this.length
+                    var i = newStart
+                    var newTree: RedBlackTree.Tree[B] = RedBlackTree.update(tree, i, it.next(), false)
+                    i += 1
+                    while (it.hasNext) {
+                        newTree = RedBlackTree.update(newTree, i, it.next(), true)
+                        i += 1
+                    }
+                    new RedBlackSeq[B](
+                        newTree,
+                        newStart,
+                        _that.endIndex
+                    ).asInstanceOf[That]
+                } else _that.asInstanceOf[That]
+            } else {
+                // append elements
+                val it = RedBlackTree.valuesIterator[B](_that.tree)
+                if (it.hasNext) {
+                    var _endIndex = this.endIndex
+                    var newTree: RedBlackTree.Tree[B] = RedBlackTree.update(tree, _endIndex, it.next(), false)
                     _endIndex += 1
-                }
-                new RedBlackSeq[B](
-                    newTree,
-                    startIndex,
-                    _endIndex
-                ).asInstanceOf[That]
-            } else this.asInstanceOf[That]
+                    while (it.hasNext) {
+                        newTree = RedBlackTree.update(newTree, _endIndex, it.next(), true)
+                        _endIndex += 1
+                    }
+                    new RedBlackSeq[B](
+                        newTree,
+                        startIndex,
+                        _endIndex
+                    ).asInstanceOf[That]
+                } else this.asInstanceOf[That]
+            }
         case _ => super.++(that)
     }
 

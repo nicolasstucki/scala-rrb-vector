@@ -19,7 +19,7 @@ class RunAll extends BenchmarkRun {
 
     include[RunAppendBenchmarks]
     include[RunPrependBenchmarks]
-    include[RunConcatenationBenchmarks]
+    //    include[RunConcatenationBenchmarks]
 
     include[RunMemoryAllocation]
 }
@@ -100,7 +100,6 @@ class RunBuilderBenchmarks extends BenchmarkRun {
 
 class RunBuilderBenchmarks2 extends BenchmarkRun {
 
-
     include[generated.rrbvector.complete.block32.balanced.RRBVector_c_32_BuilderInt_Benchmark]
     include[generated.rrbvector.complete.block64.balanced.RRBVector_c_64_BuilderInt_Benchmark]
     include[generated.rrbvector.complete.block128.balanced.RRBVector_c_128_BuilderInt_Benchmark]
@@ -109,6 +108,16 @@ class RunBuilderBenchmarks2 extends BenchmarkRun {
 
 class RunConcatenationBenchmarks extends BenchmarkRun {
 
+    include[rrbvector.balanced.RRBVectorConcatenationIntBenchmark]
+    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
+
+    include[fingertree.FingerTreeConcatenationIntBenchmark]
+    include[cowarray.CowArrayConcatenationIntBenchmark]
+}
+
+class RunConcatenationCompleteBenchmarks extends BenchmarkRun {
+
     include[vector.VectorConcatenationIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorConcatenationIntBenchmark]
@@ -116,7 +125,7 @@ class RunConcatenationBenchmarks extends BenchmarkRun {
     include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
 
     include[fingertree.FingerTreeConcatenationIntBenchmark]
-    //    include[redblack.RedBlackSeqConcatenationIntBenchmark]
+    include[redblack.RedBlackSeqConcatenationIntBenchmark]
     include[cowarray.CowArrayConcatenationIntBenchmark]
 }
 
