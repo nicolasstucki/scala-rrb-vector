@@ -39,23 +39,7 @@ trait CowArrayGenerator[A] extends BaseVectorGenerator[A] {
 
     override final def emptyVector: Vec = CowArray.empty[A]
 
-    override def iterator(vec: Vec, start: Int, end: Int) = {
-        new Iterator[A] {
-            var i = start
-
-            override def hasNext = i < end
-
-            override def next(): A = {
-                if (hasNext) {
-                    val nxt = vec(i)
-                    i += 1
-                    return nxt
-                } else {
-                    throw new NoSuchElementException
-                }
-            }
-        }
-    }
+    override def iterator(vec: Vec, start: Int, end: Int) = vec.take(end).drop(start).iterator
 
     override def plus(vec: Vec, elem: A): Vec = vec :+ elem
 

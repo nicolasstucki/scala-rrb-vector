@@ -6,6 +6,7 @@ package cowarray
 import java.util.NoSuchElementException
 
 import scala.collection.generic.{IndexedSeqFactory, CanBuildFrom, GenericCompanion, GenericTraversableTemplate}
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Created by nicolasstucki on 01/02/15.
@@ -20,7 +21,11 @@ final class CowArray[+A] private[immutable](private[immutable] val array: Array[
 
     override def length = if (array == null) 0 else array.length
 
-    override def iterator = new CowArrayIterator[A](array)
+    override def iterator = {
+        val it = new CowArrayIterator[A]()
+        it.initFrom(array)
+        it
+    }
 
     override def apply(idx: Int) = {
         val _array = array
@@ -92,22 +97,48 @@ final class CowArray[+A] private[immutable](private[immutable] val array: Array[
     override def lengthCompare(len: Int) = length - len
 }
 
-final class CowArrayIterator[+A](array: Array[AnyRef])
+final class CowArrayIterator[+A]()
   extends Iterator[A] {
-    var i = 0
-    var end = array.length
+    // assert(array)
+    private var i = 0
+    private var end = 0
+    private var _hasNext: Boolean = _
+    private var array: Array[AnyRef] = _
 
-    override def hasNext = i < end
+    final def hasNext = _hasNext
 
-    override def next(): A = {
-        val _i = i
-        if (_i < end) {
-            i = _i + 1
-            return array(_i).asInstanceOf[A]
+    def initFrom(array: Array[AnyRef]) = {
+        i = 0
+        if (array == null || array.length == 0) {
+            end = 0
+            _hasNext = false
+            this.array = new Array[AnyRef](1)
         } else {
-            throw new NoSuchElementException
+            this.array = array
+            end = array.length
+            _hasNext = true
         }
     }
+
+    final def next(): A = {
+        // keep method size under 35 bytes, so that it can be JIT-inlined
+        var _i = i
+        val res: A = array(_i).asInstanceOf[A]
+        _i += 1
+        i = _i
+        if (_i >= end)
+            checkEnded()
+        res
+    }
+
+    private[immutable] final def checkEnded(): Unit = {
+        i -= 1
+        if (_hasNext) {
+            _hasNext = false
+            return
+        } else throw new NoSuchElementException("reached iterator end")
+    }
+
 }
 
 final class CowArrayBuilder[A]() extends mutable.Builder[A, CowArray[A]] {
