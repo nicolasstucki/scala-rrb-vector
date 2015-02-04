@@ -8,6 +8,22 @@ trait BenchmarkRun extends OfflineReport {
     override def reporter = new Reporter.Composite(CSVReporter, super.reporter)
 }
 
+class RunAll extends BenchmarkRun {
+
+    include[RunBuilderBenchmarks]
+    include[RunIterationBenchmarks]
+
+    include[RunApplyBenchmarks]
+
+    include[RunUpdateBenchmarks]
+
+    include[RunAppendBenchmarks]
+    include[RunPrependBenchmarks]
+    include[RunConcatenationBenchmarks]
+
+    include[RunMemoryAllocation]
+}
+
 class RunAppendBenchmarks extends BenchmarkRun {
 
     include[cowarray.CowArrayAppendIntBenchmark]
