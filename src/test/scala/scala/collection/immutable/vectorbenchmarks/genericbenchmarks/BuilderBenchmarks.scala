@@ -16,7 +16,7 @@ abstract class BuilderBenchmarks[A] extends BaseVectorBenchmark[A] {
 
         var sideeffect = 0
 
-        val warmups = if (height <= 2) 2000 else if (height == 3) 50 else 20
+        val warmups = if (height <= 2) 2000 else if (height == 3) 200 else 100
         measure method "builder" config(
           Key.exec.minWarmupRuns -> warmups,
           Key.exec.maxWarmupRuns -> warmups

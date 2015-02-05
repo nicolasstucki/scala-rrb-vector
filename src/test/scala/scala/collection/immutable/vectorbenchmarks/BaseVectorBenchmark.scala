@@ -16,7 +16,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     def maxHeight = 3
 
-    def points = 16
+    def points = 32
 
     def independentSamples = 16
 
@@ -28,7 +28,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     /* data */
 
-    def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(to, from, -by)
+    def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(to - 1, from, -by)
 
     def sized[T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
 

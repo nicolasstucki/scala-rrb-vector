@@ -12,8 +12,8 @@ abstract class UpdateBenchmarks[A] extends BaseVectorBenchmark[A] {
         var sideeffect = 0
 
         measure method "upadte" config(
-          Key.exec.minWarmupRuns -> 700,
-          Key.exec.maxWarmupRuns -> 1000) in {
+          Key.exec.minWarmupRuns -> 1000,
+          Key.exec.maxWarmupRuns -> 1500) in {
 
             performance of "1k iteration" in {
                 performance of s"Height $height" in {
