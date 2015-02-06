@@ -4,7 +4,9 @@ import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.UpdateBench
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 
-abstract class CowArrayAbstractUpdateBenchmark[A] extends UpdateBenchmarks[A] with CowArrayBenchmark[A]
+abstract class CowArrayAbstractUpdateBenchmark[A] extends UpdateBenchmarks[A] with CowArrayBenchmark[A] {
+    override def to(n: Int): Int = math.min(n, 10000)
+}
 
 class CowArrayUpdateIntBenchmark extends CowArrayAbstractUpdateBenchmark[Int] with VectorGeneratorType.IntGenerator
 
