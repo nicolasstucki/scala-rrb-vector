@@ -12,7 +12,7 @@ abstract class ConcatenationBenchmarks[A] extends BaseVectorBenchmark[A] {
 
     override def maxHeight = 3
 
-    override def points = super.points // / 2
+    override def points = 20
 
     def generateVectors2(from: Int, to: Int, by: Int): Gen[(Vec, Vec)]
 
