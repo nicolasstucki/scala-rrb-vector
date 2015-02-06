@@ -303,8 +303,7 @@ class RunUpdateBenchmarks extends BenchmarkRun {
     include[rrbvector.unbalanced1.RRBVectorUpdateIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorUpdateIntBenchmark]
 
-    // Not implemented as core operation
-    //    include[fingertree.FingerTreeUpdateIntBenchmark]
+    include[fingertree.FingerTreeUpdateIntBenchmark]
     include[redblack.RedBlackSeqUpdateIntBenchmark]
     include[cowarray.CowArrayUpdateIntBenchmark]
 }

@@ -1,5 +1,6 @@
 package scala.collection.immutable.fingertree
 
+import scala.collection.immutable.redblack.RedBlackTree
 import scala.collection.mutable.Builder
 import scala.collection.{GenTraversableOnce, IndexedSeqLike, AbstractSeq}
 import scala.collection.generic.{IndexedSeqFactory, CanBuildFrom, GenericCompanion, GenericTraversableTemplate}
@@ -43,6 +44,17 @@ final class FingerTreeSeq[+A] private[immutable](private[immutable] val fingerTr
             new FingerTreeSeq[B](fingerTree ++ that.asInstanceOf[FingerTreeSeq[B]].fingerTree).asInstanceOf[That]
         } else super.++(that)
     }
+
+    override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[FingerTreeSeq[A], B, That]) = {
+        if (bf eq IndexedSeq.ReusableCBF) {
+            val (init, tail) = fingerTree.splitAt(index)
+            new FingerTreeSeq[B](
+                (init :+ elem.asInstanceOf[AnyRef]) ++ tail
+            ).asInstanceOf[That]
+        } else
+            super.updated(index, elem)
+    }
+
 
     override def iterator = fingerTree.iterator map (_.asInstanceOf[A])
 
