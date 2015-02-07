@@ -144,6 +144,8 @@ final class CowArrayIterator[+A]()
 final class CowArrayBuilder[A]() extends mutable.Builder[A, CowArray[A]] {
     var array = Array.newBuilder[AnyRef]
 
+    override def sizeHint(size: Int) = array.sizeHint(size)
+
     override def +=(elem: A) = {
         array += elem.asInstanceOf[AnyRef]
         this

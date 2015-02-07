@@ -96,6 +96,7 @@ class RunBuilderBenchmarks extends BenchmarkRun {
     include[fingertree.FingerTreeSeqBuilderIntBenchmark]
     include[redblack.RedBlackSeqBuilderIntBenchmark]
     include[cowarray.CowArrayBuilderIntBenchmark]
+    include[cowarray.CowArrayBuilderHintedIntBenchmark]
 }
 
 class RunBuilderBenchmarks2 extends BenchmarkRun {

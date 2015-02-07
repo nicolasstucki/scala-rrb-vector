@@ -1,6 +1,5 @@
 package scala.collection.immutable.fingertree
 
-import scala.collection.immutable.redblack.RedBlackTree
 import scala.collection.mutable.Builder
 import scala.collection.{GenTraversableOnce, IndexedSeqLike, AbstractSeq}
 import scala.collection.generic.{IndexedSeqFactory, CanBuildFrom, GenericCompanion, GenericTraversableTemplate}
