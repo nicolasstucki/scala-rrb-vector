@@ -20,14 +20,15 @@ abstract class Concatenation2Benchmarks[A] extends BaseVectorBenchmark[A] {
           Key.exec.minWarmupRuns -> warmups,
           Key.exec.maxWarmupRuns -> 2 * warmups
           ) in {
-            performance of s"vectorLHS ++ vectorRHS fixed sum" in {
-                performance of s"Height $height" in {
-                    using(generateVectorsFixedSum(32*32*32)) curve vectorName setUp { x: (Vec, Vec) => System.gc()} in { vecs =>
-                        val v = plusPlus(vecs._1, vecs._2)
-                        sideeffect = v.length
-                    }
-                }
-            }
+
+//            performance of s"vectorLHS ++ vectorRHS fixed sum" in {
+//                performance of s"Height $height" in {
+//                    using(generateVectorsFixedSum(32*32*32)) curve vectorName setUp { x: (Vec, Vec) => System.gc()} in { vecs =>
+//                        val v = plusPlus(vecs._1, vecs._2)
+//                        sideeffect = v.length
+//                    }
+//                }
+//            }
 
             performance of s"vectorLHS ++ vectorRHS fixed LHS" in {
                 performance of s"Height $height" in {
@@ -37,15 +38,15 @@ abstract class Concatenation2Benchmarks[A] extends BaseVectorBenchmark[A] {
                     }
                 }
             }
-//
-//            performance of s"vectorLHS ++ vectorRHS fixed RHS" in {
-//                performance of s"Height $height" in {
-//                    using(generateVectorsFixedRHS(32*32*16, from, to_, by)) curve vectorName setUp { x: (Vec, Vec) => System.gc()} in { vecs =>
-//                        val v = plusPlus(vecs._1, vecs._2)
-//                        sideeffect = v.length
-//                    }
-//                }
-//            }
+
+            performance of s"vectorLHS ++ vectorRHS fixed RHS" in {
+                performance of s"Height $height" in {
+                    using(generateVectorsFixedRHS(32*32*16, from, to_, by)) curve vectorName setUp { x: (Vec, Vec) => System.gc()} in { vecs =>
+                        val v = plusPlus(vecs._1, vecs._2)
+                        sideeffect = v.length
+                    }
+                }
+            }
         }
     }
 
