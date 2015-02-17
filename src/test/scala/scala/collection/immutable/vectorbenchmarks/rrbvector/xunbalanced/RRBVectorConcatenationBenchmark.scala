@@ -1,6 +1,6 @@
 package scala.collection.immutable.vectorbenchmarks.rrbvector.xunbalanced
 
-import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.{Concatenation2Benchmarks, ConcatenationBenchmarks}
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 abstract class RRBVectorAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with RRBVectorAbstractBenchmark[A]
@@ -8,3 +8,10 @@ abstract class RRBVectorAbstractConcatenationBenchmark[A] extends ConcatenationB
 class RRBVectorConcatenationIntBenchmark extends RRBVectorAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
 class RRBVectorConcatenationStringBenchmark extends RRBVectorAbstractConcatenationBenchmark[String] with VectorGeneratorType.StringGenerator
+
+
+abstract class RRBVectorAbstractConcatenation2Benchmark[A] extends Concatenation2Benchmarks[A] with RRBVectorAbstractBenchmark[A]
+
+class RRBVectorConcatenation2IntBenchmark extends RRBVectorAbstractConcatenation2Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+class RRBVectorConcatenation2StringBenchmark extends RRBVectorAbstractConcatenation2Benchmark[String] with VectorGeneratorType.StringGenerator

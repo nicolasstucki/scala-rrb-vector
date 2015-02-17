@@ -117,6 +117,30 @@ class RunConcatenationBenchmarks extends BenchmarkRun {
     include[cowarray.CowArrayConcatenationIntBenchmark]
 }
 
+
+class RunConcatenation2Benchmarks extends BenchmarkRun {
+
+    include[rrbvector.balanced.RRBVectorConcatenation2IntBenchmark]
+    include[rrbvector.unbalanced1.RRBVectorConcatenation2IntBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorConcatenation2IntBenchmark]
+
+    include[fingertree.FingerTreeConcatenation2IntBenchmark]
+    include[cowarray.CowArrayConcatenation2IntBenchmark]
+}
+
+class RunConcatenation2CompleteBenchmarks extends BenchmarkRun {
+
+    include[vector.VectorConcatenation2IntBenchmark]
+
+    include[rrbvector.balanced.RRBVectorConcatenation2IntBenchmark]
+    include[rrbvector.unbalanced1.RRBVectorConcatenation2IntBenchmark]
+    include[rrbvector.xunbalanced.RRBVectorConcatenation2IntBenchmark]
+
+    include[fingertree.FingerTreeConcatenation2IntBenchmark]
+    include[redblack.RedBlackSeqConcatenation2IntBenchmark]
+    include[cowarray.CowArrayConcatenation2IntBenchmark]
+}
+
 class RunConcatenationCompleteBenchmarks extends BenchmarkRun {
 
     include[vector.VectorConcatenationIntBenchmark]
@@ -221,7 +245,7 @@ class RunSplitBenchmarks extends BenchmarkRun {
     include[vector.VectorSplitIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorSplitIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorSplitIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorSplitIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorSplitIntBenchmark]
 
     include[fingertree.FingerTreeSplitIntBenchmark]

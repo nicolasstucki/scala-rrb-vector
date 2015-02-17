@@ -26,6 +26,26 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     def memoryInHeapSeq = Seq("16g") //, "512m")
 
+    def generateVectorsFixedSum(sum: Int): Gen[(Vec, Vec)] = {
+        val min = sum / points
+        val max = sum - min
+        for {
+            size <- sizes(min, max, (max - min) / points, "size")
+        } yield (tabulatedVector(size), tabulatedVector(sum - size))
+    }
+
+    def generateVectorsFixedLHS(fixedSize: Int, from: Int, to: Int, by: Int): Gen[(Vec, Vec)] = {
+        for {
+            size <- sizes(from, to, by, "size")
+        } yield (tabulatedVector(fixedSize), tabulatedVector(size))
+    }
+
+    def generateVectorsFixedRHS(fixedSize: Int, from: Int, to: Int, by: Int): Gen[(Vec, Vec)] = {
+        for {
+            size <- sizes(from, to, by, "size")
+        } yield (tabulatedVector(size), tabulatedVector(fixedSize))
+    }
+
     /* data */
 
     def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(to - 1, from, -by)

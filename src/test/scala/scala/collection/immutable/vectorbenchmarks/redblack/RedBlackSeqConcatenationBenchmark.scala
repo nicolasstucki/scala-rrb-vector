@@ -1,6 +1,7 @@
 package scala.collection.immutable.vectorbenchmarks.redblack
 
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.Concatenation2Benchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 abstract class RedBlackSeqAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with RedBlackSeqBenchmark[A] {
@@ -10,3 +11,10 @@ abstract class RedBlackSeqAbstractConcatenationBenchmark[A] extends Concatenatio
 class RedBlackSeqConcatenationIntBenchmark extends RedBlackSeqAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
 class RedBlackSeqConcatenationStringBenchmark extends RedBlackSeqAbstractConcatenationBenchmark[String] with VectorGeneratorType.StringGenerator
+
+
+abstract class RedBlackSeqAbstractConcatenation2Benchmark[A] extends Concatenation2Benchmarks[A] with RedBlackSeqBenchmark[A]
+
+class RedBlackSeqConcatenation2IntBenchmark extends RedBlackSeqAbstractConcatenation2Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+class RedBlackSeqConcatenation2StringBenchmark extends RedBlackSeqAbstractConcatenation2Benchmark[String] with VectorGeneratorType.StringGenerator

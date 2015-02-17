@@ -1,6 +1,7 @@
 package scala.collection.immutable.vectorbenchmarks.fingertree
 
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.Concatenation2Benchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 abstract class FingerTreeAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with FingerTreeBenchmark[A]
@@ -8,3 +9,10 @@ abstract class FingerTreeAbstractConcatenationBenchmark[A] extends Concatenation
 class FingerTreeConcatenationIntBenchmark extends FingerTreeAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
 class FingerTreeConcatenationStringBenchmark extends FingerTreeAbstractConcatenationBenchmark[String] with VectorGeneratorType.StringGenerator
+
+
+abstract class FingerTreeAbstractConcatenation2Benchmark[A] extends Concatenation2Benchmarks[A] with FingerTreeBenchmark[A]
+
+class FingerTreeConcatenation2IntBenchmark extends FingerTreeAbstractConcatenation2Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+class FingerTreeConcatenation2StringBenchmark extends FingerTreeAbstractConcatenation2Benchmark[String] with VectorGeneratorType.StringGenerator

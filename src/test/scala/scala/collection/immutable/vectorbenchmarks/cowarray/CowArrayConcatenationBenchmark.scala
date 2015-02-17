@@ -1,6 +1,7 @@
 package scala.collection.immutable.vectorbenchmarks.cowarray
 
 import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.ConcatenationBenchmarks
+import scala.collection.immutable.vectorbenchmarks.genericbenchmarks.Concatenation2Benchmarks
 import scala.collection.immutable.vectorutils.VectorGeneratorType
 
 abstract class CowArrayAbstractConcatenationBenchmark[A] extends ConcatenationBenchmarks[A] with CowArrayBenchmark[A]
@@ -8,3 +9,10 @@ abstract class CowArrayAbstractConcatenationBenchmark[A] extends ConcatenationBe
 class CowArrayConcatenationIntBenchmark extends CowArrayAbstractConcatenationBenchmark[Int] with VectorGeneratorType.IntGenerator
 
 class CowArrayConcatenationStringBenchmark extends CowArrayAbstractConcatenationBenchmark[String] with VectorGeneratorType.StringGenerator
+
+
+abstract class CowArrayAbstractConcatenation2Benchmark[A] extends Concatenation2Benchmarks[A] with CowArrayBenchmark[A]
+
+class CowArrayConcatenation2IntBenchmark extends CowArrayAbstractConcatenation2Benchmark[Int] with VectorGeneratorType.IntGenerator
+
+class CowArrayConcatenation2StringBenchmark extends CowArrayAbstractConcatenation2Benchmark[String] with VectorGeneratorType.StringGenerator
