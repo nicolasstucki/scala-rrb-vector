@@ -18,7 +18,7 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     def points = 8
 
-    def independentSamples = 1
+    def independentSamples = 8
 
     def benchRunsPerSample = 64
 
