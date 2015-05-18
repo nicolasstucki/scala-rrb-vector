@@ -30,7 +30,7 @@ class RunAppendBenchmarks extends BenchmarkRun {
     include[vector.VectorAppendIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorAppendIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorAppendIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorAppendIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorAppendIntBenchmark]
 
     include[fingertree.FingerTreeAppendIntBenchmark]
@@ -60,7 +60,7 @@ class RunApplyBenchmarks extends BenchmarkRun {
     include[vector.VectorApplyIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorApplyIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorApplyIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorApplyIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorApplyIntBenchmark]
 
     include[fingertree.FingerTreeApplyIntBenchmark]
@@ -110,7 +110,7 @@ class RunBuilderBenchmarks2 extends BenchmarkRun {
 class RunConcatenationBenchmarks extends BenchmarkRun {
 
     include[rrbvector.balanced.RRBVectorConcatenationIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
 
     include[fingertree.FingerTreeConcatenationIntBenchmark]
@@ -121,7 +121,7 @@ class RunConcatenationBenchmarks extends BenchmarkRun {
 class RunConcatenation2Benchmarks extends BenchmarkRun {
 
     include[rrbvector.balanced.RRBVectorConcatenation2IntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorConcatenation2IntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorConcatenation2IntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorConcatenation2IntBenchmark]
 
     include[fingertree.FingerTreeConcatenation2IntBenchmark]
@@ -146,7 +146,7 @@ class RunConcatenationCompleteBenchmarks extends BenchmarkRun {
     include[vector.VectorConcatenationIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorConcatenationIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorConcatenationIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorConcatenationIntBenchmark]
 
     include[fingertree.FingerTreeConcatenationIntBenchmark]
@@ -183,7 +183,7 @@ class RunIterationBenchmarks extends BenchmarkRun {
     include[vector.VectorIterationIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorIterationIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorIterationIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorIterationIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorIterationIntBenchmark]
 
     include[fingertree.FingerTreeIterationIntBenchmark]
@@ -214,7 +214,7 @@ class RunPrependBenchmarks extends BenchmarkRun {
     include[vector.VectorPrependIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorPrependIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorPrependIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorPrependIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorPrependIntBenchmark]
 
     include[fingertree.FingerTreePrependIntBenchmark]
@@ -276,7 +276,7 @@ class RunMemoryAllocation extends BenchmarkRun {
     include[vector.VectorIntMemoryAllocation]
 
     include[rrbvector.balanced.RRBVectorIntMemoryAllocation]
-    include[rrbvector.unbalanced1.RRBVectorIntMemoryAllocation]
+//    include[rrbvector.unbalanced1.RRBVectorIntMemoryAllocation]
     include[rrbvector.xunbalanced.RRBVectorIntMemoryAllocation]
 
     include[fingertree.FingerTreeIntMemoryAllocation]
@@ -303,7 +303,7 @@ class RunParMapBenchmarks extends BenchmarkRun {
     include[vector.VectorParMapIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorParMapIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorParMapIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorParMapIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorParMapIntBenchmark]
 }
 
@@ -325,7 +325,7 @@ class RunUpdateBenchmarks extends BenchmarkRun {
     include[vector.VectorUpdateIntBenchmark]
 
     include[rrbvector.balanced.RRBVectorUpdateIntBenchmark]
-    include[rrbvector.unbalanced1.RRBVectorUpdateIntBenchmark]
+//    include[rrbvector.unbalanced1.RRBVectorUpdateIntBenchmark]
     include[rrbvector.xunbalanced.RRBVectorUpdateIntBenchmark]
 
     include[fingertree.FingerTreeUpdateIntBenchmark]

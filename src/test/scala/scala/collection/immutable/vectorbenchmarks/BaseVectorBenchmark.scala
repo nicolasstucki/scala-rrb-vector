@@ -12,13 +12,13 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     /* config */
 
-    def minHeight = 3
+    def minHeight = 4
 
-    def maxHeight = 3
+    def maxHeight = 4
 
-    def points = 32
+    def points = 8
 
-    def independentSamples = 16
+    def independentSamples = 1
 
     def benchRunsPerSample = 64
 
@@ -48,7 +48,15 @@ trait BaseVectorBenchmark[A] extends OfflineRegressionReport with BaseVectorGene
 
     /* data */
 
-    def sizes(from: Int, to: Int, by: Int, sizesName: String) = Gen.range(sizesName)(to - 1, from, -by)
+    def sizes(from: Int, to: Int, by: Int, sizesName: String) = {
+        def expSeq(current: Int, seq: List[Int] = Nil): List[Int] =
+            if (current <= to) {
+                val newVal = (1.5 * current).toInt
+                expSeq(newVal, newVal :: seq)
+            } else (1.5 * current).toInt :: seq
+        Gen.enumeration(sizesName)(expSeq(4): _*)
+//        Gen.range(sizesName)(to - 1, from, -by)
+    }
 
     def sized[T, Repr](g: Gen[Repr])(implicit ev: Repr <:< Traversable[T]): Gen[(Int, Repr)] = for (xs <- g) yield (xs.size, xs)
 
