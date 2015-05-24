@@ -9,4 +9,4 @@ Documentation
 
 Maven repository
 -----------------------
-It is availabe on [Maven Central](https://github.com/nicolasstucki/scala-rrb-vector)
+It is availabe on [Maven Central](https://github.com/nicolasstucki/scala-rrb-vector/blob/master/MavenRepository.md)
