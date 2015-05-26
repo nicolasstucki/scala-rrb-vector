@@ -2365,7 +2365,7 @@ private[immutable] trait RRBVectorPointer[A] {
             display2 = d2
             val d1 = d2(31).asInstanceOf[Array[AnyRef]]
             display1 = d1
-            display0 = d3(31).asInstanceOf[Array[AnyRef]]
+            display0 = d1(31).asInstanceOf[Array[AnyRef]]
             return
         } else if (xor < 1073741824) {
             val d4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
