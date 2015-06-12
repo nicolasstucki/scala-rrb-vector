@@ -29,7 +29,7 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
                 }
             }
 
-            for (threadPoolSize <- Seq(1, 2, 4, 8)) {
+            for (threadPoolSize <- Seq(1, 2, 4, 8, 16, 32, 64)) {
                 performance of s"par.map into self (x=>x)" in {
                     performance of s"$threadPoolSize threads in pool" in {
                         performance of s"Height $height" in {
@@ -44,29 +44,29 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
             }
         }
 
-        if (height <= 3) {
-            measure method "map" in {
-                performance of s"map into mapBencFun" in {
-                    performance of s"Height $height" in {
-                        using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                            sideeffect = (vec map mapBenchFun).length
-                        }
-                    }
-                }
-                for (threadPoolSize <- Seq(1, 2, 4, 8)) {
-                    performance of s"par.map into mapBencFun" in {
-                        performance of s"$threadPoolSize threads in pool" in {
-                            performance of s"Height $height" in {
-                                using(generateVectors(from, to, by)) curve vectorName in { vec =>
-                                    val parvec = vec.par
-                                    parvec.tasksupport = ParSupport.getTaskSupport(threadPoolSize)
-                                    sideeffect = (parvec map mapBenchFun).length
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+//        if (height <= 3) {
+//            measure method "map" in {
+//                performance of s"map into mapBencFun" in {
+//                    performance of s"Height $height" in {
+//                        using(generateVectors(from, to, by)) curve vectorName in { vec =>
+//                            sideeffect = (vec map mapBenchFun).length
+//                        }
+//                    }
+//                }
+//                for (threadPoolSize <- Seq(1, 2, 4, 8)) {
+//                    performance of s"par.map into mapBencFun" in {
+//                        performance of s"$threadPoolSize threads in pool" in {
+//                            performance of s"Height $height" in {
+//                                using(generateVectors(from, to, by)) curve vectorName in { vec =>
+//                                    val parvec = vec.par
+//                                    parvec.tasksupport = ParSupport.getTaskSupport(threadPoolSize)
+//                                    sideeffect = (parvec map mapBenchFun).length
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
 
 
 //            measure method "map" in {
@@ -91,6 +91,6 @@ abstract class ParMapBenchmarks[A] extends BaseVectorBenchmark[A] {
 //                    }
 //                }
 //            }
-        }
+//        }
     }
 }
