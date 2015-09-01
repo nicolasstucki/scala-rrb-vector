@@ -3,6 +3,7 @@ This projects aims to implement and benchmark Scala `immutable.Vector` using [Re
 
 Documentation
 --------------------
+* [ICFP 2015 Paper](https://github.com/nicolasstucki/scala-rrb-vector/blob/master/documents/RRB%20Vector%20-%20A%20Practical%20General%20Purpose%20Immutable%20Sequence.pdf)
 * [Thesis Paper](https://github.com/nicolasstucki/scala-rrb-vector/blob/master/documents/Master%20Thesis%20-%20Nicolas%20Stucki%20-%20Turning%20Relaxed%20Radix%20Balanced%20Vector%20from%20Theory%20into%20Practice%20for%20Scala%20Collections.pdf?raw=true) ([printable version](https://github.com/nicolasstucki/scala-rrb-vector/blob/master/documents/Master%20Thesis%20-%20Nicolas%20Stucki%20-%20Turning%20Relaxed%20Radix%20Balanced%20Vector%20from%20Theory%20into%20Practice%20for%20Scala%20Collections%20(Print).pdf?raw=true))
 * [Slides](https://docs.google.com/presentation/d/1GY0p2P-BzPfWspKoMRxOQ87fG01t4oMJ1PJxjxGFurQ/edit?usp=sharing)
 
