@@ -17,6 +17,8 @@ publishTo := {
     Some("releases" at nexus + "service/local/staging/deploy/maven2")
 }
 
+libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test"
+
 publishMavenStyle := true
 
 publishArtifact in Test := false

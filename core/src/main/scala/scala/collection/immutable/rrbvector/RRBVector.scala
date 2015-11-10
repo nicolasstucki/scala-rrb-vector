@@ -399,7 +399,7 @@ final class RRBVector[+A] private[immutable](override private[immutable] val end
                         } else null
 
                     val newDisplay = new Array[AnyRef](display.length)
-                    System.arraycopy(display, 0, newDisplay, 0, displayLen - 1)
+                    System.arraycopy(display, 1, newDisplay, 1, displayLen - 1)
                     if (i >= _focusDepth)
                         newDisplay(displayLen) = newSizes
 
