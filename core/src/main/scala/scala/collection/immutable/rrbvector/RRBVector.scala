@@ -1747,7 +1747,7 @@ private[immutable] trait RRBVectorPointer[A] {
         this.depth = 6
         this.display0 = display0
         this.display1 = display1
-        this.display1 = display2
+        this.display2 = display2
         this.display3 = display3
         this.display4 = display4
         this.display5 = display5
